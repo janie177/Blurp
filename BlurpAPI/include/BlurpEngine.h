@@ -2,7 +2,7 @@
 
 namespace blurp
 {
-    class Blurp
+    class BlurpEngine
     {
         
     };

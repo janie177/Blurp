@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Blurp.h">
+    <ClInclude Include="include\BlurpEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
