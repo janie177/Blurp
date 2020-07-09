@@ -19,7 +19,7 @@ int main()
     windowSettings.dimensions = glm::vec2{ 800, 800 };
     windowSettings.type = blurp::WindowType::WINDOW_WIN32;
     windowSettings.name = "My lovely little window";
-    windowSettings.flags = blurp::WindowFlags::CAPTURE_CURSOR;// | blurp::WindowFlags::HIDE_CURSOR;
+    windowSettings.flags = blurp::WindowFlags::OPEN_FULLSCREEN | blurp::WindowFlags::CAPTURE_CURSOR | blurp::WindowFlags::HIDE_CURSOR;
 
     blurpSettings.windowSettings = windowSettings;
 
@@ -75,18 +75,18 @@ int main()
                 std::cout << "Mouse input: " << mButton << " was " << pressrelease << std::endl;
             }
 
-            else if(mEvent.action == blurp::MouseAction::SCROLL)
-            {
-                std::cout << "Mouse input: Scrolled distance " << mEvent.value << "." << std::endl;
-            }
-            else if (mEvent.action == blurp::MouseAction::MOVE_X)
-            {
-                std::cout << "Mouse moved x: " << mEvent.value << "." << std::endl;
-            }
-            else if (mEvent.action == blurp::MouseAction::MOVE_Y)
-            {
-                std::cout << "Mouse moved y: " << mEvent.value << "." << std::endl;
-            }
+            //else if(mEvent.action == blurp::MouseAction::SCROLL)
+            //{
+            //    std::cout << "Mouse input: Scrolled distance " << mEvent.value << "." << std::endl;
+            //}
+            //else if (mEvent.action == blurp::MouseAction::MOVE_X)
+            //{
+            //    std::cout << "Mouse moved x: " << mEvent.value << "." << std::endl;
+            //}
+            //else if (mEvent.action == blurp::MouseAction::MOVE_Y)
+            //{
+            //    std::cout << "Mouse moved y: " << mEvent.value << "." << std::endl;
+            //}
         }
 
         static int i = 0;

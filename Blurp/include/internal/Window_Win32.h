@@ -34,7 +34,7 @@ namespace blurp
     private:
         RECT GetClientCoordinates() const;
         RECT GetWindowCoordinates() const;
-        void CenterCursor(RECT clientRect);
+        void CenterCursor(RECT a_ClientRect);
         void OnMoveResize();
         void ObtainFocus();
 

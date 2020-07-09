@@ -221,7 +221,7 @@ namespace blurp
         {
             if (windowPtr)
             {
-                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::RELEASE, 0, MouseButton::MMB));
+                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::RELEASE, 0, MouseButton::RMB));
             }
         }
         return 0;
@@ -229,7 +229,7 @@ namespace blurp
         {
             if (windowPtr)
             {
-                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::RELEASE, 0, MouseButton::LMB));
+                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::RELEASE, 0, MouseButton::MMB));
             }
         }
         return 0;
@@ -437,11 +437,11 @@ namespace blurp
         return rect;
     }
 
-    void Window_Win32::CenterCursor(RECT clientRect)
+    void Window_Win32::CenterCursor(RECT a_ClientRect)
     {
         //Set the cursor to the center of the screen when focused.
-        int centerX = clientRect.left + ((clientRect.right - clientRect.left) / 2);
-        int centerY = clientRect.top + ((clientRect.bottom - clientRect.top) / 2);
+        int centerX = a_ClientRect.left + ((a_ClientRect.right - a_ClientRect.left) / 2);
+        int centerY = a_ClientRect.top + ((a_ClientRect.bottom - a_ClientRect.top) / 2);
         m_MousePos = { centerX, centerY };
         SetCursorPos(centerX, centerY);
     }
