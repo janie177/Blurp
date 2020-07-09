@@ -1,17 +1,19 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <memory>
-#include <vector>
+
+#include "RenderResource.h"
 
 namespace blurp
 {
     struct SwapChainSettings;
     class RenderTarget;
 
-    class SwapChain
+    class SwapChain : public RenderResource
     {
     public:
-        SwapChain(const SwapChainSettings& a_Settings);
+        virtual ~SwapChain() = default;
+        SwapChain(const SwapChainSettings& a_Settings) : m_Settings(a_Settings) {}
 
         /*
          * Called when the swapchain needs to resize.
@@ -32,5 +34,8 @@ namespace blurp
          * Swap the buffers to present the next frame.
          */
         virtual void Present() = 0;
+
+    protected:
+        SwapChainSettings m_Settings;
     };
 }

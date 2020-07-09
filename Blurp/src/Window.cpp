@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "Settings.h"
+#include "SwapChain.h"
 
 namespace blurp
 {
@@ -13,6 +14,19 @@ namespace blurp
     std::shared_ptr<SwapChain> Window::GetSwapChain() const
     {
         return m_SwapChain;
+    }
+
+    WindowType Window::GetWindowType() const
+    {
+        return m_Settings.type;
+    }
+
+    void Window::Present() const
+    {
+        if(m_SwapChain != nullptr)
+        {
+            m_SwapChain->Present();
+        }
     }
 
     void Window::BindSwapChain(std::shared_ptr<SwapChain> a_SwapChain)

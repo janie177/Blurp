@@ -1,9 +1,24 @@
 #include "BlurpEngine.h"
 
+#include <RenderDevice.h>
+#include "opengl/RenderDevice_GL.h"
 #include "Window_Win32.h"
+
+#include "Material.h"
+#include "Light.h"
+#include "Mesh.h"
+#include "RenderTarget.h"
+#include "Texture.h"
+#include "Camera.h"
 
 namespace blurp
 {
+	BlurpEngine::BlurpEngine()
+    {
+		//TODO use something other than a vector maybe.
+		m_Resources.reserve(2000);
+    }
+
     bool BlurpEngine::Init(const BlurpSettings& a_Settings)
     {
 		//Create the window if specified.
@@ -19,27 +34,77 @@ namespace blurp
 				return false;
             }
 
+			//Initialize the window.
 			m_Window->Load();
 		}
 
-		//TODO make a shared pointer to a RenderDevice here. Then pass the window.get() to it in Init(window*);
-
-		//Initialize the API
+		//Create the right render device instance.
         switch (a_Settings.graphicsAPI)
         {
 		case GraphicsAPI::OPENGL:
+			m_RenderDevice = std::make_shared<RenderDevice_GL>();
 			break;
 		default:
 			throw std::exception("Graphics API selected not implemented!");
 			return false;
         }
 
-		return true;
+		//Initialize the rendering context. Returns true on success.
+		return m_RenderDevice->Init(*this, a_Settings.windowSettings);
     }
 
-    std::shared_ptr<Window> BlurpEngine::GetWindow()
+    std::shared_ptr<Window> BlurpEngine::GetWindow() const
     {
 		return m_Window;
+    }
+
+    std::shared_ptr<Light> BlurpEngine::CreateLight(const LightSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateLight(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+    }
+
+    std::shared_ptr<Camera> BlurpEngine::CreateCamera(const CameraSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateCamera(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+    }
+
+    std::shared_ptr<Mesh> BlurpEngine::CreateMesh(const MeshSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateMesh(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+    }
+
+    std::shared_ptr<Texture> BlurpEngine::CreateTexture(const TextureSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateTexture(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+    }
+
+    std::shared_ptr<RenderTarget> BlurpEngine::CreateRenderTarget(const RenderTargetSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateRenderTarget(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+    }
+
+    std::shared_ptr<Material> BlurpEngine::CreateMaterial(const MaterialSettings& a_Settings)
+    {
+		auto resource = m_RenderDevice->CreateMaterial(a_Settings);
+		resource->Load(*this);
+		m_Resources.emplace_back(resource);
+		return resource;
+
     }
 
     void BlurpEngine::CleanUp()
@@ -51,7 +116,7 @@ namespace blurp
 			{
 				//Destroy the resource.
 				auto& resource = *itr;
-				resource->Destroy();
+				resource->Destroy(*this);
 
 				itr = m_Resources.erase(itr);
 				return;

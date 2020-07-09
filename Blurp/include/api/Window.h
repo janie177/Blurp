@@ -10,9 +10,10 @@ namespace blurp
     struct WindowSettings;
     class SwapChain;
 
-    class Window : public RenderResource
+    class Window
     {
         friend class RenderDevice;
+        friend class BlurpEngine;
 
     public:
         Window(const WindowSettings& a_Settings);
@@ -65,11 +66,31 @@ namespace blurp
          */
         virtual bool IsClosed() const = 0;
 
+        /*
+         * Get the type of this window.
+         */
+        WindowType GetWindowType() const;
+
+        /*
+         * Swap the front and back buffers in the swapchain.
+         */
+        void Present() const;
+
     protected:
         /*
          * Associate this window with the given SwapChain.
          */
         void BindSwapChain(std::shared_ptr<SwapChain> a_SwapChain);
+
+        /*
+         * Load this window and initialize it.
+         */
+        virtual void Load() = 0;
+
+        /*
+         * Destroy this window. Clean up what needs cleaning up.
+         */
+        virtual void Destroy() = 0;
 
     protected:
         //Initial window settings.

@@ -53,9 +53,9 @@ namespace blurp
         TEXTURE_ARRAY
     };
 
-    enum class ColorFormat
+    enum class PixelFormat
     {
-        COLOR_RGBA32,
+        RGBA_32,
     };
 
     enum class WindowFlags : std::uint16_t
@@ -87,13 +87,34 @@ namespace blurp
      * The settings structs.
      */
 
+    struct RenderTargetSettings
+    {
+        //TODO: Add attachments here. Depth, stencil and color. This corresponds to the shader output.
+        //TODO: Certain RenderPasses will require certain attachments. For now keep it simple and the same always.
+        PixelFormat format;
+    };
+
+    struct SwapChainSettings
+    {
+        //Buffer format.
+        RenderTargetSettings renderTargetSettings;
+
+        //Amount of buffers. Minimum of two required.
+        std::uint16_t numBuffers;
+    };
+
+
     struct WindowSettings
     {
+        //Window information
         glm::vec2 dimensions;
         bool fullScreen;
         WindowType type;
         std::string name;
         WindowFlags flags;
+
+        //Swapchain information
+        SwapChainSettings swapChainSettings;
     };
 
     struct CameraSettings
@@ -105,6 +126,7 @@ namespace blurp
     {
         
     };
+
 
     struct BlurpSettings
     {
@@ -118,16 +140,6 @@ namespace blurp
     };
 
     struct LightSettings
-    {
-        
-    };
-
-    struct RenderTargetSettings
-    {
-        
-    };
-
-    struct SwapChainSettings
     {
         
     };

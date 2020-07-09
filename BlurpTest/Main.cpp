@@ -19,7 +19,7 @@ int main()
     windowSettings.dimensions = glm::vec2{ 800, 800 };
     windowSettings.type = blurp::WindowType::WINDOW_WIN32;
     windowSettings.name = "My lovely little window";
-    windowSettings.flags = blurp::WindowFlags::OPEN_FULLSCREEN | blurp::WindowFlags::CAPTURE_CURSOR | blurp::WindowFlags::HIDE_CURSOR;
+    windowSettings.flags = blurp::WindowFlags::CAPTURE_CURSOR | blurp::WindowFlags::HIDE_CURSOR;
 
     blurpSettings.windowSettings = windowSettings;
 
@@ -89,15 +89,15 @@ int main()
             //}
         }
 
-        static int i = 0;
-        ++i;
-
         //Handle alt enter:
         if(input.getKeyState(KEY_ALT) != blurp::ButtonState::NOT_PRESSED && input.getKeyState(KEY_ENTER) == blurp::ButtonState::FIRST_PRESSED)
         {
             std::cout << "Toggling fullscreen mode" << std::endl;
             window->SetFullScreen(!window->IsFullScreen());
         }
+
+        //Finally display on the screen.
+       window->Present();
     }
 
 

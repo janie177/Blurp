@@ -22,14 +22,12 @@ namespace blurp
 
     void Window_Win32::Load()
     {
-        //TODO use the window flags to change the window.
-
         //Retrieve the current instance.
         const auto hInstance = GetModuleHandle(NULL);
 
         WNDCLASSEX windowClass = { 0 };
         windowClass.cbSize = sizeof(WNDCLASSEX);
-        windowClass.style = CS_HREDRAW | CS_VREDRAW;
+        windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
         windowClass.lpfnWndProc = WindowProc;
         windowClass.hInstance = hInstance;
         windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -73,6 +71,9 @@ namespace blurp
         {
             m_CaptureCursor = true;
         }
+
+        //Finally calculate the screen dimensions and possibly update the swapchain size.
+        OnMoveResize();
 
         //Finally set the window focus.
         //First set to null to ensure it resets the focus state.
@@ -455,7 +456,7 @@ namespace blurp
         const int height = windowRect.bottom - windowRect.top;
 
         //Size has changed.
-        if (width != static_cast<int>(m_Dimensions.x) && height != static_cast<int>(m_Dimensions.y))
+        if (width != static_cast<int>(m_Dimensions.x) || height != static_cast<int>(m_Dimensions.y))
         {
             const glm::vec2 newDims = { width, height };
             m_Dimensions = newDims;
