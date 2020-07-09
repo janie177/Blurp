@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <Window.h>
 
-#include "../Blurp/include/api/KeyCodes.h"
+#include "KeyCodes.h"
 
 int main()
 {
@@ -19,7 +19,7 @@ int main()
     windowSettings.dimensions = glm::vec2{ 800, 800 };
     windowSettings.type = blurp::WindowType::WINDOW_WIN32;
     windowSettings.name = "My lovely little window";
-    windowSettings.flags = blurp::WindowFlags::CAPTURE_CURSOR | blurp::WindowFlags::HIDE_CURSOR;
+    windowSettings.flags = blurp::WindowFlags::CAPTURE_CURSOR;// | blurp::WindowFlags::HIDE_CURSOR;
 
     blurpSettings.windowSettings = windowSettings;
 

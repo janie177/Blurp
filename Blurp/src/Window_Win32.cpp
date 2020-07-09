@@ -141,8 +141,7 @@ namespace blurp
                     //Finally set the cursor back to the center if it is captured.
                     if(windowPtr->m_CaptureCursor && windowPtr->m_HasFocus)
                     {
-                        auto windowRect = windowPtr->GetWindowCoordinates();
-                        auto clientRect = windowPtr->GetClientCoordinates(windowRect);
+                        auto clientRect = windowPtr->GetClientCoordinates();
 
                         //Set the cursor to the center of the screen when focused.
                         windowPtr->CenterCursor(clientRect);
@@ -157,8 +156,7 @@ namespace blurp
                     //Set focus if the window is clicked and the mouse is within the window.
                     if (!windowPtr->m_HasFocus)
                     {
-                        const auto windowRect = windowPtr->GetWindowCoordinates();
-                        const auto clientRect = windowPtr->GetClientCoordinates(windowRect);
+                        const auto clientRect = windowPtr->GetClientCoordinates();
                         POINT cursorPos;
                         GetCursorPos(&cursorPos);
 
@@ -178,8 +176,7 @@ namespace blurp
                 //Set focus if the window is clicked and the mouse is within the window.
                 if (!windowPtr->m_HasFocus)
                 {
-                    const auto windowRect = windowPtr->GetWindowCoordinates();
-                    const auto clientRect = windowPtr->GetClientCoordinates(windowRect);
+                    const auto clientRect = windowPtr->GetClientCoordinates();
                     POINT cursorPos;
                     GetCursorPos(&cursorPos);
 
@@ -199,8 +196,7 @@ namespace blurp
                     //Set focus if the window is clicked and the mouse is within the window.
                     if (!windowPtr->m_HasFocus)
                     {
-                        const auto windowRect = windowPtr->GetWindowCoordinates();
-                        const auto clientRect = windowPtr->GetClientCoordinates(windowRect);
+                        const auto clientRect = windowPtr->GetClientCoordinates();
                         POINT cursorPos;
                         GetCursorPos(&cursorPos);
 
@@ -326,9 +322,6 @@ namespace blurp
                     SWP_FRAMECHANGED | SWP_NOACTIVATE);
 
                 ShowWindow(m_Hwnd, SW_NORMAL);
-
-                //Update the dimensions
-                m_Dimensions = { m_WindowedRect.right - m_WindowedRect.left, m_WindowedRect.bottom - m_WindowedRect.top };
             }
             //To full screen mode.
             else
@@ -362,9 +355,6 @@ namespace blurp
 
 
                 ShowWindow(m_Hwnd, SW_MAXIMIZE);
-
-                //Update the dimensions.
-                m_Dimensions = { devMode.dmPelsWidth , devMode.dmPelsHeight };
             }
 
             //Resize the buffers and clip the cursor if needed.
@@ -429,18 +419,15 @@ namespace blurp
         DestroyWindow(m_Hwnd);
     }
 
-    RECT Window_Win32::GetClientCoordinates(RECT a_WindowCoordinates) const
+    RECT Window_Win32::GetClientCoordinates() const
     {
         RECT rect;
         GetClientRect(m_Hwnd, &rect);
 
-        RECT coords;
-        coords.left = a_WindowCoordinates.left;
-        coords.top = a_WindowCoordinates.top;
-        coords.right = coords.left + rect.right;
-        coords.bottom = coords.top + rect.bottom;
+        ClientToScreen(m_Hwnd, reinterpret_cast<POINT*>(&rect.left)); // convert top-left
+        ClientToScreen(m_Hwnd, reinterpret_cast<POINT*>(&rect.right)); // convert bottom-right
 
-        return coords;
+        return rect;
     }
 
     RECT Window_Win32::GetWindowCoordinates() const
@@ -453,8 +440,8 @@ namespace blurp
     void Window_Win32::CenterCursor(RECT clientRect)
     {
         //Set the cursor to the center of the screen when focused.
-        int centerX = clientRect.left + (clientRect.right / 2);
-        int centerY = clientRect.top + (clientRect.bottom / 2);
+        int centerX = clientRect.left + ((clientRect.right - clientRect.left) / 2);
+        int centerY = clientRect.top + ((clientRect.bottom - clientRect.top) / 2);
         m_MousePos = { centerX, centerY };
         SetCursorPos(centerX, centerY);
     }
@@ -485,7 +472,7 @@ namespace blurp
         {
             if (m_CaptureCursor)
             {
-                auto clientRect = GetClientCoordinates(windowRect);
+                auto clientRect = GetClientCoordinates();
 
                 //Set the cursor to the center of the screen when focused.
                 CenterCursor(clientRect);
@@ -504,8 +491,7 @@ namespace blurp
         if (m_CaptureCursor)
         {
             //Get the screen rectangle.
-            const auto windowRect = GetWindowCoordinates();
-            auto clientRect = GetClientCoordinates(windowRect);
+            auto clientRect = GetClientCoordinates();
 
             //Set the cursor to the center of the screen when focussed.
             CenterCursor(clientRect);

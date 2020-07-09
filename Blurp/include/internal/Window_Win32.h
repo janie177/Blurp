@@ -32,7 +32,7 @@ namespace blurp
         void Close() override;
 
     private:
-        RECT GetClientCoordinates(RECT a_WindowCoordinates) const;
+        RECT GetClientCoordinates() const;
         RECT GetWindowCoordinates() const;
         void CenterCursor(RECT clientRect);
         void OnMoveResize();
