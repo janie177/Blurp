@@ -45,13 +45,15 @@ namespace blurp
         /*
          * Set the mouse position for this window.
          * This caps to be within 0,0 and width,height.
+         *
+         * This regards the native OS mouse.
          */
-        virtual void SetMousePosition(const glm::vec2& a_MousePosition) = 0;
+        virtual void SetNativeMousePosition(const glm::vec2& a_MousePosition) = 0;
 
         /*
-         * Get the mouse position.
+         * Get the mouse position of the native OS mouse.
          */
-        virtual glm::vec2 GetMousePosition() const = 0;
+        virtual glm::vec2 GetNativeMousePosition() const = 0;
 
         /*
          * Get a queue of all input events that happened since this was last called.

@@ -25,8 +25,8 @@ namespace blurp
         void Resize(glm::vec2 a_Dimensions) override;
         void SetFullScreen(bool a_FullScreen) override;
         bool IsFullScreen() override;
-        void SetMousePosition(const glm::vec2& a_MousePosition) override;
-        glm::vec2 GetMousePosition() const override;
+        void SetNativeMousePosition(const glm::vec2& a_MousePosition) override;
+        glm::vec2 GetNativeMousePosition() const override;
         InputData PollInput() override;
         bool IsClosed() const override;
         void Close() override;

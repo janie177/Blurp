@@ -188,7 +188,7 @@ namespace blurp
                         windowPtr->ObtainFocus();
                     }
                 }
-                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::CLICK, 0, MouseButton::MMB));
+                windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::CLICK, 0, MouseButton::RMB));
             }
         }
         return 0;
@@ -209,7 +209,7 @@ namespace blurp
                             windowPtr->ObtainFocus();
                         }
                     }
-                    windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::CLICK, 0, MouseButton::LMB));
+                    windowPtr->m_InputQueue.addMouseEvent(MouseEvent(MouseAction::CLICK, 0, MouseButton::MMB));
                 }
             }
             return 0;
@@ -381,12 +381,12 @@ namespace blurp
         return m_FullScreen;
     }
 
-    void Window_Win32::SetMousePosition(const glm::vec2& a_MousePosition)
+    void Window_Win32::SetNativeMousePosition(const glm::vec2& a_MousePosition)
     {
         m_MousePos = a_MousePosition;
     }
 
-    glm::vec2 Window_Win32::GetMousePosition() const
+    glm::vec2 Window_Win32::GetNativeMousePosition() const
     {
         return m_MousePos;
     }
