@@ -165,9 +165,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\api\BlurpEngine.h" />
+    <ClInclude Include="include\api\InputQueue.h" />
+    <ClInclude Include="include\api\KeyCodes.h" />
+    <ClInclude Include="include\api\Mouse.h" />
+    <ClInclude Include="include\api\RenderDevice.h" />
+    <ClInclude Include="include\api\RenderResource.h" />
+    <ClInclude Include="include\api\RenderTarget.h" />
+    <ClInclude Include="include\api\Settings.h" />
+    <ClInclude Include="include\api\SwapChain.h" />
+    <ClInclude Include="include\api\Window.h" />
+    <ClInclude Include="include\internal\Window_Win32.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp" />
+    <ClCompile Include="src\InputQueue.cpp" />
+    <ClCompile Include="src\Mouse.cpp" />
+    <ClCompile Include="src\Window.cpp" />
+    <ClCompile Include="src\Window_Win32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

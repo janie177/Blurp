@@ -1,87 +1,64 @@
 #include "BlurpEngine.h"
 
-#include <Windows.h>
-#include "GL/glew.h"
-#include <cstdio>
-#include <iostream>
+#include "Window_Win32.h"
 
-blurp::BlurpEngine::BlurpEngine()
+namespace blurp
 {
+    bool BlurpEngine::Init(const BlurpSettings& a_Settings)
+    {
+		//Create the window if specified.
+		if(a_Settings.windowSettings.type != WindowType::NONE)
+		{
+            switch (a_Settings.windowSettings.type)
+            {
+			case WindowType::WINDOW_WIN32:
+				m_Window = std::make_shared<Window_Win32>(a_Settings.windowSettings);
+				break;
+			default:
+				throw std::exception("Window type selected not implemented!");
+				return false;
+            }
 
+			m_Window->Load();
+		}
+
+		//TODO make a shared pointer to a RenderDevice here. Then pass the window.get() to it in Init(window*);
+
+		//Initialize the API
+        switch (a_Settings.graphicsAPI)
+        {
+		case GraphicsAPI::OPENGL:
+			break;
+		default:
+			throw std::exception("Graphics API selected not implemented!");
+			return false;
+        }
+
+		return true;
+    }
+
+    std::shared_ptr<Window> BlurpEngine::GetWindow()
+    {
+		return m_Window;
+    }
+
+    void BlurpEngine::CleanUp()
+	{
+		auto itr = m_Resources.begin();
+		while (itr != m_Resources.end())
+		{
+			if (itr->use_count() <= 1)
+			{
+				//Destroy the resource.
+				auto& resource = *itr;
+				resource->Destroy();
+
+				itr = m_Resources.erase(itr);
+				return;
+			}
+
+			++itr;
+		}
+	}
 }
 
-void blurp::BlurpEngine::Run()
-{
-	//GLuint handle;
-
- //   const wchar_t CLASS_NAME[] = L"Sample Window Class";
-
- //   WNDCLASS wc = { };
-
- //   wc.lpfnWndProc = myWndProc;
- //   wc.hInstance = GetModuleHandle(NULL);
- //   wc.lpszClassName = CLASS_NAME;
-
- //   HWND hwnd = CreateWindowEx(
- //       0,                              // Optional window styles.
- //       CLASS_NAME,                     // Window class
- //       L"Learn to Program Windows",    // Window text
- //       WS_OVERLAPPEDWINDOW,            // Window style
-
- //       // Size and position
- //       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-
- //       NULL,       // Parent window    
- //       NULL,       // Menu
- //       GetModuleHandle(NULL),  // Instance handle
- //       NULL        // Additional application data
- //   );
-
- //   HDC ourWindowHandleToDeviceContext = GetDC(hwnd);
-
- //   PIXELFORMATDESCRIPTOR pfd =
- //   {
- //       sizeof(PIXELFORMATDESCRIPTOR),
- //       1,
- //       PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
- //       PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
- //       32,                   // Colordepth of the framebuffer.
- //       0, 0, 0, 0, 0, 0,
- //       0,
- //       0,
- //       0,
- //       0, 0, 0, 0,
- //       24,                   // Number of bits for the depthbuffer
- //       8,                    // Number of bits for the stencilbuffer
- //       0,                    // Number of Aux buffers in the framebuffer.
- //       PFD_MAIN_PLANE,
- //       0,
- //       0, 0, 0
- //   };
-
- //   int  letWindowsChooseThisPixelFormat;
- //   letWindowsChooseThisPixelFormat = ChoosePixelFormat(ourWindowHandleToDeviceContext, &pfd);
- //   SetPixelFormat(ourWindowHandleToDeviceContext, letWindowsChooseThisPixelFormat, &pfd);
-
- //   HGLRC ourOpenGLRenderingContext = wglCreateContext(ourWindowHandleToDeviceContext);
- //   wglMakeCurrent(ourWindowHandleToDeviceContext, ourOpenGLRenderingContext);
-
- //   glewExperimental = GL_TRUE;
- //   if (glewInit() != GLEW_OK)
- //   {
- //       std::cout << "Failure!" << std::endl;
- //       getchar();
- //       return;
- //   }
-
-	//glCreateBuffers(1, &handle);
-
-
-
-	getchar();
-}
-
-LRESULT myWndProc(HWND, UINT, WPARAM, LPARAM)
-{
-    return 0;
-}
