@@ -18,7 +18,9 @@ namespace blurp
         //TODO make it so that a render target can only be bound to a single pipeline at the same time.
         //Add some sort of locking mechanism.
         //
-        ////TODO Make render target control the viewport and scissor rects.
+        ////TODO Make render target control the viewport and scissor rects. Also clear color.
+        //TODO setting for DepthBuffer and StencilBuffer.
+        //TODO attachments? Attachment count? Then in the renderpasses the attachment count is taken into account?
         
     protected:
         RenderTargetSettings m_Settings;

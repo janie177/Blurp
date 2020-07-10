@@ -14,10 +14,13 @@ namespace blurp
 
     enum class RenderPassType
     {
+        RP_DUMMY,   //TODO remove this is for testing.
         RP_CLEAR,
         RP_FORWARD,
         RP_DEFERRED,
         RP_SHADOWMAP,
+        RP_CUBEMAP,
+        RP_SKYBOX,
         RP_DOF,
         RP_2D,
         RP_BLOOM,
@@ -48,14 +51,51 @@ namespace blurp
 
     enum class TextureType
     {
+        NONE,
         TEXTURE_2D,
-        TEXTURE_3D,
+        TEXTURE_CUBE,
         TEXTURE_ARRAY
+    };
+
+    enum class WrapMode
+    {
+        CLAMP_TO_EDGE,
+        MIRRORED_REPEAT,
+        REPEAT
+    };
+
+    enum class MagFilterType
+    {
+        NEAREST,
+        LINEAR
+    };
+
+    enum class MinFilterType
+    {
+        NEAREST,
+        LINEAR,
+        MIPMAP_NEAREST
     };
 
     enum class PixelFormat
     {
-        RGBA_32,
+        RGBA,
+        RGB,
+        RG,
+        R,
+        DEPTH,
+        DEPTH_STENCIL
+    };
+
+    enum class DataType
+    {
+        FLOAT,
+        INT,
+        UINT,
+        BYTE,
+        UBYTE,
+        SHORT,
+        USHORT
     };
 
     enum class WindowFlags : std::uint16_t
@@ -63,6 +103,7 @@ namespace blurp
         OPEN_FULLSCREEN = 1 << 0,
         HIDE_CURSOR = 1 << 1,
         CAPTURE_CURSOR = 1 << 2,
+        NONE = 1 << 3
     };
 
     /*
@@ -87,15 +128,66 @@ namespace blurp
      * The settings structs.
      */
 
+    /*
+     * TextureSettings describes a texture resource.
+     * It is passed to BlurpEngine to create a Texture resource instance.
+     */
+    struct TextureSettings
+    {
+        TextureSettings()
+        {
+            //Default values
+            dimensions = { 1, 1 };
+            pixelFormat = PixelFormat::RGBA;
+            dataType = DataType::FLOAT;
+            textureType = TextureType::TEXTURE_2D;
+            mipLevels = 0;
+            minFilter = MinFilterType::LINEAR;
+            magFilter = MagFilterType::LINEAR;
+            wrapMode = WrapMode::REPEAT;
+        }
+
+        glm::vec2 dimensions;
+        PixelFormat pixelFormat;
+        DataType dataType;
+        TextureType textureType;
+        std::uint16_t mipLevels;
+        MinFilterType minFilter;
+        MagFilterType magFilter;
+        WrapMode wrapMode;
+
+    };
+
     struct RenderTargetSettings
     {
-        //TODO: Add attachments here. Depth, stencil and color. This corresponds to the shader output.
-        //TODO: Certain RenderPasses will require certain attachments. For now keep it simple and the same always.
-        PixelFormat format;
+        RenderTargetSettings()
+        {
+            //Default values.
+            depthStencilSettings.enable = true;
+            depthStencilSettings.format = PixelFormat::DEPTH_STENCIL;
+        }
+
+        //Color buffer attachment settings.
+        TextureSettings colorSettings;
+
+        /*
+         * Settings related to the depth/stencil buffer.
+         */
+        struct DepthStencilSettings
+        {
+            bool enable;        //Set to false to prevent a depth and/or stencil buffer from being created.
+            PixelFormat format; //Should be DEPTH or DEPTH_STENCIL
+        } depthStencilSettings;
     };
 
     struct SwapChainSettings
     {
+        SwapChainSettings()
+        {
+            //Default values.
+            numBuffers = 2;
+        }
+
         //Buffer format.
         RenderTargetSettings renderTargetSettings;
 
@@ -106,9 +198,17 @@ namespace blurp
 
     struct WindowSettings
     {
+        WindowSettings()
+        {
+            //Default settings.
+            dimensions = { 800, 600 };
+            type = WindowType::WINDOW_WIN32;
+            name = "Blurp Window";
+            flags = WindowFlags::NONE;
+        }
+
         //Window information
         glm::vec2 dimensions;
-        bool fullScreen;
         WindowType type;
         std::string name;
         WindowFlags flags;
@@ -119,34 +219,34 @@ namespace blurp
 
     struct CameraSettings
     {
-        
+        //TODO
     };
-
-    struct TextureSettings
-    {
-        
-    };
-
 
     struct BlurpSettings
     {
+        BlurpSettings()
+        {
+            //Default settings.
+            graphicsAPI = GraphicsAPI::OPENGL;
+        }
+
         WindowSettings windowSettings;
         GraphicsAPI graphicsAPI;
     };
 
     struct MeshSettings
     {
-        
+        //TODO maybe add a static/dynamic thing here? mutable/unmutable? To optimize GPU memory.
     };
 
     struct LightSettings
     {
-        
+        //TODO
     };
 
     struct MaterialSettings
     {
-        
+        //TODO   
     };
     
 }
