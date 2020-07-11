@@ -14,7 +14,7 @@ namespace blurp
 
     enum class RenderPassType
     {
-        RP_DUMMY,   //TODO remove this is for testing.
+        RP_HELLOTRIANGLE,
         RP_CLEAR,
         RP_FORWARD,
         RP_DEFERRED,
@@ -186,6 +186,7 @@ namespace blurp
         {
             //Default values.
             numBuffers = 2;
+            vsync = false;
         }
 
         //Buffer format.
@@ -193,6 +194,9 @@ namespace blurp
 
         //Amount of buffers. Minimum of two required.
         std::uint16_t numBuffers;
+
+        //Enable or disable vsync.
+        bool vsync;
     };
 
 

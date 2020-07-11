@@ -25,13 +25,16 @@ namespace blurp
     class SwapChain;
     class Material;
 
+    class RenderResourceManager;
+
     class RenderResource;
     class RenderDevice;
+    class RenderPipeline;
 
 
     class BlurpEngine
     {
-        friend class RenderDevice_GL;
+        friend class RenderDevice;
     public:
         BlurpEngine();
 
@@ -48,46 +51,16 @@ namespace blurp
         std::shared_ptr<Window> GetWindow() const;
 
         /*
-         * Create a Light resource and load it.
-         * The resource is automatically added to the resource registry.
+         * Get the resource manager instance. 
          */
-        std::shared_ptr<Light> CreateLight(const LightSettings& a_Settings);
+        RenderResourceManager& GetResourceManager() const;
 
+    protected:
         /*
-         * Create a Camera resource and load it.
-         * The resource is automatically added to the resource registry.
+         * Register a resource with the resource registry.
+         * This loads the resource as well.
          */
-        std::shared_ptr<Camera> CreateCamera(const CameraSettings& a_Settings);
-
-        /*
-         * Create a Mesh resource and load it.
-         * The resource is automatically added to the resource registry.
-         */
-        std::shared_ptr<Mesh> CreateMesh(const MeshSettings& a_Settings);
-
-        /*
-         * Create a Texture resource and load it.
-         * The resource is automatically added to the resource registry.
-         */
-        std::shared_ptr<Texture> CreateTexture(const TextureSettings& a_Settings);
-
-        /*
-         * Create a RenderTarget resource and load it.
-         * The resource is automatically added to the resource registry.
-         */
-        std::shared_ptr<RenderTarget> CreateRenderTarget(const RenderTargetSettings& a_Settings);
-
-        /*
-         * Create a Material resource and load it.
-         * The resource is automatically added to the resource registry.
-         */
-        std::shared_ptr<Material> CreateMaterial(const MaterialSettings& a_Settings);
-
-        /*
-         * Clean up resources that have gone out of scope.
-         * This erases them from the registry.
-         */
-        void CleanUp();
+        void RegisterResource(const std::shared_ptr<RenderResource>& a_Resource);
 
     private:
         //Registry containing all live resources.
@@ -99,5 +72,8 @@ namespace blurp
         //The window belonging to this instance of BlurpEngine.
         //This is nullptr if the initial settings specified WindowType::NONE.
         std::shared_ptr<Window> m_Window;
+
+        //The resource manager instance
+        std::unique_ptr<RenderResourceManager> m_ResourceManager;
     };
 }

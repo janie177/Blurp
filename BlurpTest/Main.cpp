@@ -5,28 +5,42 @@
 #include <Window.h>
 
 #include "KeyCodes.h"
+#include "RenderResourceManager.h"
+#include "RenderPipeline.h"
+#include "RenderPass_HelloTriangle.h"
+#include "SwapChain.h"
 
 int main()
 {
+    //SETUP
+
     blurp::BlurpEngine engine;
-
     blurp::BlurpSettings blurpSettings;
-
     blurpSettings.graphicsAPI = blurp::GraphicsAPI::OPENGL;
 
     blurp::WindowSettings windowSettings;
-    windowSettings.fullScreen = false;
     windowSettings.dimensions = glm::vec2{ 800, 800 };
     windowSettings.type = blurp::WindowType::WINDOW_WIN32;
     windowSettings.name = "My lovely little window";
     windowSettings.flags = blurp::WindowFlags::CAPTURE_CURSOR | blurp::WindowFlags::HIDE_CURSOR;
+    windowSettings.swapChainSettings.vsync = false ;
 
     blurpSettings.windowSettings = windowSettings;
-
     engine.Init(blurpSettings);
-
     auto window = engine.GetWindow();
 
+
+    //RENDERING
+
+    auto pipeline = engine.GetResourceManager().CreatePipeline();
+    auto triangleRenderPass = pipeline->AppendRenderPass<blurp::RenderPass_HelloTriangle>(blurp::RenderPassType::RP_HELLOTRIANGLE);
+
+    triangleRenderPass->SetTarget(window->GetRenderTarget());
+    triangleRenderPass->SetColor({0.f, 0.f, 1.f, 1.f});
+
+    /*
+     * Main loop. Render as long as the window remains open.
+     */
     while(!window->IsClosed())
     {
         auto input = window->PollInput();
@@ -96,8 +110,19 @@ int main()
             window->SetFullScreen(!window->IsFullScreen());
         }
 
+        //Update the rendering pipeline.
+        pipeline->Execute();
+
+        while(true)
+        {
+            if (pipeline->HasFinishedExecuting())
+            {
+                break;
+            }
+        }
+
         //Finally display on the screen.
-       window->Present();
+        window->Present();
     }
 
 

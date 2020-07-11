@@ -16,6 +16,11 @@ namespace blurp
         return m_SwapChain;
     }
 
+    std::shared_ptr<RenderTarget> Window::GetRenderTarget() const
+    {
+        return m_SwapChain->GetRenderTarget();
+    }
+
     WindowType Window::GetWindowType() const
     {
         return m_Settings.type;

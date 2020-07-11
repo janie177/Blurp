@@ -3,6 +3,7 @@
 #include <utility>
 #include "Window.h"
 #include "SwapChain.h"
+#include "BlurpEngine.h"
 
 namespace blurp
 {

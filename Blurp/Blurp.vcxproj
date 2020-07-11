@@ -173,13 +173,19 @@
     <ClInclude Include="include\api\Mesh.h" />
     <ClInclude Include="include\api\Mouse.h" />
     <ClInclude Include="include\api\RenderDevice.h" />
+    <ClInclude Include="include\api\RenderPass.h" />
+    <ClInclude Include="include\api\RenderPass_HelloTriangle.h" />
+    <ClInclude Include="include\api\RenderPipeline.h" />
     <ClInclude Include="include\api\RenderResource.h" />
+    <ClInclude Include="include\api\RenderResourceManager.h" />
     <ClInclude Include="include\api\RenderTarget.h" />
     <ClInclude Include="include\api\Settings.h" />
     <ClInclude Include="include\api\SwapChain.h" />
     <ClInclude Include="include\api\Texture.h" />
     <ClInclude Include="include\api\Window.h" />
     <ClInclude Include="include\internal\opengl\RenderDevice_GL.h" />
+    <ClInclude Include="include\internal\opengl\RenderPass_HelloTriangle_GL.h" />
+    <ClInclude Include="include\internal\opengl\RenderPipeline_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderTarget_GL.h" />
     <ClInclude Include="include\internal\opengl\SwapChain_GL_Win32.h" />
     <ClInclude Include="include\internal\Window_Win32.h" />
@@ -190,8 +196,14 @@
     <ClCompile Include="src\Mouse.cpp" />
     <ClCompile Include="src\RenderDevice.cpp" />
     <ClCompile Include="src\RenderDevice_GL.cpp" />
+    <ClCompile Include="src\RenderPass_HelloTriangle.cpp" />
+    <ClCompile Include="src\RenderPass_HelloTriangle_GL.cpp" />
+    <ClCompile Include="src\RenderPipeline.cpp" />
+    <ClCompile Include="src\RenderPipeline_GL.cpp" />
+    <ClCompile Include="src\RenderResourceManager.cpp" />
     <ClCompile Include="src\RenderTarget_GL.cpp" />
     <ClCompile Include="src\SwapChain_GL_Win32.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\Window_Win32.cpp" />
   </ItemGroup>

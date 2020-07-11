@@ -9,6 +9,7 @@ namespace blurp
 {
     struct WindowSettings;
     class SwapChain;
+    class RenderTarget;
 
     class Window
     {
@@ -22,6 +23,11 @@ namespace blurp
          * Get the SwapChain belonging to this window.
          */
         std::shared_ptr<SwapChain> GetSwapChain() const;
+
+        /*
+         * Get the RenderTarget from the swapchain directly.
+         */
+        std::shared_ptr<RenderTarget> GetRenderTarget() const;
 
         /*
          * Close the window.

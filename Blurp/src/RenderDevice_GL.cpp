@@ -2,6 +2,8 @@
 
 #include "opengl/RenderTarget_GL.h"
 #include "BlurpEngine.h"
+#include "opengl/RenderPass_HelloTriangle_GL.h"
+#include "opengl/RenderPipeline_GL.h"
 #include "opengl/SwapChain_GL_Win32.h"
 
 
@@ -76,13 +78,21 @@ namespace blurp
         return nullptr;
     }
 
-    void RenderDevice_GL::CreateRenderPass(RenderPassType& a_Type)
+    std::shared_ptr<RenderPass> RenderDevice_GL::CreateRenderPass(RenderPassType& a_Type, RenderPipeline& a_Pipeline)
     {
-        //TODO return right thing.
+        switch(a_Type)
+        {
+            case RenderPassType::RP_HELLOTRIANGLE:
+                return std::make_shared<RenderPass_HelloTriangle_GL>(a_Pipeline);
+            break;
+        default:
+            throw std::exception("RenderPassType not implemented for OpenGL!");
+            break;
+        }
     }
 
-    void RenderDevice_GL::CreatePipeline()
+    std::shared_ptr<RenderPipeline> RenderDevice_GL::CreatePipeline()
     {
-        //TODO return right thing.
+        return std::make_shared<RenderPipeline_GL>(m_Engine, *this);
     }
 }

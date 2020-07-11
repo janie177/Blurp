@@ -5,6 +5,7 @@
 
 
 #include "opengl/RenderTarget_GL.h"
+#include <windows.h>
 #include "Window.h"
 #include "Window_Win32.h"
 
@@ -29,10 +30,11 @@ namespace blurp
 
     void SwapChain_GL_Win32::Present()
     {
-        //TODO this is temporary.
         glBindBuffer(GL_FRAMEBUFFER, reinterpret_cast<RenderTarget_GL*>(m_RenderTarget.get())->GetFrameBufferID());
 
-        static float red = 0.5;
+        static int framecount = 0;
+        ++framecount;
+        static float red = 0.5f;
         static bool reverse = false;
         red = red + (reverse ?  0.001f : -0.001f);
         if(red > 1.0)
@@ -46,13 +48,18 @@ namespace blurp
             red = 0.0;
         }
 
-        glClearColor(red, 0.7, 0.9, 1.0);
+        glClearColor(red, 0.7f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
         wglSwapLayerBuffers(m_Hdc, WGL_SWAP_MAIN_PLANE);
+
+        if(framecount % 100 == 0)
+        {
+            std::cout << "Frames: " << framecount << std::endl;
+        }
     }
 
-    bool SwapChain_GL_Win32::Load(BlurpEngine& a_BlurpEngine)
+    bool SwapChain_GL_Win32::OnLoad(BlurpEngine& a_BlurpEngine)
     {
         //Retrieve a pointer to the window.
         const auto window = a_BlurpEngine.GetWindow().get();
@@ -103,10 +110,26 @@ namespace blurp
         //This doesn't need loading because it is a dummy.
         m_RenderTarget = std::make_shared<RenderTarget_GL>(m_Settings.renderTargetSettings, true);
 
+        //Disable vsync if specified
+        {
+            typedef BOOL(APIENTRY* PFNWGLSWAPINTERVALPROC)(int);
+            PFNWGLSWAPINTERVALPROC wglSwapIntervalEXT = 0;
+
+            const char* extensions = (char*)glGetString(GL_EXTENSIONS);
+
+            wglSwapIntervalEXT = (PFNWGLSWAPINTERVALPROC)wglGetProcAddress("wglSwapIntervalEXT");
+
+            if (wglSwapIntervalEXT)
+            {
+                int vSync = m_Settings.vsync ? 1 : 0;
+                wglSwapIntervalEXT(m_Settings.vsync);
+            }
+        }
+    
         return true;
     }
 
-    bool SwapChain_GL_Win32::Destroy(BlurpEngine& a_BlurpEngine)
+    bool SwapChain_GL_Win32::OnDestroy(BlurpEngine& a_BlurpEngine)
     {
         wglDeleteContext(m_GlContext);
         return true;

@@ -21,8 +21,8 @@ namespace blurp
 
         void Present() override;
     protected:
-        bool Load(BlurpEngine& a_BlurpEngine) override;
-        bool Destroy(BlurpEngine& a_BlurpEngine) override;
+        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
+        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
         std::shared_ptr<RenderTarget> m_RenderTarget;
