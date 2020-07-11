@@ -2,13 +2,15 @@
 
 #include "RenderPipeline.h"
 #include "RenderPass.h"
+#include "BlurpEngine.h"
+#include "RenderResourceManager.h"
 
 namespace blurp
 {
     std::shared_ptr<RenderPass> RenderPipeline::AppendRenderPass(RenderPassType a_Type)
     {
         //Create and emplace in the vector.
-        std::shared_ptr<RenderPass> ptr = m_RenderDevice.CreateRenderPass(a_Type, *this);
+        std::shared_ptr<RenderPass> ptr = m_Engine.GetResourceManager().CreateRenderPass(a_Type, *this);
         m_RenderPasses.emplace_back(ptr);
         return std::move(ptr);
     }

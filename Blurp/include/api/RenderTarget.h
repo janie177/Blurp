@@ -24,7 +24,7 @@ namespace blurp
         /*
          * Get the amount of color attachments bound to this RenderTarget.
          */
-        virtual bool GetNumColorAttachments() = 0;
+        virtual std::uint16_t GetNumColorAttachments() = 0;
 
         /*
          * Returns true when this RenderTarget has a color attachment.

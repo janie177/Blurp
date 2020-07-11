@@ -13,6 +13,7 @@ namespace blurp
     public:
         RenderDevice_GL(BlurpEngine& a_Engine) : RenderDevice(a_Engine) {}
 
+    protected:
         bool Init(BlurpEngine& a_BlurpEngine, const WindowSettings& a_WindowSettings) override;
 
         std::shared_ptr<Light> CreateLight(const LightSettings& a_Settings) override;

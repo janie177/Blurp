@@ -209,6 +209,9 @@ namespace blurp
             type = WindowType::WINDOW_WIN32;
             name = "Blurp Window";
             flags = WindowFlags::NONE;
+
+            //Make sure the internal render target has the same dimensions.
+            swapChainSettings.renderTargetSettings.colorSettings.dimensions = dimensions;
         }
 
         //Window information

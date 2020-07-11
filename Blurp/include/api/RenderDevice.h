@@ -35,11 +35,14 @@ namespace blurp
 
     class RenderDevice
     {
+        friend class BlurpEngine;
+        friend class RenderResourceManager;
     public:
         virtual ~RenderDevice() = default;
 
         RenderDevice(BlurpEngine& a_Engine) : m_Engine(a_Engine) {}
 
+    protected:
         /*
          * Initialize the rendering context and setup any required systems.
          * This includes setting up a swap chain for the provided window if not null.

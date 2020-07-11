@@ -39,9 +39,6 @@
     <ClInclude Include="include\api\RenderDevice.h">
       <Filter>Header Files\Main</Filter>
     </ClInclude>
-    <ClInclude Include="include\api\RenderResourceManager.h">
-      <Filter>Header Files\Main</Filter>
-    </ClInclude>
     <ClInclude Include="include\api\Settings.h">
       <Filter>Header Files\Main</Filter>
     </ClInclude>
@@ -61,9 +58,6 @@
       <Filter>Header Files\Resources</Filter>
     </ClInclude>
     <ClInclude Include="include\api\RenderTarget.h">
-      <Filter>Header Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="include\api\RenderPipeline.h">
       <Filter>Header Files\Resources</Filter>
     </ClInclude>
     <ClInclude Include="include\api\Window.h">
@@ -97,10 +91,16 @@
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="include\internal\opengl\RenderPass_HelloTriangle_GL.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\RenderPasses</Filter>
     </ClInclude>
     <ClInclude Include="include\internal\opengl\RenderPipeline_GL.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\RenderPipeline.h">
+      <Filter>Header Files\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\RenderResourceManager.h">
+      <Filter>Header Files\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

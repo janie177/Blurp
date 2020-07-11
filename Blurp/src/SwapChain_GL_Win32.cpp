@@ -13,8 +13,8 @@ namespace blurp
 {
     void SwapChain_GL_Win32::Resize(const glm::vec2& a_Dimensions, bool a_FullScreen)
     {
-        std::cout << "SwapChain Resized" << std::endl;
-        //OpenGL does this for me so I can be lazy.
+        //OpenGL does this for me so I can be lazy. Do have to update the internal viewport of the render target though.
+        m_RenderTarget->SetViewPort({ 0.f, 0.f, a_Dimensions });
     }
 
     std::uint16_t SwapChain_GL_Win32::GetNumBuffers()
@@ -30,33 +30,8 @@ namespace blurp
 
     void SwapChain_GL_Win32::Present()
     {
-        glBindBuffer(GL_FRAMEBUFFER, reinterpret_cast<RenderTarget_GL*>(m_RenderTarget.get())->GetFrameBufferID());
-
-        static int framecount = 0;
-        ++framecount;
-        static float red = 0.5f;
-        static bool reverse = false;
-        red = red + (reverse ?  0.001f : -0.001f);
-        if(red > 1.0)
-        {
-            reverse = !reverse;
-            red = 1.0;
-        }
-        if(red < 0.0)
-        {
-            reverse = !reverse;
-            red = 0.0;
-        }
-
-        glClearColor(red, 0.7f, 0.9f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
         wglSwapLayerBuffers(m_Hdc, WGL_SWAP_MAIN_PLANE);
-
-        if(framecount % 100 == 0)
-        {
-            std::cout << "Frames: " << framecount << std::endl;
-        }
     }
 
     bool SwapChain_GL_Win32::OnLoad(BlurpEngine& a_BlurpEngine)
@@ -107,7 +82,6 @@ namespace blurp
         std::cout << "OpenGL version: " << (char*)glGetString(GL_VERSION) << std::endl;
 
         //Create the default OpenGL rendertarget which is really just a dummy.
-        //This doesn't need loading because it is a dummy.
         m_RenderTarget = std::make_shared<RenderTarget_GL>(m_Settings.renderTargetSettings, true);
 
         //Disable vsync if specified

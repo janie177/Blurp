@@ -8,7 +8,7 @@
 #include "RenderResourceManager.h"
 #include "RenderPipeline.h"
 #include "RenderPass_HelloTriangle.h"
-#include "SwapChain.h"
+#include "RenderTarget.h"
 
 int main()
 {
@@ -37,6 +37,7 @@ int main()
 
     triangleRenderPass->SetTarget(window->GetRenderTarget());
     triangleRenderPass->SetColor({0.f, 0.f, 1.f, 1.f});
+    window->GetRenderTarget()->SetClearColor({ 1.f, 1.f, 1.f,1.f });
 
     /*
      * Main loop. Render as long as the window remains open.
