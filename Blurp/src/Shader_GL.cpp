@@ -11,8 +11,6 @@ namespace blurp
 
     bool Shader_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
-        //TODO have a separate compute and graphics shader type. Below is graphics.
-
         //Append the #define tag to each preprocessor definition.
         std::vector<std::string> defines;
         for(auto& s : m_Settings.preprocessorDefinitions)
@@ -21,12 +19,15 @@ namespace blurp
         }
 
         //Convert strings to const char* array.
+        //The size of this array is two larger that the amount of defines:
+        //The first slot is reserved for the shader version.
+        //The last slot is the rest of the shader source.
         std::vector<const char*> cStrings;
-        cStrings.resize(defines.size() + 1, nullptr);
+        cStrings.resize(defines.size() + 2, nullptr);
 
         for(int i = 0; i < static_cast<int>(defines.size()); ++i)
         {
-            cStrings[i] = defines[i].c_str();
+            cStrings[i + 1] = defines[i].c_str();
         }
 
         //Graphics shader.
@@ -46,7 +47,22 @@ namespace blurp
             {
                 //Create a shader, set the correct source and then compile.
                 vertex = glCreateShader(GL_VERTEX_SHADER);
-                cStrings[cStrings.size() - 1] = m_Settings.vertexShaderSource;
+
+                //Find the version tag in the shader source, then correctly set the indices for each.
+                bool hasVersion;
+                const char* srcStart;
+                const char* versionStart;
+                std::uint16_t versionSize;
+                FindVersionIndices(m_Settings.vertexShaderSource, hasVersion, srcStart, versionStart, versionSize);
+                assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+                //Append the version info to the front. All defines are now between the source and version info.
+                const std::string versionInfo = std::string(versionStart, versionSize);
+                cStrings[0] = versionInfo.c_str();
+
+                //Start the source from AFTER the version info.
+                cStrings[cStrings.size() - 1] = srcStart;
+
                 glShaderSource(vertex, cStrings.size(), &cStrings[0], NULL);
                 bool success = CompileShader(vertex);
                 assert(success);
@@ -61,7 +77,22 @@ namespace blurp
             {
                 //Create a shader, set the correct source and then compile.
                 fragment = glCreateShader(GL_FRAGMENT_SHADER);
-                cStrings[cStrings.size() - 1] = m_Settings.fragmentShaderSource;
+
+                //Find the version tag in the shader source, then correctly set the indices for each.
+                bool hasVersion;
+                const char* srcStart;
+                const char* versionStart;
+                std::uint16_t versionSize;
+                FindVersionIndices(m_Settings.fragmentShaderSource, hasVersion, srcStart, versionStart, versionSize);
+                assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+                //Append the version info to the front. All defines are now between the source and version info.
+                const std::string versionInfo = std::string(versionStart, versionSize);
+                cStrings[0] = versionInfo.c_str();
+
+                //Start the source from AFTER the version info.
+                cStrings[cStrings.size() - 1] = srcStart;
+
                 glShaderSource(fragment, cStrings.size(), &cStrings[0], NULL);
                 const bool success = CompileShader(fragment);
                 assert(success);
@@ -72,7 +103,22 @@ namespace blurp
             {
                 //Create a shader, set the correct source and then compile.
                 tess_hull = glCreateShader(GL_TESS_CONTROL_SHADER);
-                cStrings[cStrings.size() - 1] = m_Settings.tessellationHullShaderSource;
+
+                //Find the version tag in the shader source, then correctly set the indices for each.
+                bool hasVersion;
+                const char* srcStart;
+                const char* versionStart;
+                std::uint16_t versionSize;
+                FindVersionIndices(m_Settings.tessellationHullShaderSource, hasVersion, srcStart, versionStart, versionSize);
+                assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+                //Append the version info to the front. All defines are now between the source and version info.
+                const std::string versionInfo = std::string(versionStart, versionSize);
+                cStrings[0] = versionInfo.c_str();
+
+                //Start the source from AFTER the version info.
+                cStrings[cStrings.size() - 1] = srcStart;
+
                 glShaderSource(tess_hull, cStrings.size(), &cStrings[0], NULL);
                 const bool success = CompileShader(tess_hull);
                 assert(success);
@@ -83,7 +129,22 @@ namespace blurp
             {
                 //Create a shader, set the correct source and then compile.
                 tess_domain = glCreateShader(GL_TESS_EVALUATION_SHADER);
-                cStrings[cStrings.size() - 1] = m_Settings.tessellationDomainShaderSource;
+
+                //Find the version tag in the shader source, then correctly set the indices for each.
+                bool hasVersion;
+                const char* srcStart;
+                const char* versionStart;
+                std::uint16_t versionSize;
+                FindVersionIndices(m_Settings.tessellationDomainShaderSource, hasVersion, srcStart, versionStart, versionSize);
+                assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+                //Append the version info to the front. All defines are now between the source and version info.
+                const std::string versionInfo = std::string(versionStart, versionSize);
+                cStrings[0] = versionInfo.c_str();
+
+                //Start the source from AFTER the version info.
+                cStrings[cStrings.size() - 1] = srcStart;
+
                 glShaderSource(tess_domain, cStrings.size(), &cStrings[0], NULL);
                 const bool success = CompileShader(tess_domain);
                 assert(success);
@@ -94,7 +155,22 @@ namespace blurp
             {
                 //Create a shader, set the correct source and then compile.
                 geometry = glCreateShader(GL_GEOMETRY_SHADER);
-                cStrings[cStrings.size() - 1] = m_Settings.geometryShaderSource;
+
+                //Find the version tag in the shader source, then correctly set the indices for each.
+                bool hasVersion;
+                const char* srcStart;
+                const char* versionStart;
+                std::uint16_t versionSize;
+                FindVersionIndices(m_Settings.geometryShaderSource, hasVersion, srcStart, versionStart, versionSize);
+                assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+                //Append the version info to the front. All defines are now between the source and version info.
+                const std::string versionInfo = std::string(versionStart, versionSize);
+                cStrings[0] = versionInfo.c_str();
+
+                //Start the source from AFTER the version info.
+                cStrings[cStrings.size() - 1] = srcStart;
+
                 glShaderSource(geometry, cStrings.size(), &cStrings[0], NULL);
                 const bool success = CompileShader(geometry);
                 assert(success);
@@ -140,7 +216,22 @@ namespace blurp
 
             //Create a shader, set the correct source and then compile.
             GLuint compute = glCreateShader(GL_COMPUTE_SHADER);
-            cStrings[cStrings.size() - 1] = m_Settings.computeShaderSource;
+
+            //Find the version tag in the shader source, then correctly set the indices for each.
+            bool hasVersion;
+            const char* srcStart;
+            const char* versionStart;
+            std::uint16_t versionSize;
+            FindVersionIndices(m_Settings.computeShaderSource, hasVersion, srcStart, versionStart, versionSize);
+            assert(hasVersion && "GLSL shaders must specify their shader version!");
+
+            //Append the version info to the front. All defines are now between the source and version info.
+            const std::string versionInfo = std::string(versionStart, versionSize);
+            cStrings[0] = versionInfo.c_str();
+
+            //Start the source from AFTER the version info.
+            cStrings[cStrings.size() - 1] = srcStart;
+
             glShaderSource(compute, cStrings.size(), &cStrings[0], NULL);
             const bool compiled = CompileShader(compute);
             assert(compiled);
@@ -186,5 +277,27 @@ namespace blurp
         }
 
         return true;
+    }
+
+    void Shader_GL::FindVersionIndices(const char* a_Src, bool& a_HasVersion, const char*& a_SrcStart,
+        const char*& a_VersionStart, std::uint16_t& a_VersionSize) const
+    {
+        //Find the version line. If not specified, return.
+        const auto versionStart = strstr(a_Src, "#version ");
+        const auto versionEnd = strstr(a_Src, "\n");
+        if(versionStart == nullptr || versionEnd == nullptr)
+        {
+            a_HasVersion = false;
+            a_SrcStart = a_Src;
+            a_VersionStart = nullptr;
+            a_VersionSize = 0;
+            return;
+        }
+
+        //Version is found. Return the positions.
+        a_HasVersion = true;
+        a_SrcStart = versionEnd + 1;
+        a_VersionStart = versionStart;
+        a_VersionSize = versionEnd - versionStart + 1;
     }
 }

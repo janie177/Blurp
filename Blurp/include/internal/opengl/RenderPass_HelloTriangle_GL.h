@@ -18,7 +18,11 @@ namespace blurp
         "uniform vec4 ucolor;\n"
         "void main()\n"
         "{\n"
+        "#ifdef RED\n"
+        "   FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+        "#else\n"
         "   FragColor = ucolor;\n"
+        "#endif\n"
         "}\n\0";
 
     class RenderPass_HelloTriangle_GL : public RenderPass_HelloTriangle

@@ -18,6 +18,12 @@ namespace blurp
         shaderSettings.vertexShaderSource = vertexShaderSource;
         shaderSettings.fragmentShaderSource = fragmentShaderSource;
 
+        bool red = true;
+        if(red)
+        {
+            shaderSettings.preprocessorDefinitions.emplace_back("RED");
+        }
+
         m_Shader = a_BlurpEngine.GetResourceManager().CreateShader(shaderSettings);
 
 
