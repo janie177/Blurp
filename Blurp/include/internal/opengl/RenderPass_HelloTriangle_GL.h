@@ -2,6 +2,8 @@
 #include "RenderPass_HelloTriangle.h"
 #include <gl/glew.h>
 
+#include "Shader.h"
+
 namespace blurp
 {
     inline const char* vertexShaderSource = "#version 330 core\n"
@@ -30,8 +32,8 @@ namespace blurp
         void Execute() override;
 
     private:
-        GLuint vbo, vao, colorUniformID;
-        GLuint shader;
+        GLuint m_Vbo, m_Vao, m_ColorUniformId;
+        std::shared_ptr<Shader> m_Shader;
         
     };
 }

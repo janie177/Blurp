@@ -4,49 +4,21 @@
 
 #include "opengl/RenderTarget_GL.h"
 
+#include "BlurpEngine.h"
+#include "RenderResourceManager.h"
+#include "opengl/Shader_GL.h"
+
 namespace blurp
 {
     bool RenderPass_HelloTriangle_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
-        std::cout << "Now loading hello triangle gl!" << std::endl;
-
         //Shader program
-        int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
-        // check for shader compile errors
-        int success;
-        char infoLog[512];
-        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-        }
-        // fragment shader
-        int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
-        // check for shader compile errors
-        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-        }
-        // link shaders
-        shader = glCreateProgram();
-        glAttachShader(shader, vertexShader);
-        glAttachShader(shader, fragmentShader);
-        glLinkProgram(shader);
-        // check for linking errors
-        glGetProgramiv(shader, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(shader, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-        }
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        ShaderSettings shaderSettings;
+        shaderSettings.type = ShaderType::GRAPHICS;
+        shaderSettings.vertexShaderSource = vertexShaderSource;
+        shaderSettings.fragmentShaderSource = fragmentShaderSource;
+
+        m_Shader = a_BlurpEngine.GetResourceManager().CreateShader(shaderSettings);
 
 
         float vertices[] = {
@@ -55,12 +27,12 @@ namespace blurp
              0.0f,  0.5f, 0.0f
         };
 
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
+        glGenVertexArrays(1, &m_Vao);
+        glGenBuffers(1, &m_Vbo);
         // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-        glBindVertexArray(vao);
+        glBindVertexArray(m_Vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, m_Vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -74,21 +46,15 @@ namespace blurp
         glBindVertexArray(0);
 
         //Get the uniform id
-        colorUniformID = glGetUniformLocation(shader, "ucolor");
-
-
-        std::cout << "Loaded hello triangle gl!" << std::endl;
+        m_ColorUniformId = glGetUniformLocation(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId(), "ucolor");
 
         return true;
     }
 
     bool RenderPass_HelloTriangle_GL::OnDestroy(BlurpEngine& a_BlurpEngine)
     {
-        std::cout << "Destroyed hello triangle gl!" << std::endl;
-
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vbo);
-        glDeleteProgram(shader);
+        glDeleteVertexArrays(1, &m_Vao);
+        glDeleteBuffers(1, &m_Vbo);
 
         return true;
     }
@@ -107,10 +73,10 @@ namespace blurp
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(shader);
-        glBindVertexArray(vao);
+        glUseProgram(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId());
+        glBindVertexArray(m_Vao);
 
-        glUniform4f(colorUniformID, m_Color.r, m_Color.g, m_Color.b, m_Color.a);
+        glUniform4f(m_ColorUniformId, m_Color.r, m_Color.g, m_Color.b, m_Color.a);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }

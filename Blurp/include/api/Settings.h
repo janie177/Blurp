@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <string>
+#include <vector>
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -75,6 +76,12 @@ namespace blurp
         NEAREST,
         LINEAR,
         MIPMAP_NEAREST
+    };
+
+    enum class ShaderType
+    {
+        COMPUPE,
+        GRAPHICS
     };
 
     enum class PixelFormat
@@ -255,5 +262,42 @@ namespace blurp
     {
         //TODO   
     };
-    
+
+    /*
+     * Struct containing shader data.
+     * The char pointers are only valid on construction, later usage is unsafe.
+     * When a shader stage is not used, leave it as nullptr.
+     */
+    struct ShaderSettings
+    {
+        ShaderSettings()
+        {
+            //Default to nullptr to be safe.
+            vertexShaderSource = nullptr;
+            tessellationHullShaderSource = nullptr;
+            tessellationDomainShaderSource = nullptr;
+            geometryShaderSource = nullptr;
+            fragmentShaderSource = nullptr;
+            computeShaderSource = nullptr;
+
+
+            type = ShaderType::GRAPHICS;
+        }
+
+        //Raw pointers to each shader stage. Nullptr if not used.
+        const char* vertexShaderSource;
+        const char* tessellationHullShaderSource;
+        const char* tessellationDomainShaderSource;
+        const char* geometryShaderSource;
+        const char* fragmentShaderSource;
+
+        //Compute shader source
+        const char* computeShaderSource;
+
+        //Strings to define in the shader before compiling.
+        std::vector<std::string> preprocessorDefinitions;
+
+        //The type of shader
+        ShaderType type;
+    };
 }

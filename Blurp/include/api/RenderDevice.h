@@ -16,6 +16,7 @@ namespace blurp
     struct RenderTargetSettings;
     struct SwapChainSettings;
     struct MaterialSettings;
+    struct ShaderSettings;
 
     //Resources forward declarations.
     class Window;
@@ -26,6 +27,7 @@ namespace blurp
     class RenderTarget;
     class SwapChain;
     class Material;
+    class Shader;
 
     class RenderPass;
     class RenderPipeline;
@@ -42,6 +44,9 @@ namespace blurp
 
         RenderDevice(BlurpEngine& a_Engine) : m_Engine(a_Engine) {}
 
+        //These functions are protected so that only BlurpEngine and the resource manager can call them.
+        //These create resources but don't properly load them. Available functions for loading resources
+        //can be found in the RenderResourceManager class.
     protected:
         /*
          * Initialize the rendering context and setup any required systems.
@@ -93,6 +98,11 @@ namespace blurp
          * Create a render pipeline.
          */
         virtual std::shared_ptr<RenderPipeline> CreatePipeline() = 0;
+
+        /*
+         * Create a shader from the given settings.
+         */
+        virtual std::shared_ptr<Shader> CreateShader(const ShaderSettings& a_Settings) = 0;
 
     protected:
         /*

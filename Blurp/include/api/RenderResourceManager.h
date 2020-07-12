@@ -20,6 +20,7 @@ namespace blurp
     struct RenderTargetSettings;
     struct SwapChainSettings;
     struct MaterialSettings;
+    struct ShaderSettings;
 
     //Resources forward declarations.
     class Window;
@@ -30,6 +31,7 @@ namespace blurp
     class RenderTarget;
     class SwapChain;
     class Material;
+    class Shader;
 
     class RenderPass;
     class RenderPipeline;
@@ -103,6 +105,11 @@ namespace blurp
          * Create a render pipeline.
          */
         std::shared_ptr<RenderPipeline> CreatePipeline();
+
+        /*
+         * Create a shader from the given settings.
+         */
+        std::shared_ptr<Shader> CreateShader(const ShaderSettings& a_Settings);
 
     private:
         std::vector<std::shared_ptr<RenderResource>> m_Resources;

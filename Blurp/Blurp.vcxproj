@@ -180,6 +180,7 @@
     <ClInclude Include="include\api\RenderResourceManager.h" />
     <ClInclude Include="include\api\RenderTarget.h" />
     <ClInclude Include="include\api\Settings.h" />
+    <ClInclude Include="include\api\Shader.h" />
     <ClInclude Include="include\api\SwapChain.h" />
     <ClInclude Include="include\api\Texture.h" />
     <ClInclude Include="include\api\Window.h" />
@@ -187,6 +188,7 @@
     <ClInclude Include="include\internal\opengl\RenderPass_HelloTriangle_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPipeline_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderTarget_GL.h" />
+    <ClInclude Include="include\internal\opengl\Shader_GL.h" />
     <ClInclude Include="include\internal\opengl\SwapChain_GL_Win32.h" />
     <ClInclude Include="include\internal\Window_Win32.h" />
   </ItemGroup>
@@ -202,6 +204,7 @@
     <ClCompile Include="src\RenderPipeline_GL.cpp" />
     <ClCompile Include="src\RenderResourceManager.cpp" />
     <ClCompile Include="src\RenderTarget_GL.cpp" />
+    <ClCompile Include="src\Shader_GL.cpp" />
     <ClCompile Include="src\SwapChain_GL_Win32.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\Window.cpp" />

@@ -4,6 +4,7 @@
 #include "BlurpEngine.h"
 #include "opengl/RenderPass_HelloTriangle_GL.h"
 #include "opengl/RenderPipeline_GL.h"
+#include "opengl/Shader_GL.h"
 #include "opengl/SwapChain_GL_Win32.h"
 
 
@@ -37,21 +38,25 @@ namespace blurp
 
     std::shared_ptr<Light> RenderDevice_GL::CreateLight(const LightSettings& a_Settings)
     {
+        //TODO
         return nullptr;
     }
 
     std::shared_ptr<Camera> RenderDevice_GL::CreateCamera(const CameraSettings& a_Settings)
     {
+        //TODO
         return nullptr;
     }
 
     std::shared_ptr<Mesh> RenderDevice_GL::CreateMesh(const MeshSettings& a_Settings)
     {
+        //TODO
         return nullptr;
     }
 
     std::shared_ptr<Texture> RenderDevice_GL::CreateTexture(const TextureSettings& a_Settings)
     {
+        //TODO
         return nullptr;
     }
 
@@ -75,6 +80,7 @@ namespace blurp
 
     std::shared_ptr<Material> RenderDevice_GL::CreateMaterial(const MaterialSettings& a_Settings)
     {
+        //TODO
         return nullptr;
     }
 
@@ -94,5 +100,10 @@ namespace blurp
     std::shared_ptr<RenderPipeline> RenderDevice_GL::CreatePipeline()
     {
         return std::make_shared<RenderPipeline_GL>(m_Engine, *this);
+    }
+
+    std::shared_ptr<Shader> RenderDevice_GL::CreateShader(const ShaderSettings& a_Settings)
+    {
+        return std::make_shared<Shader_GL>(a_Settings);
     }
 }
