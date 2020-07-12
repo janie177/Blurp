@@ -23,8 +23,11 @@ namespace blurp
         //Tell each pass to execute.
         for(auto& pass : m_RenderPasses)
         {
-            assert(pass->IsStateValid() && "Cannot execute render pass with invalid state!");
-            pass->Execute();
+            if(pass->IsEnabled())
+            {
+                assert(pass->IsStateValid() && "Cannot execute render pass with invalid state!");
+                pass->Execute();
+            }
         }
 
         //Before finishing, let the child class clean up and possibly send GPU work.

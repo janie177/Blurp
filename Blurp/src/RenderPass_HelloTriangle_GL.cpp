@@ -18,6 +18,7 @@ namespace blurp
         shaderSettings.vertexShaderSource = vertexShaderSource;
         shaderSettings.fragmentShaderSource = fragmentShaderSource;
 
+        //Preprocessor definitions test here.
         bool red = true;
         if(red)
         {

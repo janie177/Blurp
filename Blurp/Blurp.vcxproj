@@ -120,6 +120,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Blurp\Include\internal;$(SolutionDir)Blurp\Include\api;$(SolutionDir)Blurp\Include;$(SolutionDir)Dependencies\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -198,6 +199,7 @@
     <ClCompile Include="src\Mouse.cpp" />
     <ClCompile Include="src\RenderDevice.cpp" />
     <ClCompile Include="src\RenderDevice_GL.cpp" />
+    <ClCompile Include="src\RenderPass.cpp" />
     <ClCompile Include="src\RenderPass_HelloTriangle.cpp" />
     <ClCompile Include="src\RenderPass_HelloTriangle_GL.cpp" />
     <ClCompile Include="src\RenderPipeline.cpp" />

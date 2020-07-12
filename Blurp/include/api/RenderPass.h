@@ -11,11 +11,21 @@ namespace blurp
     public:
         virtual ~RenderPass() = default;
 
-        RenderPass(RenderPipeline& a_Pipeline) : m_Pipeline(a_Pipeline) {}
+        RenderPass(RenderPipeline& a_Pipeline) : m_Pipeline(a_Pipeline), m_Enabled(true) {}
 
         //Don't allow copy.
         RenderPass(RenderPass&) = delete;
         RenderPass& operator=(RenderPass&) = delete;
+
+        /*
+         * Enable or disable this RenderPass.
+         */
+        void SetEnabled(bool a_Enabled);
+
+        /*
+         * Returns true if this RenderPass is enabled. False otherwise.
+         */
+        bool IsEnabled() const;
 
         /*
          * Get the type of this render pass.
@@ -42,5 +52,6 @@ namespace blurp
     private:
         
         RenderPipeline& m_Pipeline;
+        bool m_Enabled;
     };
 }
