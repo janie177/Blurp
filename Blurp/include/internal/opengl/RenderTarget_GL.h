@@ -18,7 +18,7 @@ namespace blurp
                                                                                             m_Fbo(0),
                                                                                             m_IsDefault(a_DefaultFrameBuffer),
                                                                                             m_ClearColor(0.f, 0.f, 0.f, 1.f),
-                                                                                            m_ViewPort(0.f, 0.f, a_Settings.colorSettings.dimensions),
+                                                                                            m_ViewPort(0.f, 0.f, a_Settings.colorSettings.dimensions.x, a_Settings.colorSettings.dimensions.y),
                                                                                             m_ScissorRect(0.f, 0.f, 99999999.f, 99999999.f)
         {
         }

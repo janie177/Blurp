@@ -6,6 +6,7 @@
 #include "opengl/RenderPipeline_GL.h"
 #include "opengl/Shader_GL.h"
 #include "opengl/SwapChain_GL_Win32.h"
+#include "opengl/Texture_GL.h"
 
 
 namespace blurp
@@ -56,8 +57,8 @@ namespace blurp
 
     std::shared_ptr<Texture> RenderDevice_GL::CreateTexture(const TextureSettings& a_Settings)
     {
-        //TODO
-        return nullptr;
+        //Return the texture class that internally sets up according to type.
+        return std::make_shared<Texture_GL>(a_Settings);
     }
 
     std::shared_ptr<RenderTarget> RenderDevice_GL::CreateRenderTarget(const RenderTargetSettings& a_Settings)

@@ -13,6 +13,16 @@ namespace blurp
      * Enumerations used in the settings structs.
      */
 
+    enum class Direction : std::uint8_t
+    {
+        FORWARD = 0,
+        RIGHT,
+        LEFT,
+        BACKWARD,
+        UP,
+        DOWN
+    };
+
     enum class RenderPassType
     {
         RP_HELLOTRIANGLE,
@@ -53,9 +63,11 @@ namespace blurp
     enum class TextureType
     {
         NONE,
+        TEXTURE_1D,
         TEXTURE_2D,
-        TEXTURE_CUBE,
-        TEXTURE_ARRAY
+        TEXTURE_3D,
+        TEXTURE_CUBEMAP,
+        TEXTURE_2D_ARRAY
     };
 
     enum class WrapMode
@@ -75,21 +87,22 @@ namespace blurp
     {
         NEAREST,
         LINEAR,
-        MIPMAP_NEAREST
+        MIPMAP_NEAREST,
+        MIPMAP_LINEAR
     };
 
     enum class ShaderType
     {
-        COMPUPE,
+        COMPUTE,
         GRAPHICS
     };
 
     enum class PixelFormat
     {
-        RGBA,
-        RGB,
-        RG,
         R,
+        RG,
+        RGB,
+        RGBA,
         DEPTH,
         DEPTH_STENCIL
     };
@@ -137,31 +150,98 @@ namespace blurp
 
     /*
      * TextureSettings describes a texture resource.
-     * It is passed to BlurpEngine to create a Texture resource instance.
+     * It is passed to the ResourceManager to create a Texture resource instance.
+     *
+     * A const char pointer is passed to the start of the texture data.
+     * The size of this pointer should be the amount of channels (PixelFormat) * DataType * width * height * depth.
      */
     struct TextureSettings
     {
         TextureSettings()
         {
             //Default values
-            dimensions = { 1, 1 };
+            dimensions = { 2, 2, 1 };
             pixelFormat = PixelFormat::RGBA;
             dataType = DataType::FLOAT;
             textureType = TextureType::TEXTURE_2D;
+            generateMipMaps = false;
             mipLevels = 0;
             minFilter = MinFilterType::LINEAR;
             magFilter = MagFilterType::LINEAR;
             wrapMode = WrapMode::REPEAT;
+
+            textureCubeMap.data[0] = nullptr;
+            textureCubeMap.data[1] = nullptr;
+            textureCubeMap.data[2] = nullptr;
+            textureCubeMap.data[3] = nullptr;
+            textureCubeMap.data[4] = nullptr;
+            textureCubeMap.data[5] = nullptr;
         }
 
-        glm::vec2 dimensions;
+        //The dimensions of this texture.
+        glm::vec<3, std::uint32_t> dimensions;
+
+        //The pixel format for this texture. This determines how many channels this texture has and how they are used.
         PixelFormat pixelFormat;
+
+        //The data type for this texture. This determines the size of each channel in the pixel format.
         DataType dataType;
+
+        //The type of texture.
         TextureType textureType;
+
+        //Whether to generate mip maps or not.
+        bool generateMipMaps;
+
+        //The amount of mip levels to generate. When 0, automatically determines.
         std::uint16_t mipLevels;
+
+        //How should this texture behave when scaled down?
         MinFilterType minFilter;
+
+        //How should this texture behave when scaled up?
         MagFilterType magFilter;
+
+        //How should this texture behave when sampled outside of the 0-1 UVW coordinate range.
         WrapMode wrapMode;
+
+        //Raw texture data pointer. Leave this as nullptr to not upload any data.
+        union
+        {
+            //Texture1D
+            struct
+            {
+                const void* data;
+            } texture1D;
+
+            //Texture2D
+            struct
+            {
+                const void* data;
+
+            } texture2D;
+
+            //Texture3D
+            struct
+            {
+                //The amount of layers in this 3D texture
+                const void* data;
+            } texture3D;
+
+            //TextureCubeMap
+            struct
+            {
+                const void* data[6];
+            } textureCubeMap;
+
+            //Texture2DArray
+            struct
+            {
+                //The amount of layers in this texture array.
+                const void* data;
+            } texture2DArray;
+
+        };
 
     };
 
@@ -218,7 +298,7 @@ namespace blurp
             flags = WindowFlags::NONE;
 
             //Make sure the internal render target has the same dimensions.
-            swapChainSettings.renderTargetSettings.colorSettings.dimensions = dimensions;
+            swapChainSettings.renderTargetSettings.colorSettings.dimensions = { dimensions, 1 };
         }
 
         //Window information

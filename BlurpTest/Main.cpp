@@ -36,8 +36,8 @@ int main()
     auto triangleRenderPass = pipeline->AppendRenderPass<blurp::RenderPass_HelloTriangle>(blurp::RenderPassType::RP_HELLOTRIANGLE);
 
     triangleRenderPass->SetTarget(window->GetRenderTarget());
-    triangleRenderPass->SetColor({0.f, 0.f, 1.f, 1.f});
-    window->GetRenderTarget()->SetClearColor({ 1.f, 1.f, 1.f,1.f });
+    triangleRenderPass->SetColor({1.f, 1.f, 1.f, 1.f});
+    window->GetRenderTarget()->SetClearColor({ 0.f, 0.6f, 1.f,1.f });
 
     /*
      * Main loop. Render as long as the window remains open.
@@ -110,6 +110,12 @@ int main()
             std::cout << "Toggling fullscreen mode" << std::endl;
             window->SetFullScreen(!window->IsFullScreen());
         }
+
+        //Toggle the render pass on or off at runtime.
+        //if(input.getKeyState(KEY_T) == blurp::ButtonState::FIRST_PRESSED)
+        //{
+        //    triangleRenderPass->SetEnabled(!triangleRenderPass->IsEnabled());
+        //}
 
         //Update the rendering pipeline.
         pipeline->Execute();

@@ -25,9 +25,9 @@ namespace blurp
         std::vector<const char*> cStrings;
         cStrings.resize(defines.size() + 2, nullptr);
 
-        for(int i = 0; i < static_cast<int>(defines.size()); ++i)
+        for(size_t i = 0; i < defines.size(); ++i)
         {
-            cStrings[i + 1] = defines[i].c_str();
+            cStrings[i + 1L] = defines[i].c_str();
         }
 
         //Graphics shader.
@@ -63,7 +63,7 @@ namespace blurp
                 //Start the source from AFTER the version info.
                 cStrings[cStrings.size() - 1] = srcStart;
 
-                glShaderSource(vertex, cStrings.size(), &cStrings[0], NULL);
+                glShaderSource(vertex, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
                 bool success = CompileShader(vertex);
                 assert(success);
             }
@@ -93,7 +93,7 @@ namespace blurp
                 //Start the source from AFTER the version info.
                 cStrings[cStrings.size() - 1] = srcStart;
 
-                glShaderSource(fragment, cStrings.size(), &cStrings[0], NULL);
+                glShaderSource(fragment, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
                 const bool success = CompileShader(fragment);
                 assert(success);
             }
@@ -119,7 +119,7 @@ namespace blurp
                 //Start the source from AFTER the version info.
                 cStrings[cStrings.size() - 1] = srcStart;
 
-                glShaderSource(tess_hull, cStrings.size(), &cStrings[0], NULL);
+                glShaderSource(tess_hull, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
                 const bool success = CompileShader(tess_hull);
                 assert(success);
             }
@@ -145,7 +145,7 @@ namespace blurp
                 //Start the source from AFTER the version info.
                 cStrings[cStrings.size() - 1] = srcStart;
 
-                glShaderSource(tess_domain, cStrings.size(), &cStrings[0], NULL);
+                glShaderSource(tess_domain, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
                 const bool success = CompileShader(tess_domain);
                 assert(success);
             }
@@ -171,7 +171,7 @@ namespace blurp
                 //Start the source from AFTER the version info.
                 cStrings[cStrings.size() - 1] = srcStart;
 
-                glShaderSource(geometry, cStrings.size(), &cStrings[0], NULL);
+                glShaderSource(geometry, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
                 const bool success = CompileShader(geometry);
                 assert(success);
             }
@@ -232,7 +232,7 @@ namespace blurp
             //Start the source from AFTER the version info.
             cStrings[cStrings.size() - 1] = srcStart;
 
-            glShaderSource(compute, cStrings.size(), &cStrings[0], NULL);
+            glShaderSource(compute, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
             const bool compiled = CompileShader(compute);
             assert(compiled);
 
@@ -298,6 +298,6 @@ namespace blurp
         a_HasVersion = true;
         a_SrcStart = versionEnd + 1;
         a_VersionStart = versionStart;
-        a_VersionSize = versionEnd - versionStart + 1;
+        a_VersionSize = static_cast<std::uint16_t>(versionEnd - versionStart + 1L);
     }
 }
