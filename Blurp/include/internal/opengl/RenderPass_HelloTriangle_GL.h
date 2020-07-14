@@ -3,7 +3,6 @@
 #include <gl/glew.h>
 
 #include "Shader.h"
-#include "Texture.h"
 
 namespace blurp
 {

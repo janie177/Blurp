@@ -2,11 +2,13 @@
 
 #include "opengl/RenderTarget_GL.h"
 #include "BlurpEngine.h"
+#include "opengl/Mesh_GL.h"
 #include "opengl/RenderPass_HelloTriangle_GL.h"
 #include "opengl/RenderPipeline_GL.h"
 #include "opengl/Shader_GL.h"
 #include "opengl/SwapChain_GL_Win32.h"
 #include "opengl/Texture_GL.h"
+#include "Camera.h"
 
 
 namespace blurp
@@ -51,14 +53,12 @@ namespace blurp
 
     std::shared_ptr<Camera> RenderDevice_GL::CreateCamera(const CameraSettings& a_Settings)
     {
-        //TODO
-        return nullptr;
+        return std::make_shared<Camera>(a_Settings);
     }
 
     std::shared_ptr<Mesh> RenderDevice_GL::CreateMesh(const MeshSettings& a_Settings)
     {
-        //TODO
-        return nullptr;
+        return std::make_shared<Mesh_GL>(a_Settings);
     }
 
     std::shared_ptr<Texture> RenderDevice_GL::CreateTexture(const TextureSettings& a_Settings)

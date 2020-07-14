@@ -114,6 +114,12 @@
     <ClInclude Include="include\internal\opengl\GLUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\internal\opengl\Mesh_GL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
@@ -171,6 +177,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mesh_GL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

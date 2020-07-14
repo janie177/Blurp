@@ -1,11 +1,5 @@
 #pragma once
 #include <GL/glew.h>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
 #include <glm/glm.hpp>
 
 #include "RenderTarget.h"

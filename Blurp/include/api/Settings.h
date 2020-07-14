@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#define NUM_VERTEX_ATRRIBS 8
+#include <unordered_map>
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -151,6 +153,71 @@ namespace blurp
     inline bool operator&(WindowFlags a_Lhs, WindowFlags a_Rhs)
     {
         return (static_cast<int>(a_Lhs) & static_cast<int>(a_Rhs)) != 0;
+    }
+
+    enum class VertexAttribute : std::uint16_t
+    {
+        //X and Y position.
+        POSITION_2D = 1 << 0,
+
+        //X, Y and Z position.
+        POSITION_3D = 1 << 1,
+
+        //UV coordinates for a texture.
+        //Multiple UV coords can be enabled for different material
+        UV_COORDS = 1 << 2,
+
+        //X, Y and Z direction of the surface.
+        NORMAL = 1 << 3,
+
+        //R, G and B color channels.
+        COLOR = 1 << 4,
+
+        //X, Y and Z indicating a curved direction.
+        TANGENT = 1 << 5,
+
+        //Vec3 of the bone indices affecting vertex.
+        BONE_INDEX = 1 << 6,
+
+        //Vec3 of the weights of each bone (to be used with BONE_INDEX).
+        BONE_WEIGHT = 1 << 7
+    };
+
+    //All vertex attributes in an iterable format.
+    const static VertexAttribute VERTEX_ATTRIBUTES[NUM_VERTEX_ATRRIBS]{
+        VertexAttribute::POSITION_3D,
+        VertexAttribute::POSITION_2D,
+        VertexAttribute::UV_COORDS,
+        VertexAttribute::NORMAL,
+        VertexAttribute::COLOR,
+        VertexAttribute::TANGENT,
+        VertexAttribute::BONE_INDEX,
+        VertexAttribute::BONE_WEIGHT
+    };
+
+    inline VertexAttribute operator|(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
+    {
+        return static_cast<VertexAttribute>(static_cast<std::uint16_t>(a_Lhs) | static_cast<std::uint16_t>(a_Rhs));
+    }
+
+    inline VertexAttribute operator^(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
+    {
+        return static_cast<VertexAttribute>(static_cast<std::uint16_t>(a_Lhs) ^ static_cast<std::uint16_t>(a_Rhs));
+    }
+
+    inline VertexAttribute operator~(VertexAttribute a_Lhs)
+    {
+        return static_cast<VertexAttribute>(~static_cast<std::uint16_t>(a_Lhs));
+    }
+
+    inline VertexAttribute operator&(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
+    {
+        return static_cast<VertexAttribute>(static_cast<std::uint16_t>(a_Lhs) & static_cast<std::uint16_t>(a_Rhs));
+    }
+
+    inline bool operator==(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
+    {
+        return static_cast<std::uint16_t>(a_Lhs) == static_cast<std::uint16_t>(a_Rhs);
     }
 
     /*
@@ -327,7 +394,17 @@ namespace blurp
 
     struct CameraSettings
     {
-        //TODO
+        //The field of view for this camera.
+        std::float_t fov;
+
+        //How close to the camera do objects have to be to be cut off.
+        std::float_t nearPlane;
+
+        //How far from the camera do objects have to be to be cut off.
+        std::float_t farPlane;
+
+        //Aspect ratio of the camera. Should be width / height of the render target.
+        std::float_t aspectRatio;
     };
 
     struct BlurpSettings
@@ -342,9 +419,167 @@ namespace blurp
         GraphicsAPI graphicsAPI;
     };
 
+    /*
+     * Static lookup table for vertex attribute information.
+     */
+    struct VertexAttributeInfo
+    {
+        //The amount of elements for this vertex attribute.
+        std::uint32_t numElements;
+
+        //The data type of each element.
+        DataType dataType;
+
+        //The unique name of this vertex attribute
+        std::string name;
+
+        //The define name used in preprocessor definitions in shaders.
+        std::string defineName;
+    };
+
+    struct VertexAttributeData
+    {
+        VertexAttributeData()
+        {
+            byteOffset = 0;
+            byteStride = 0;
+            normalize = false;
+        }
+
+        //The offset from the start of the buffer to the first vertex attribute of this type.
+        std::uint32_t byteOffset;
+
+        //The stride in bytes between the data elements. When 0, they are tightly packed.
+        std::uint32_t byteStride;
+
+        //Normalize or not (between 0 and 1).
+        bool normalize;
+    };
+
+    struct VertexSettings
+    {
+        VertexSettings()
+        {
+            //Nothing enabled by default.
+            m_Mask = static_cast<VertexAttribute>(0);
+        }
+
+        /*
+         * Enable a vertex attribute with the given offset and stride in bytes.
+         * The given vertex attribute has to be a single attribute without any masking.
+         */
+        void EnableAttribute(VertexAttribute a_Attribute, std::uint32_t a_Offset, std::uint32_t a_Stride)
+        {
+            assert(static_cast<std::uint16_t>(a_Attribute) != 0 && (static_cast<std::uint16_t>(a_Attribute) & (static_cast<std::uint16_t>(a_Attribute) - 1)) == 0);
+            m_Mask = m_Mask | a_Attribute;
+
+            //Get the data index and set it.
+            auto& data = m_Data[static_cast<std::uint16_t>(std::floor(std::log(static_cast<std::uint16_t>(a_Attribute) | 0) / std::log(2)))];
+            data.byteOffset = a_Offset;
+            data.byteStride = a_Stride;
+        }
+
+        /*
+         * Disable a vertex attribute.
+         */
+        void DisableAttribute(VertexAttribute a_Attribute)
+        {
+            m_Mask = m_Mask & ~a_Attribute;
+        }
+
+        /*
+         * Get the masked value of the vertex attributes that are enabled.
+         */
+        VertexAttribute GetMask() const
+        {
+            return m_Mask;
+        }
+
+        /*
+         * See if the given attributes are enabled.
+         */
+        bool IsEnabled(VertexAttribute a_Attribute) const
+        {
+            return (m_Mask & a_Attribute) == a_Attribute;
+        }
+
+        /*
+         * Get the configured data for the given attribute.
+         * The given vertex attribute has to be a single attribute without any masking.
+         */
+        VertexAttributeData GetAttributeData(VertexAttribute a_Attribute)
+        {
+            assert(static_cast<std::uint16_t>(a_Attribute) != 0 && (static_cast<std::uint16_t>(a_Attribute) & (static_cast<std::uint16_t>(a_Attribute) - 1)) == 0);
+            return m_Data[static_cast<std::uint16_t>(std::floor(std::log(static_cast<std::uint16_t>(a_Attribute) | 0) / std::log(2)))];
+        }
+
+        /*
+         * Get static information about the given vertex type like the name, size and type.
+         * The vertex attribute provided has to be a single attribute that was not masked.
+         */
+        static VertexAttributeInfo GetVertexAttributeInfo(VertexAttribute a_Attribute)
+        {
+            assert(static_cast<std::uint16_t>(a_Attribute) != 0 && (static_cast<std::uint16_t>(a_Attribute) & (static_cast<std::uint16_t>(a_Attribute) - 1)) == 0);
+            const auto found =  VERTEX_ATTRIBUTE_INFO.find(a_Attribute);
+            if(found != VERTEX_ATTRIBUTE_INFO.end())
+            {
+                return found->second;
+            }
+            throw std::exception("Fatal error: This should never happen. Were not vertex attributes added but not to VERTEX_ATTRIBUTE_INFO?");
+        }
+
+    private:
+        VertexAttribute m_Mask;
+        VertexAttributeData m_Data[NUM_VERTEX_ATRRIBS];
+
+        inline static const std::unordered_map<VertexAttribute, VertexAttributeInfo> VERTEX_ATTRIBUTE_INFO = {
+            {VertexAttribute::POSITION_3D, {3, DataType::FLOAT, "va_Position3D", "VA_POS3D_DEF"}},
+            {VertexAttribute::POSITION_2D, {2, DataType::FLOAT, "va_Position2D", "VA_POS2D_DEF"}},
+            {VertexAttribute::UV_COORDS, {2, DataType::FLOAT, "va_UVCoords", "VA_UVCOORD_DEF"}},
+            {VertexAttribute::NORMAL, {3, DataType::FLOAT, "va_Normal", "VA_NORMAL_DEF"}},
+            {VertexAttribute::COLOR, {3, DataType::FLOAT, "va_Color", "VA_COLOR_DEF"}},
+            {VertexAttribute::TANGENT, {3, DataType::FLOAT, "va_Tangent", "VA_TANGENT_DEF"}},
+            {VertexAttribute::BONE_INDEX, {3, DataType::UINT, "va_BoneIndex", "VA_BONEINDEX_DEF"}},
+            {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF"}},
+        };
+    };
+
     struct MeshSettings
     {
-        //TODO maybe add a static/dynamic thing here? mutable/unmutable? To optimize GPU memory.
+        MeshSettings()
+        {
+            usage = AccessMode::READ;
+            vertexData = nullptr;
+            indexData = nullptr;
+            numIndices = 0;
+            indexDataType = DataType::SHORT;
+            vertexDataSizeBytes = 0;
+        }
+
+        //Which vertex attributes are enabled for this mesh?
+        VertexSettings vertexSettings;
+
+        //The memory access mode for this mesh.
+        //This is not enforced, but should be carefully considered.
+        //If a mesh does not change for more than a single frame, READ is recommended.
+        //If a mesh data is updated every frame, then READ_WRITE should be used.
+        AccessMode usage;
+
+        //The raw data of this mesh in the provided vertex format.
+        //Offsets and strides between attributes are configured in vertexSettings.
+        const void* vertexData;
+
+        //The size of the total vertexData in bytes.
+        std::uint32_t vertexDataSizeBytes;
+
+        //Pointer to the raw index data for the index buffer.
+        const void* indexData;
+
+        //Size of the index buffer.
+        std::uint32_t numIndices;
+
+        //Data type for the index buffer
+        DataType indexDataType;
     };
 
     struct LightSettings
