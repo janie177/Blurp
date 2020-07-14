@@ -9,6 +9,7 @@
 #include "opengl/SwapChain_GL_Win32.h"
 #include "opengl/Texture_GL.h"
 #include "Camera.h"
+#include "Light.h"
 
 
 namespace blurp
@@ -47,8 +48,19 @@ namespace blurp
 
     std::shared_ptr<Light> RenderDevice_GL::CreateLight(const LightSettings& a_Settings)
     {
-        //TODO
-        return nullptr;
+        switch (a_Settings.type)
+        {
+        case LightType::LIGHT_AMBIENT:
+            return std::make_shared<Light>(a_Settings);
+        case LightType::LIGHT_DIRECTIONAL:
+            return std::make_shared<DirectionalLight>(a_Settings);
+        case LightType::LIGHT_POINT:
+            return std::make_shared<PointLight>(a_Settings);
+        case LightType::LIGHT_SPOT:
+            return std::make_shared<SpotLight>(a_Settings);
+        };
+
+        throw std::exception("Unsupported light type!");
     }
 
     std::shared_ptr<Camera> RenderDevice_GL::CreateCamera(const CameraSettings& a_Settings)

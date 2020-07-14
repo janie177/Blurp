@@ -7,7 +7,7 @@ namespace blurp
     class Camera : public RenderResource
     {
     public:
-        Camera(const CameraSettings& a_Settings) : m_Settings(a_Settings), m_DirtyFlag(true) {}
+        Camera(const CameraSettings& a_Settings) : m_Settings(a_Settings), m_DirtyFlag(true), m_View(1.f), m_Projection(1.f) {}
 
         /*
          * Get the view matrix of this camera.

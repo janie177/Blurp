@@ -53,6 +53,7 @@ namespace blurp
 
     enum class LightType
     {
+        LIGHT_AMBIENT,
         LIGHT_SPOT,
         LIGHT_DIRECTIONAL,
         LIGHT_POINT
@@ -584,7 +585,52 @@ namespace blurp
 
     struct LightSettings
     {
-        //TODO
+        LightSettings()
+        {
+            //Default values.
+            type = LightType::LIGHT_AMBIENT;
+            color = { 1.f, 1.f, 1.f };
+            intensity = 1.f;
+            spotLight.position = { 0.f, 0.f, 0.f };
+            spotLight.direction = { 0.f, -1.f, 0.f };
+            spotLight.angle = 45.f;
+        }
+
+        //Type of the light.
+        LightType type;
+
+        //Color of the light.
+        glm::vec3 color;
+
+        //Intensity of the light.
+        float intensity;
+
+        union
+        {
+            struct
+            {
+                //Where is the light located.
+                glm::vec3 position;
+
+                //Where does the light point.
+                glm::vec3 direction;
+
+                //Angle of the light cone.
+                float angle;
+            } spotLight;
+
+            struct
+            {
+                //Where is the light located.
+                glm::vec3 position;
+            } pointLight;
+
+            struct
+            {
+                //Where does the light point.
+                glm::vec3 direction;
+            } directionalLight;
+        };
     };
 
     struct MaterialSettings
