@@ -301,6 +301,11 @@ namespace blurp
         OnMoveResize();
     }
 
+    glm::vec2 Window_Win32::GetDimensions()
+    {
+        return m_Dimensions;
+    }
+
     void Window_Win32::SetFullScreen(bool a_FullScreen)
     {
         if(m_FullScreen != a_FullScreen)
@@ -375,6 +380,7 @@ namespace blurp
     void Window_Win32::SetNativeMousePosition(const glm::vec2& a_MousePosition)
     {
         m_MousePos = a_MousePosition;
+        SetCursorPos(static_cast<int>(m_MousePos.x), static_cast<int>(m_MousePos.y));
     }
 
     glm::vec2 Window_Win32::GetNativeMousePosition() const

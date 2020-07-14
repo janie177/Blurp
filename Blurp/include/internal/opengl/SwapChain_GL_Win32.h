@@ -3,6 +3,8 @@
 #include "SwapChain.h"
 #include <windows.h>
 
+#include "RenderTarget_GL.h"
+
 namespace blurp
 {
     class SwapChain_GL_Win32 : public SwapChain
@@ -25,7 +27,7 @@ namespace blurp
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
-        std::shared_ptr<RenderTarget> m_RenderTarget;
+        std::shared_ptr<RenderTarget_GL> m_RenderTarget;
         HGLRC m_GlContext;
         HDC m_Hdc;
     };

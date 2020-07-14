@@ -3,6 +3,8 @@
 #include "Settings.h"
 #include <memory>
 
+#define MAX_NUM_COLOR_ATTACHMENTS 8
+
 namespace blurp
 {
     class Texture;
@@ -15,41 +17,78 @@ namespace blurp
     class RenderTarget : public RenderResource
     {
     public:
-        RenderTarget(const RenderTargetSettings& a_Settings) : m_Settings(a_Settings){}
+        RenderTarget(const RenderTargetSettings& a_Settings) : m_Settings(a_Settings), m_AllowAttachments(true){}
 
         //TODO make it so that a render target can only be bound to a single pipeline at the same time.
-        //Some sort of lock? 
-        
-    public:
+        //Some sort of lock?
+        //And maybe lock the attachments too to ensure safe operations regarding state?
+
+
         /*
          * Get the amount of color attachments bound to this RenderTarget.
          */
-        virtual std::uint16_t GetNumColorAttachments() = 0;
+        std::uint16_t GetNumColorAttachments() const;
 
         /*
-         * Returns true when this RenderTarget has a color attachment.
+         * Get the maximum number of color attachments.
          */
-        virtual bool HasColorAttachment() = 0;
+        std::uint16_t GetMaxColorAttachments() const;
+
+        /*
+         * Returns true when this RenderTarget has at least one color attachment.
+         */
+        bool HasColorAttachment() const;
 
         /*
          * Returns true when this RenderTarget has a depth attachment.
          */
-        virtual bool HasDepthAttachment() = 0;
+        bool HasDepthAttachment() const;
 
         /*
          * Returns true when this RenderTarget has a stencil attachment.
          */
-        virtual bool HasStencilAttachment() = 0;
+        bool HasStencilAttachment() const;
 
         /*
-         * Get the color attachment bound to this RenderTarget.
+         * Add an attachment to this render target in the given slot. 
          */
-        virtual std::shared_ptr<Texture> GetColorAttachment() = 0;
+        bool SetColorAttachment(std::uint16_t a_Slot, std::shared_ptr<Texture> a_Attachment);
 
         /*
-         * Get the depth stencil attachment bound to this RenderTarget.
+         * Add a depth stencil texture attachment to this render target.
          */
-        virtual std::shared_ptr<Texture> GetDepthStencilAttachment() = 0;
+        bool SetDepthStencilAttachment(std::shared_ptr<Texture> a_Attachment);
+
+        /*
+         * Get the color attachment at the given slot.
+         * If not bound, returns nullptr.
+         */
+        std::shared_ptr<Texture> GetColorAttachment(std::uint16_t a_Slot);
+
+        /*
+         * Get the depth stencil texture attachment.
+         * Returns nullptr if not bound.
+         */
+        std::shared_ptr<Texture> GetDepthStencilAttachment();
+
+        /*
+         * Check to see if attachments are allowed.
+         * If false, no attachment switches can be made.
+         */
+        bool AllowsAttachments();
+
+        //Virtual functions
+    public:
+
+        /*
+         * Called when a color attachment is added to this render target.
+         */
+        virtual void OnColorAttachmentBound(std::uint16_t a_Slot, const std::shared_ptr<Texture>& a_Added) = 0;
+
+        /*
+         * Called when a depth stencil attachment is added to this render target.
+         */
+        virtual void OnDepthStencilAttachmentBound(const std::shared_ptr<Texture>& a_Added) = 0;
 
         /*
          * Get the clear color of this RenderTarget.
@@ -69,7 +108,7 @@ namespace blurp
         /*
          * Set the viewport of this RenderTarget.
          */
-        virtual void SetViewPort(const glm::vec4& a_ViewPort) = 0;
+        virtual void SetViewPort(const glm::vec<4, std::uint32_t>& a_ViewPort) = 0;
 
         /*
          * Get the scissor rect of this RenderTarget.
@@ -79,9 +118,19 @@ namespace blurp
         /*
          * Set the scissor rect of this RenderTarget.
          */
-        virtual void SetScissorRect(const glm::vec4& a_ScissorRect) = 0;
+        virtual void SetScissorRect(const glm::vec<4, std::uint32_t>& a_ScissorRect) = 0;
         
     protected:
         RenderTargetSettings m_Settings;
+
+        //Bound textures.
+        std::shared_ptr<Texture> m_DepthStencilAttachment;
+        std::shared_ptr<Texture> m_ColorAttachments[MAX_NUM_COLOR_ATTACHMENTS];
+
+        //The amount of color attachments currently bound.
+        std::uint16_t m_NumColorAttachments;
+
+        //Attachment switching is only allowed when this is true.
+        bool m_AllowAttachments;
     };
 }

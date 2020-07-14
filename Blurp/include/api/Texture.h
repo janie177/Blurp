@@ -56,6 +56,12 @@ namespace blurp
          */
         WrapMode GetWrapMode() const;
 
+        /*
+         * Get how this texture can be accessed.
+         * Can be READ or READ_WRITE.
+         */
+        AccessMode GetAccessMode() const;
+
     protected:
         TextureSettings m_Settings;
 

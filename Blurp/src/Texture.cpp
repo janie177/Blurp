@@ -41,4 +41,9 @@ namespace blurp
     {
         return m_Settings.wrapMode;
     }
+
+    AccessMode Texture::GetAccessMode() const
+    {
+        return m_Settings.memoryAccess;
+    }
 }

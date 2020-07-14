@@ -40,6 +40,11 @@ namespace blurp
         virtual void Resize(glm::vec2 a_Dimensions) = 0;
 
         /*
+         * Get the current dimensions of this window.
+         */
+        virtual glm::vec2 GetDimensions() = 0;
+
+        /*
          * Returns whether this window is currently full screen mode.
          */
         virtual bool IsFullScreen() = 0;

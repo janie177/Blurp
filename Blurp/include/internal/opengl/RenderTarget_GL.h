@@ -1,5 +1,11 @@
 #pragma once
 #include <GL/glew.h>
+#include <glm/common.hpp>
+#include <glm/common.hpp>
+#include <glm/common.hpp>
+#include <glm/common.hpp>
+#include <glm/common.hpp>
+#include <glm/common.hpp>
 #include <glm/glm.hpp>
 
 #include "RenderTarget.h"
@@ -8,6 +14,7 @@ namespace blurp
 {
     class RenderTarget_GL : public RenderTarget
     {
+        friend class SwapChain_GL_Win32;
     public:
         /*
          * Create a OpenGL Render Target.
@@ -16,44 +23,35 @@ namespace blurp
          */
         RenderTarget_GL(const RenderTargetSettings& a_Settings, bool a_DefaultFrameBuffer) : RenderTarget(a_Settings),
                                                                                             m_Fbo(0),
-                                                                                            m_IsDefault(a_DefaultFrameBuffer),
-                                                                                            m_ClearColor(0.f, 0.f, 0.f, 1.f),
-                                                                                            m_ViewPort(0.f, 0.f, a_Settings.colorSettings.dimensions.x, a_Settings.colorSettings.dimensions.y),
-                                                                                            m_ScissorRect(0.f, 0.f, 99999999.f, 99999999.f)
+                                                                                            m_IsDefault(a_DefaultFrameBuffer)
         {
         }
 
-        GLint GetFrameBufferID();
+        /*
+         * Get the FBO id of this FrameBuffer.
+         */
+        GLint GetFrameBufferId() const;
+
+        /*
+         * Returns true if this FrameBuffer is the default OpenGL created FrameBuffer.
+         * This means that it is owned and maintained by the window and OS.
+         * Textures and attachments cannot be used in those cases.
+         */
+        bool IsDefaultGlTarget() const;
 
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     public:
-        std::uint16_t GetNumColorAttachments() override;
-        bool HasColorAttachment() override;
-        bool HasDepthAttachment() override;
-        bool HasStencilAttachment() override;
         glm::vec4 GetClearColor() override;
         void SetClearColor(const glm::vec4& a_ClearColor) override;
         glm::vec4 GetViewPort() override;
-        void SetViewPort(const glm::vec4& a_ViewPort) override;
+        void SetViewPort(const glm::vec<4, std::uint32_t>& a_ViewPort) override;
         glm::vec4 GetScissorRect() override;
-        void SetScissorRect(const glm::vec4& a_ScissorRect) override;
-
-        /*
-         * Get the color attachment texture of this FrameBuffer.
-         * Note: If this is the default FrameBuffer made by the OpenGL context,
-         * this cannot be accessed. In that case nullptr is returned.
-         */
-        std::shared_ptr<Texture> GetColorAttachment() override;
-
-        /*
-         * Get the depth stancel attachment texture of this FrameBuffer.
-         * Note: If this is the default FrameBuffer made by the OpenGL context,
-         * this cannot be accessed. In that case nullptr is returned.
-         */
-        std::shared_ptr<Texture> GetDepthStencilAttachment() override;
+        void SetScissorRect(const glm::vec<4, std::uint32_t>& a_ScissorRect) override;
+        void OnColorAttachmentBound(std::uint16_t a_Slot, const std::shared_ptr<Texture>& a_Added) override;
+        void OnDepthStencilAttachmentBound(const std::shared_ptr<Texture>& a_Added) override;
     private:
         GLuint m_Fbo;
         bool m_IsDefault;
@@ -61,9 +59,5 @@ namespace blurp
         glm::vec4 m_ClearColor;
         glm::vec4 m_ViewPort;
         glm::vec4 m_ScissorRect;
-
-        std::shared_ptr<Texture> m_ColorAttachment;
-        std::shared_ptr<Texture> m_DepthStencilAttachment;
-
     };
 }

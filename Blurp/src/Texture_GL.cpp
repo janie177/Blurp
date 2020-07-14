@@ -11,6 +11,8 @@ namespace blurp
 
     bool Texture_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
+        assert(m_Settings.dimensions.x > 0 && m_Settings.dimensions.y >= 0 && m_Settings.dimensions.z >= 0 && "Texture needs positive dimensions.");
+
         const GLenum dataType = ToGL(m_Settings.dataType);
         const GLenum pixelFormat = ToGL(m_Settings.pixelFormat);
         const GLenum wrapMode = ToGL(m_Settings.wrapMode);

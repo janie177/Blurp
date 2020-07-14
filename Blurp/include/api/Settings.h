@@ -1,7 +1,9 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <memory>
 #include <string>
 #include <vector>
+
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -9,6 +11,8 @@
 
 namespace blurp
 {
+    class Texture;
+
     /*
      * Enumerations used in the settings structs.
      */
@@ -62,7 +66,6 @@ namespace blurp
 
     enum class TextureType
     {
-        NONE,
         TEXTURE_1D,
         TEXTURE_2D,
         TEXTURE_3D,
@@ -75,6 +78,12 @@ namespace blurp
         CLAMP_TO_EDGE,
         MIRRORED_REPEAT,
         REPEAT
+    };
+
+    enum class AccessMode
+    {
+        READ,
+        READ_WRITE
     };
 
     enum class MagFilterType
@@ -169,6 +178,7 @@ namespace blurp
             minFilter = MinFilterType::LINEAR;
             magFilter = MagFilterType::LINEAR;
             wrapMode = WrapMode::REPEAT;
+            memoryAccess = AccessMode::READ;
 
             textureCubeMap.data[0] = nullptr;
             textureCubeMap.data[1] = nullptr;
@@ -204,6 +214,9 @@ namespace blurp
 
         //How should this texture behave when sampled outside of the 0-1 UVW coordinate range.
         WrapMode wrapMode;
+
+        //How will this texture be accessed? If READ, can not be set as render target.
+        AccessMode memoryAccess;
 
         //Raw texture data pointer. Leave this as nullptr to not upload any data.
         union
@@ -250,21 +263,22 @@ namespace blurp
         RenderTargetSettings()
         {
             //Default values.
-            depthStencilSettings.enable = true;
-            depthStencilSettings.format = PixelFormat::DEPTH_STENCIL;
+            viewPort = { 0.f, 0.f, 2.f, 2.f };
+            scissorRect = { 0.f, 0.f, 99999, 99999 };
+            clearColor = { 1.f, 1.f, 1.f, 1.f };
+            allowAttachments = true;
         }
+        //When true, attachment switching is allowed at runtime.
+        bool allowAttachments;
 
-        //Color buffer attachment settings.
-        TextureSettings colorSettings;
+        //The dimensions of the viewport and scissor rect.
+        glm::vec<4, std::uint32_t> viewPort;
+        glm::vec<4, std::uint32_t> scissorRect;
+        glm::vec4 clearColor;
 
-        /*
-         * Settings related to the depth/stencil buffer.
-         */
-        struct DepthStencilSettings
-        {
-            bool enable;        //Set to false to prevent a depth and/or stencil buffer from being created.
-            PixelFormat format; //Should be DEPTH or DEPTH_STENCIL
-        } depthStencilSettings;
+        //Default attachments. Leave null for none.
+        std::shared_ptr<Texture> defaultColorAttachment;
+        std::shared_ptr<Texture> defaultDepthStencilAttachment;
     };
 
     struct SwapChainSettings
@@ -298,7 +312,7 @@ namespace blurp
             flags = WindowFlags::NONE;
 
             //Make sure the internal render target has the same dimensions.
-            swapChainSettings.renderTargetSettings.colorSettings.dimensions = { dimensions, 1 };
+            swapChainSettings.renderTargetSettings.viewPort = { 0.f, 0.f, dimensions};
         }
 
         //Window information

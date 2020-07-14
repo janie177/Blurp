@@ -28,7 +28,6 @@ namespace blurp
 
         m_Shader = a_BlurpEngine.GetResourceManager().CreateShader(shaderSettings);
 
-
         float vertices[] = {
             -0.5f, -0.5f, 0.0f, //XYZ
              0.0f, 0.0f,          //UV
@@ -87,7 +86,9 @@ namespace blurp
     void RenderPass_HelloTriangle_GL::Execute()
     {
         //Clear the target buffer.
-        glBindBuffer(GL_FRAMEBUFFER, reinterpret_cast<RenderTarget_GL*>(m_Target.get())->GetFrameBufferID());
+        const auto fboId = reinterpret_cast<RenderTarget_GL*>(m_Target.get())->GetFrameBufferId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
         const auto viewPort = m_Target->GetViewPort();
         glViewport(static_cast<int>(viewPort.r), static_cast<int>(viewPort.g), static_cast<int>(viewPort.b), static_cast<int>(viewPort.a));
 
@@ -107,7 +108,7 @@ namespace blurp
         glUniform1i(m_SamplerId, 0);
         glActiveTexture(GL_TEXTURE0);
 
-        auto textureId = std::reinterpret_pointer_cast<Texture_GL>(m_Texture)->GetTextureId();
+        const auto textureId = std::reinterpret_pointer_cast<Texture_GL>(m_Texture)->GetTextureId();
         glBindTexture(GL_TEXTURE_2D, textureId);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);

@@ -81,8 +81,12 @@ namespace blurp
 
         std::cout << "OpenGL version: " << (char*)glGetString(GL_VERSION) << std::endl;
 
+        //Don't allow attachments to the default OpenGL created framebuffer.
+        m_Settings.renderTargetSettings.allowAttachments = false;
+
         //Create the default OpenGL rendertarget which is really just a dummy.
         m_RenderTarget = std::make_shared<RenderTarget_GL>(m_Settings.renderTargetSettings, true);
+        m_RenderTarget->Load(a_BlurpEngine);
 
         //Disable vsync if specified
         {

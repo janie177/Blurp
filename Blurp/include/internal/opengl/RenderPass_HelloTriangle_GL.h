@@ -68,7 +68,6 @@ namespace blurp
     private:
         GLuint m_Vbo, m_Vao, m_ColorUniformId, m_SamplerId;
         std::shared_ptr<Shader> m_Shader;
-        std::shared_ptr<Texture> m_Texture;
         
     };
 }

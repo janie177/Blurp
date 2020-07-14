@@ -5,6 +5,7 @@
 namespace blurp
 {
     static constexpr GLenum MAG_TYPES[]{ GL_NEAREST, GL_LINEAR };
+    static constexpr GLenum TEXTURE_TYPES[]{ GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_2D_ARRAY };
     static constexpr GLenum MIN_TYPES[]{ GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR};
     static constexpr GLenum WRAP_TYPES[]{ GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT, GL_REPEAT };
 
@@ -17,6 +18,11 @@ namespace blurp
     inline constexpr GLenum ToGL(MagFilterType a_Filter)
     {
         return MAG_TYPES[static_cast<int>(a_Filter)];
+    }
+
+    inline constexpr GLenum ToGL(TextureType a_Type)
+    {
+        return TEXTURE_TYPES[static_cast<int>(a_Type)];
     }
 
     /*

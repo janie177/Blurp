@@ -23,6 +23,7 @@ namespace blurp
 
     public:
         void Resize(glm::vec2 a_Dimensions) override;
+        glm::vec2 GetDimensions() override;
         void SetFullScreen(bool a_FullScreen) override;
         bool IsFullScreen() override;
         void SetNativeMousePosition(const glm::vec2& a_MousePosition) override;
@@ -37,7 +38,7 @@ namespace blurp
         void CenterCursor(RECT a_ClientRect);
         void OnMoveResize();
         void ObtainFocus();
-
+       
     private:
         //Event queue
         InputQueue m_InputQueue;
