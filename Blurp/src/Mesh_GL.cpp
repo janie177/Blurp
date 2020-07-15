@@ -60,5 +60,6 @@ namespace blurp
         glDeleteBuffers(1, &m_Vbo);
         glDeleteBuffers(1, &m_Ibo);
         glDeleteBuffers(1, &m_Vao);
+        return true;
     }
 }

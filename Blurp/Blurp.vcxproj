@@ -133,7 +133,8 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\Libs\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I</Command>
+      <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I
+xcopy "$(ProjectDir)shaders\" "$(OutDir)shaders\"  /E /Y /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -161,7 +162,8 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\Libs\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I</Command>
+      <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I
+xcopy "$(ProjectDir)shaders\" "$(OutDir)shaders\"  /E /Y /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -175,6 +177,7 @@
     <ClInclude Include="include\api\Mouse.h" />
     <ClInclude Include="include\api\RenderDevice.h" />
     <ClInclude Include="include\api\RenderPass.h" />
+    <ClInclude Include="include\api\RenderPass_Forward.h" />
     <ClInclude Include="include\api\RenderPass_HelloTriangle.h" />
     <ClInclude Include="include\api\RenderPipeline.h" />
     <ClInclude Include="include\api\RenderResource.h" />
@@ -186,9 +189,11 @@
     <ClInclude Include="include\api\Texture.h" />
     <ClInclude Include="include\api\Transform.h" />
     <ClInclude Include="include\api\Window.h" />
+    <ClInclude Include="include\internal\FileReader.h" />
     <ClInclude Include="include\internal\opengl\GLUtils.h" />
     <ClInclude Include="include\internal\opengl\Mesh_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderDevice_GL.h" />
+    <ClInclude Include="include\internal\opengl\RenderPass_Forward_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPass_HelloTriangle_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPipeline_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderTarget_GL.h" />
@@ -200,6 +205,7 @@
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp" />
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\FileReader.cpp" />
     <ClCompile Include="src\InputQueue.cpp" />
     <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\Mesh_GL.cpp" />
@@ -207,6 +213,8 @@
     <ClCompile Include="src\RenderDevice.cpp" />
     <ClCompile Include="src\RenderDevice_GL.cpp" />
     <ClCompile Include="src\RenderPass.cpp" />
+    <ClCompile Include="src\RenderPass_Forward.cpp" />
+    <ClCompile Include="src\RenderPass_Forward_GL.cpp" />
     <ClCompile Include="src\RenderPass_HelloTriangle.cpp" />
     <ClCompile Include="src\RenderPass_HelloTriangle_GL.cpp" />
     <ClCompile Include="src\RenderPipeline.cpp" />

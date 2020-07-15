@@ -37,9 +37,13 @@ namespace blurp
         void SetIntensity(float a_Intensity);
 
     protected:
+        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
+        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
+
+    protected:
         LightSettings m_Settings;
         glm::vec3 m_Color;
-        glm::vec3 m_Intensity;
+        float m_Intensity;
     };
 
     /*
@@ -61,10 +65,6 @@ namespace blurp
          * This has to be normalized.
          */
         void SetDirection(const glm::vec3& a_Direction);
-
-    protected:
-        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
-        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
         glm::vec3 m_Direction;
@@ -89,7 +89,7 @@ namespace blurp
          * Get the angle of this spotlight.
          * This is in degrees.
          */
-        float GetAngle(float a_Angle);
+        float GetAngle(float a_Angle) const;
 
         /*
          * Get the light position.
@@ -111,10 +111,6 @@ namespace blurp
          * Get the light direction.
          */
         glm::vec3 GetDirection() const;
-
-    protected:
-        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
-        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
         glm::vec3 m_Position;
@@ -140,10 +136,6 @@ namespace blurp
          * Set the light position.
          */
         glm::vec3 GetPosition() const;
-
-    protected:
-        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
-        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
         glm::vec3 m_Position;

@@ -1,6 +1,11 @@
 #include "opengl/Texture_GL.h"
 
+#include <algorithm>
+
+
 #include "opengl/GLUtils.h"
+
+#include <cmath>
 
 namespace blurp
 {
@@ -72,7 +77,21 @@ namespace blurp
 
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_2D_ARRAY, m_Texture);
-            glTexStorage3D(GL_TEXTURE_2D_ARRAY, m_Settings.mipLevels, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z);
+
+            //Calculate how many mipmaps to generate.
+            auto mips = m_Settings.numMipMaps;
+            if(m_Settings.generateMipMaps)
+            {
+                //Calulate how many mipmaps are needed for these dimensions.
+                if(mips == 0) mips = std::min(std::ceil(std::log2(m_Settings.dimensions.x)), std::ceil(std::log2(m_Settings.dimensions.y))) + 1;
+            }
+            else
+            {
+                mips = 0;
+            }
+
+
+            glTexStorage3D(GL_TEXTURE_2D_ARRAY, mips, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z);
             glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z, pixelFormat, dataType, m_Settings.texture2DArray.data);
 
             // Always set reasonable texture parameters
@@ -110,6 +129,28 @@ namespace blurp
             }
 
             glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            break;
+
+        case TextureType::TEXTURE_CUBEMAP_ARRAY:
+            assert(m_Settings.dimensions.x == m_Settings.dimensions.y && "Error: Cubemap texture has to be square!");
+            glGenTextures(1, &m_Texture);
+            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_Texture);
+
+            //Generate 6x the layers because 6 faces per layer.
+            glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z * 6, 0, pixelFormat, dataType, m_Settings.textureCubeMapArray.data);
+
+            glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, magFilter);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, minFilter);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, wrapMode);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, wrapMode);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, wrapMode);
+
+            if (m_Settings.generateMipMaps)
+            {
+                glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
+            }
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
             break;
 
         default:

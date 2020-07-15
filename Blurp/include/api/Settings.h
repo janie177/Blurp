@@ -21,12 +21,12 @@ namespace blurp
 
     enum class Direction : std::uint8_t
     {
-        FORWARD = 0,
         RIGHT,
         LEFT,
-        BACKWARD,
         UP,
-        DOWN
+        DOWN,
+        FORWARD,
+        BACKWARD
     };
 
     enum class RenderPassType
@@ -73,7 +73,8 @@ namespace blurp
         TEXTURE_2D,
         TEXTURE_3D,
         TEXTURE_CUBEMAP,
-        TEXTURE_2D_ARRAY
+        TEXTURE_2D_ARRAY,
+        TEXTURE_CUBEMAP_ARRAY
     };
 
     enum class WrapMode
@@ -242,11 +243,11 @@ namespace blurp
             dataType = DataType::FLOAT;
             textureType = TextureType::TEXTURE_2D;
             generateMipMaps = false;
-            mipLevels = 0;
             minFilter = MinFilterType::LINEAR;
             magFilter = MagFilterType::LINEAR;
             wrapMode = WrapMode::REPEAT;
             memoryAccess = AccessMode::READ;
+            numMipMaps = 0;
 
             textureCubeMap.data[0] = nullptr;
             textureCubeMap.data[1] = nullptr;
@@ -271,8 +272,9 @@ namespace blurp
         //Whether to generate mip maps or not.
         bool generateMipMaps;
 
-        //The amount of mip levels to generate. When 0, automatically determines.
-        std::uint16_t mipLevels;
+        //The amount of mipmaps to generate.
+        //Leave this 0 to automatically determine.
+        std::uint16_t numMipMaps;
 
         //How should this texture behave when scaled down?
         MinFilterType minFilter;
@@ -321,6 +323,13 @@ namespace blurp
                 //The amount of layers in this texture array.
                 const void* data;
             } texture2DArray;
+
+            //Texture2DArray
+            struct
+            {
+                //The amount of layers in this texture array.
+                const void* data;
+            } textureCubeMapArray;
 
         };
 
@@ -414,10 +423,17 @@ namespace blurp
         {
             //Default settings.
             graphicsAPI = GraphicsAPI::OPENGL;
+            shadersPath = "/shaders/";
         }
 
+        //Settings for the window. To not create a window, set type to NONE.
         WindowSettings windowSettings;
+
+        //Which graphics API is used?
         GraphicsAPI graphicsAPI;
+
+        //Path to the shaders directory.
+        std::string shadersPath;
     };
 
     /*
