@@ -6,6 +6,7 @@
 #include "opengl/GLUtils.h"
 
 #include <cmath>
+#include <iostream>
 
 namespace blurp
 {
@@ -28,6 +29,7 @@ namespace blurp
         switch (m_Settings.textureType)
         {
         case TextureType::TEXTURE_1D:
+        {
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_1D, m_Texture);
             // set the texture wrapping/filtering options (on the currently bound texture object)
@@ -36,9 +38,10 @@ namespace blurp
             glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, magFilter);
             glTexImage1D(GL_TEXTURE_1D, 0, pixelFormat, m_Settings.dimensions.x, 0, pixelFormat, dataType, m_Settings.texture1D.data);
             glBindTexture(GL_TEXTURE_1D, 0);
+        }
             break;
-
         case TextureType::TEXTURE_2D:
+        {
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_2D, m_Texture);
             // set the texture wrapping/filtering options (on the currently bound texture object)
@@ -53,9 +56,10 @@ namespace blurp
                 glGenerateMipmap(GL_TEXTURE_2D);
             }
             glBindTexture(GL_TEXTURE_2D, 0);
+        }
             break;
-
         case TextureType::TEXTURE_3D:
+        {
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_3D, m_Texture);
             // set the texture wrapping/filtering options (on the currently bound texture object)
@@ -71,19 +75,19 @@ namespace blurp
                 glGenerateMipmap(GL_TEXTURE_3D);
             }
             glBindTexture(GL_TEXTURE_3D, 0);
+        }
             break;
-
         case TextureType::TEXTURE_2D_ARRAY:
-
+        {
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_2D_ARRAY, m_Texture);
 
             //Calculate how many mipmaps to generate.
             auto mips = m_Settings.numMipMaps;
-            if(m_Settings.generateMipMaps)
+            if (m_Settings.generateMipMaps)
             {
                 //Calulate how many mipmaps are needed for these dimensions.
-                if(mips == 0) mips = std::min(std::ceil(std::log2(m_Settings.dimensions.x)), std::ceil(std::log2(m_Settings.dimensions.y))) + 1;
+                if (mips == 0) mips = static_cast<std::uint16_t>(std::min(std::ceil(std::log2(m_Settings.dimensions.x)), std::ceil(std::log2(m_Settings.dimensions.y))) + 1);
             }
             else
             {
@@ -100,15 +104,16 @@ namespace blurp
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, wrapMode);
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, wrapMode);
 
-            if(m_Settings.generateMipMaps)
+            if (m_Settings.generateMipMaps)
             {
                 glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
             }
 
             glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+        }
             break;
-
         case TextureType::TEXTURE_CUBEMAP:
+        {
             assert(m_Settings.dimensions.x == m_Settings.dimensions.y && "Error: Cubemap texture has to be square!");
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_CUBE_MAP, m_Texture);
@@ -129,9 +134,10 @@ namespace blurp
             }
 
             glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
             break;
-
         case TextureType::TEXTURE_CUBEMAP_ARRAY:
+        {
             assert(m_Settings.dimensions.x == m_Settings.dimensions.y && "Error: Cubemap texture has to be square!");
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_Texture);
@@ -151,11 +157,14 @@ namespace blurp
             }
 
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+        }
             break;
 
         default:
+        {
             throw std::exception("Error: texture type not supported for OpenGL.");
             return false;
+        }
             break;
         }
 

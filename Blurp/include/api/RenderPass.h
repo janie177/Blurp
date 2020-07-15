@@ -32,11 +32,14 @@ namespace blurp
          */
         virtual RenderPassType GetType() = 0;
 
-    protected:
         /*
-         * Reset the state of this RenderPass to default.
+         * Reset the state of this renderpass.
+         * This will clean out cached and queued data.
+         * Data that does not differ between frames will not be reset.
          */
         virtual void Reset() = 0;
+
+    protected:
 
         /*
          * Checks if the state inside this render target is valid.

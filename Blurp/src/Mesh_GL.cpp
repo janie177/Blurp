@@ -4,6 +4,31 @@
 
 namespace blurp
 {
+    GLuint Mesh_GL::GetVaoId() const
+    {
+        return m_Vao;
+    }
+
+    GLuint Mesh_GL::GetVboId() const
+    {
+        return m_Vbo;
+    }
+
+    GLuint Mesh_GL::GetIboId() const
+    {
+        return m_Ibo;
+    }
+
+    std::uint32_t Mesh_GL::GetNumIndices() const
+    {
+        return m_NumIndices;
+    }
+
+    GLenum Mesh_GL::GetIndexDataType() const
+    {
+        return m_IndexDataType;
+    }
+
     bool Mesh_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
         assert((m_Settings.indexDataType == DataType::USHORT || m_Settings.indexDataType == DataType::UINT) && "Index buffer data type has to be either UINT or USHORT.");
@@ -21,7 +46,8 @@ namespace blurp
 
         glGenBuffers(1, &m_Ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Ibo);
-        const auto iboDataSize = sizeof(ToGL(m_Settings.indexDataType));
+        m_IndexDataType = ToGL(m_Settings.indexDataType);
+        const auto iboDataSize = sizeof(m_IndexDataType);
 
         //Upload the index buffer in the right format.
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Settings.numIndices * iboDataSize, m_Settings.indexData, memoryUsage);
@@ -34,6 +60,7 @@ namespace blurp
          * Enable the vertex attributes that are set enabled.
          */
         int index = 0;
+
         for (const auto attrib : VERTEX_ATTRIBUTES)
         {
             if (m_Settings.vertexSettings.IsEnabled(attrib))
@@ -41,11 +68,26 @@ namespace blurp
                 const auto info = VertexSettings::GetVertexAttributeInfo(attrib);
                 const auto data = m_Settings.vertexSettings.GetAttributeData(attrib);
                 const auto glDataType = ToGL(info.dataType);
-                    
-                glVertexAttribPointer(index, info.numElements, glDataType, ToGL(data.normalize), data.byteStride, (void*)data.byteOffset);
-                glEnableVertexAttribArray(index);
 
-                ++index;
+                const auto numIndicesRequired = ((info.numElements -1) / 4) + 1;
+                int elementsLeft = info.numElements;
+                GLenum normalize = ToGL(data.normalize);
+                for(std::uint32_t i = 0; i < numIndicesRequired; ++i)
+                {
+                    glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<int>(i) * 4))));
+                    glEnableVertexAttribArray(index + i);
+
+                    elementsLeft -= 4;
+
+                    //Enable instancing if specified.
+                    if (data.instanceDivisor != 0)
+                    {
+                        glVertexAttribDivisor(index + i, data.instanceDivisor);
+                    }
+                }
+
+
+                index += numIndicesRequired;
             }
         }
 

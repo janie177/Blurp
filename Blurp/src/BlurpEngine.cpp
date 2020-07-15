@@ -1,5 +1,7 @@
 #include "BlurpEngine.h"
 
+
+#include <iostream>
 #include <RenderDevice.h>
 #include "opengl/RenderDevice_GL.h"
 #include "Window_Win32.h"
@@ -15,6 +17,9 @@ namespace blurp
 
     bool BlurpEngine::Init(const BlurpSettings& a_Settings)
     {
+		//Store the settings for later use.
+		m_Settings = a_Settings;
+
 		//Create the window if specified.
 		if(a_Settings.windowSettings.type != WindowType::NONE)
 		{
@@ -66,6 +71,11 @@ namespace blurp
     {
 		assert(m_ResourceManager && "BlurpEngine was not yet initialized!");
 		return *m_ResourceManager;
+    }
+
+    BlurpSettings BlurpEngine::GetEngineSettings() const
+    {
+		return m_Settings;
     }
 }
 

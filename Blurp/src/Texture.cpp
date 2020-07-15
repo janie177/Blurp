@@ -4,7 +4,7 @@ namespace blurp
 {
     std::uint16_t Texture::GetMipLevels() const
     {
-        return m_Settings.mipLevels;
+        return m_Settings.numMipMaps;
     }
 
     glm::vec2 Texture::GetDimensions() const

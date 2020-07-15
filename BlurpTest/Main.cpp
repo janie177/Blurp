@@ -4,21 +4,53 @@
 #include <glm/glm.hpp>
 #include <Window.h>
 
+
+#include "RenderPass_Forward.h"
 #include "KeyCodes.h"
 #include "RenderResourceManager.h"
 #include "RenderPipeline.h"
 #include "RenderPass_HelloTriangle.h"
 #include "RenderTarget.h"
 
+//Color and vertices for a cube.
+float cubeVertices[] = {
+    // front
+    -1.0, -1.0,  1.0, 0.5f, 1.0, 1.0,
+     1.0, -1.0,  1.0, 1.f, 0.5, 1.0,
+     1.0,  1.0,  1.0, 0.f, 1.0, 0.7,
+    -1.0,  1.0,  1.0, 0.f, 0.0, 1.0,
+    // back
+    -1.0, -1.0, -1.0, 0.f, 1.0, 1.0,
+     1.0, -1.0, -1.0, 1.f, 1.0, 1.0,
+     1.0,  1.0, -1.0, 1.f, 0.0, 1.0,
+    -1.0,  1.0, -1.0, 1.f, 1.0, 0.0,
+};
+
+std::uint16_t cubeIndices[]
+{
+        0, 1, 2,
+        2, 3, 0,
+        1, 5, 6,
+        6, 2, 1,
+        7, 6, 5,
+        5, 4, 7,
+        4, 0, 3,
+        3, 7, 4,
+        4, 5, 1,
+        1, 0, 4,
+        3, 2, 6,
+        6, 7, 3
+};
+
 int main()
 {
     using namespace blurp;
-
     //SETUP
 
     BlurpEngine engine;
     BlurpSettings blurpSettings;
     blurpSettings.graphicsAPI = GraphicsAPI::OPENGL;
+    blurpSettings.shadersPath = "../Output/shaders/";
 
     WindowSettings windowSettings;
     windowSettings.dimensions = glm::vec2{ 800, 800 };
@@ -64,7 +96,48 @@ int main()
     triangleRenderPass2->SetColor({ 1.f, 0.6f, 0.2f, 1.f });
     triangleRenderPass2->SetTexture(renderTarget->GetColorAttachment(0));
 
-    //The result should be a red screen with a triangle in it. The triangle should be blue with a second triangle inside it.
+
+    triangleRenderPass->SetEnabled(false);
+    triangleRenderPass2->SetEnabled(false);
+
+    CameraSettings camSettings;
+    camSettings.width = window->GetDimensions().x;
+    camSettings.height = window->GetDimensions().y;
+    auto camera = engine.GetResourceManager().CreateCamera(camSettings);
+    auto forwardPass = pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
+    forwardPass->SetCamera(camera);
+    forwardPass->SetTarget(window->GetRenderTarget());
+
+    //Scene graph with a mesh and transforms.
+    MeshSettings meshSettings;
+    meshSettings.indexData = &cubeIndices;
+    meshSettings.vertexData = &cubeVertices;
+    meshSettings.indexDataType = DataType::USHORT;
+    meshSettings.usage = AccessMode::READ;
+    meshSettings.vertexDataSizeBytes = sizeof(cubeVertices);
+    meshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 24, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 12, 24, 0);
+
+    std::shared_ptr<Mesh> mesh = engine.GetResourceManager().CreateMesh(meshSettings);
+    std::vector<glm::mat4> transforms;
+
+    Transform transform;
+    transform.SetTranslation({ 0, 0, -40 });
+
+    //Init the scene graph.
+    for(int i = 0; i < 10000; ++i)
+    {
+        transforms.emplace_back(transform.GetTransformation());
+    }
+
+    //Set the meshes to be drawn.
+    InstanceData data;
+    data.mesh = mesh.get();
+    data.count = transforms.size();
+    data.transform = &transforms[0];
+
+    forwardPass->QueueForDraw(data);
 
     /*
      * Main loop. Render as long as the window remains open.
@@ -143,6 +216,19 @@ int main()
         //{
         //    triangleRenderPass->SetEnabled(!triangleRenderPass->IsEnabled());
         //}
+        //
+
+        //Update the positions of the cubes.
+        for (int i = 0; i < 10000; ++i)
+        {
+            auto& mat = transforms[i];
+
+            float x = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;
+            float y = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;
+            float z = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;
+
+            mat = glm::translate(mat, {x, y, z});
+        }
 
         //Update the rendering pipeline.
         pipeline->Execute();

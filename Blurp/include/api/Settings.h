@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#define NUM_VERTEX_ATRRIBS 8
+#define NUM_VERTEX_ATRRIBS 9
 #include <unordered_map>
 
 /*
@@ -18,6 +18,12 @@ namespace blurp
     /*
      * Enumerations used in the settings structs.
      */
+
+    enum class ProjectionMode
+    {
+        ORTHOGRAPHIC,
+        PERSPECTIVE
+    };
 
     enum class Direction : std::uint8_t
     {
@@ -182,7 +188,10 @@ namespace blurp
         BONE_INDEX = 1 << 6,
 
         //Vec3 of the weights of each bone (to be used with BONE_INDEX).
-        BONE_WEIGHT = 1 << 7
+        BONE_WEIGHT = 1 << 7,
+
+        //Matrices for instancing.
+        MATRIX
     };
 
     //All vertex attributes in an iterable format.
@@ -194,7 +203,8 @@ namespace blurp
         VertexAttribute::COLOR,
         VertexAttribute::TANGENT,
         VertexAttribute::BONE_INDEX,
-        VertexAttribute::BONE_WEIGHT
+        VertexAttribute::BONE_WEIGHT,
+        VertexAttribute::MATRIX
     };
 
     inline VertexAttribute operator|(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
@@ -404,6 +414,19 @@ namespace blurp
 
     struct CameraSettings
     {
+        CameraSettings()
+        {
+            projectionMode = ProjectionMode::PERSPECTIVE;
+            fov = 90.f;
+            nearPlane = 0.001f;
+            farPlane = 9999.f;
+            width = 800.f;
+            height = 400.f;
+        }
+
+        //The projection mode.
+        ProjectionMode projectionMode;
+
         //The field of view for this camera.
         std::float_t fov;
 
@@ -413,8 +436,11 @@ namespace blurp
         //How far from the camera do objects have to be to be cut off.
         std::float_t farPlane;
 
-        //Aspect ratio of the camera. Should be width / height of the render target.
-        std::float_t aspectRatio;
+        //Width of the camera resolution.
+        std::float_t width;
+
+        //Height of the camera resolution.
+        std::float_t height;
     };
 
     struct BlurpSettings
@@ -461,6 +487,7 @@ namespace blurp
             byteOffset = 0;
             byteStride = 0;
             normalize = false;
+            instanceDivisor = 0;
         }
 
         //The offset from the start of the buffer to the first vertex attribute of this type.
@@ -471,6 +498,10 @@ namespace blurp
 
         //Normalize or not (between 0 and 1).
         bool normalize;
+
+        //The instance divisor of this attribute. If 0, no instancing is used.
+        //Any other value indicates after how many full instance draws the attribute updates in the shader.
+        std::uint16_t instanceDivisor;
     };
 
     struct VertexSettings
@@ -484,8 +515,9 @@ namespace blurp
         /*
          * Enable a vertex attribute with the given offset and stride in bytes.
          * The given vertex attribute has to be a single attribute without any masking.
+         * The instance divisor determines if instancing is enabled and per how many draws it is updated.
          */
-        void EnableAttribute(VertexAttribute a_Attribute, std::uint32_t a_Offset, std::uint32_t a_Stride)
+        void EnableAttribute(VertexAttribute a_Attribute, std::uint32_t a_Offset, std::uint32_t a_Stride, std::uint16_t a_InstanceDivisor)
         {
             assert(static_cast<std::uint16_t>(a_Attribute) != 0 && (static_cast<std::uint16_t>(a_Attribute) & (static_cast<std::uint16_t>(a_Attribute) - 1)) == 0);
             m_Mask = m_Mask | a_Attribute;
@@ -494,6 +526,7 @@ namespace blurp
             auto& data = m_Data[static_cast<std::uint16_t>(std::floor(std::log(static_cast<std::uint16_t>(a_Attribute) | 0) / std::log(2)))];
             data.byteOffset = a_Offset;
             data.byteStride = a_Stride;
+            data.instanceDivisor = a_InstanceDivisor;
         }
 
         /*
@@ -558,6 +591,7 @@ namespace blurp
             {VertexAttribute::TANGENT, {3, DataType::FLOAT, "va_Tangent", "VA_TANGENT_DEF"}},
             {VertexAttribute::BONE_INDEX, {3, DataType::UINT, "va_BoneIndex", "VA_BONEINDEX_DEF"}},
             {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF"}},
+            {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF"}},
         };
     };
 

@@ -134,7 +134,7 @@
     </Lib>
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I
-xcopy "$(ProjectDir)shaders\" "$(OutDir)shaders\"  /E /Y /I</Command>
+xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -163,7 +163,7 @@ xcopy "$(ProjectDir)shaders\" "$(OutDir)shaders\"  /E /Y /I</Command>
     </Lib>
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)include\api" "$(OutDir)include\"  /E /Y /I
-xcopy "$(ProjectDir)shaders\" "$(OutDir)shaders\"  /E /Y /I</Command>
+xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

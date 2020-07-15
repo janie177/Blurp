@@ -36,7 +36,9 @@ namespace blurp
         void Execute();
 
         /*
-         * Reset the state of this entire RenderPipeline to default.
+         * Set the state of this entire RenderPipeline in every RenderPass to default.
+         * This cleans out caches and queues that are only valid for a single frame.
+         * Set state that can last more than a single frame is not touched.
          */
         void Reset();
 

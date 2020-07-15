@@ -9,21 +9,20 @@
 namespace blurp
 {
     /*
-     * Struct containing information for drawing.
+     * Passing this struct to the forward renderer guarantees in to be drawn
+     * in the order it was provided.
+     * The order of transforms is also kept.
      */
-    struct MeshData
+    struct InstanceData
     {
-        MeshData()
-        {
-            mesh = nullptr;
-            material = nullptr;
-        }
-
-        MeshData(Mesh* a_Mesh, glm::mat4 a_Transform, Material* a_Material) : mesh(a_Mesh), transform(a_Transform), material(a_Material) {}
-
+        //Pointer to the mesh to draw.
         Mesh* mesh;
-        glm::mat4 transform;
-        Material* material;
+
+        //The amount of instances.
+        std::uint32_t count;
+
+        //Pointer to the start of the transforms.
+        glm::mat4* transform;
     };
 
     /*
@@ -69,6 +68,11 @@ namespace blurp
     class RenderPass_Forward : public RenderPass
     {
     public:
+        RenderPass_Forward(RenderPipeline& a_Pipeline)
+            : RenderPass(a_Pipeline)
+        {
+        }
+
         RenderPassType GetType() override;
 
         /*
@@ -82,17 +86,21 @@ namespace blurp
         void SetTarget(const std::shared_ptr<RenderTarget>& a_RenderTarget);
 
         /*
-         * Add a mesh to the drawing queue.
+         * Add one or more meshes to the drawing queue.
+         * The InstanceData object contains a pointer to the mesh to use.
+         * It also contains the number of instances, and a pointer to the start of the instance data.
+         * Data is rendered in the order provided.
          */
-        void QueueForDraw(const std::shared_ptr<Mesh>& a_Mesh, glm::mat4 a_Transform);
+        void QueueForDraw(InstanceData a_Data);
 
         /*
          * Add a light to be taken into consideration when drawing.
          */
         void AddLight(const std::shared_ptr<Light>& a_Light, const std::shared_ptr<Texture>& a_ShadowMap);
 
-    protected:
         void Reset() override;
+
+    protected:
         bool IsStateValid() override;
 
     protected:
@@ -100,7 +108,8 @@ namespace blurp
         std::shared_ptr<RenderTarget> m_Output;
 
         //Drawqueue sorted by meshes{materials{transforms}}
-        std::unordered_map<Mesh*, std::unordered_map<Material*, std::vector<glm::mat4>>> m_DrawQueue;
+        //std::unordered_map<Mesh*, std::unordered_map<Material*, std::vector<glm::mat4>>> m_DrawQueue;
+        std::vector<InstanceData> m_DrawQueue;
 
         //Light data.
         std::vector<PointLightData> m_PointLights;

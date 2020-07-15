@@ -10,6 +10,7 @@
 #include "opengl/Texture_GL.h"
 #include "Camera.h"
 #include "Light.h"
+#include "opengl/RenderPass_Forward_GL.h"
 
 
 namespace blurp
@@ -91,8 +92,10 @@ namespace blurp
         case WindowType::WINDOW_WIN32:
             return std::make_shared<SwapChain_GL_Win32>(a_Settings.swapChainSettings);
         default:
+        {
             throw std::exception("Swap chain for given window not implemented for OpenGL!");
             return nullptr;
+        }
         }
         
     }
@@ -109,7 +112,8 @@ namespace blurp
         {
             case RenderPassType::RP_HELLOTRIANGLE:
                 return std::make_shared<RenderPass_HelloTriangle_GL>(a_Pipeline);
-            break;
+            case RenderPassType::RP_FORWARD:
+                return std::make_shared<RenderPass_Forward_GL>(a_Pipeline);
         default:
             throw std::exception("RenderPassType not implemented for OpenGL!");
             break;

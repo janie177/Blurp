@@ -35,8 +35,9 @@ namespace blurp
          */
         void SetTarget(std::shared_ptr<RenderTarget> a_Target);
 
-    protected:
         void Reset() override;
+
+    protected:
 
         bool IsStateValid() override;
 

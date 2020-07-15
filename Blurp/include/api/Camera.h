@@ -22,12 +22,16 @@ namespace blurp
         /*
          * Set the projection settings for this camera.
          */
-        void SetProjection(float a_Fov, float a_AspectRatio, float a_NearPlane, float a_FarPlane);
+        void SetProjection(const CameraSettings& a_Settings);
 
         /*
          * Get the transform for this camera.
          */
         Transform& GetTransform();
+
+    protected:
+        bool OnLoad(BlurpEngine& a_BlurpEngine) override;
+        bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
         CameraSettings m_Settings;

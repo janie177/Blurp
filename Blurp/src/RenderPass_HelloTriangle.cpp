@@ -28,8 +28,7 @@ namespace blurp
 
     void RenderPass_HelloTriangle::Reset()
     {
-        m_Color = { 1.f, 1.f, 1.f, 1.f };
-        m_Target = nullptr;
+        //Nothing to do here.
     }
 
     bool RenderPass_HelloTriangle::IsStateValid()

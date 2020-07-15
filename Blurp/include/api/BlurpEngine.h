@@ -2,36 +2,19 @@
 #include <memory>
 #include <vector>
 
+#include "Settings.h"
+
 namespace blurp
 {
-    //Structs to construct resources forward declarations.
-    struct BlurpSettings;
-    struct WindowSettings;
-    struct CameraSettings;
-    struct TextureSettings;
-    struct MeshSettings;
-    struct LightSettings;
-    struct RenderTargetSettings;
-    struct SwapChainSettings;
-    struct MaterialSettings;
-
     //Resources forward declarations.
     class Window;
-    class Light;
-    class Camera;
-    class Texture;
-    class Mesh;
-    class RenderTarget;
-    class SwapChain;
-    class Material;
-
     class RenderResourceManager;
 
-    class RenderResource;
-    class RenderDevice;
-    class RenderPipeline;
-
-
+    /*
+     * Main entry point into rendering with blurp.
+     * Create an instance and call Init with a settings object.
+     * RenderResources can then be created through the RenderResourceManager.
+     */
     class BlurpEngine
     {
         friend class RenderDevice;
@@ -55,17 +38,12 @@ namespace blurp
          */
         RenderResourceManager& GetResourceManager() const;
 
-    protected:
         /*
-         * Register a resource with the resource registry.
-         * This loads the resource as well.
+         * Get the settings object that the BlurpEngine instance was created with.
          */
-        void RegisterResource(const std::shared_ptr<RenderResource>& a_Resource);
+        BlurpSettings GetEngineSettings() const;
 
     private:
-        //Registry containing all live resources.
-        std::vector<std::shared_ptr<RenderResource>> m_Resources;
-
         //The render device containing the rendering context.
         std::shared_ptr<RenderDevice> m_RenderDevice;
 
@@ -75,5 +53,8 @@ namespace blurp
 
         //The resource manager instance
         std::unique_ptr<RenderResourceManager> m_ResourceManager;
+
+        //The settings the engine was set up with.
+        BlurpSettings m_Settings;
     };
 }
