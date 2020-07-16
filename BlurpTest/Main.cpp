@@ -11,6 +11,7 @@
 #include "RenderPipeline.h"
 #include "RenderPass_HelloTriangle.h"
 #include "RenderTarget.h"
+#include <glm/gtc/type_ptr.hpp>
 
 //Color and vertices for a cube.
 float cubeVertices[] = {
@@ -58,6 +59,7 @@ int main()
     windowSettings.name = "My lovely little window";
     windowSettings.flags = WindowFlags::CAPTURE_CURSOR | WindowFlags::HIDE_CURSOR;
     windowSettings.swapChainSettings.vsync = false ;
+    windowSettings.swapChainSettings.renderTargetSettings.viewPort = { 0, 0, windowSettings.dimensions };
 
     blurpSettings.windowSettings = windowSettings;
     engine.Init(blurpSettings);
@@ -103,6 +105,7 @@ int main()
     CameraSettings camSettings;
     camSettings.width = window->GetDimensions().x;
     camSettings.height = window->GetDimensions().y;
+    camSettings.farPlane = 100000000000.f;
     auto camera = engine.GetResourceManager().CreateCamera(camSettings);
     auto forwardPass = pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     forwardPass->SetCamera(camera);
@@ -123,7 +126,7 @@ int main()
     std::vector<glm::mat4> transforms;
 
     Transform transform;
-    transform.SetTranslation({ 0, 0, -40 });
+    transform.SetTranslation({ 0, 0, 0.f });
 
     //Init the scene graph.
     for(int i = 0; i < 10000; ++i)
@@ -138,6 +141,86 @@ int main()
     data.transform = &transforms[0];
 
     forwardPass->QueueForDraw(data);
+
+
+
+
+    /*
+     * Generate a big instance enabled mesh for testing.
+     */
+    const int numinstances = 10000000;
+    const float maxDistance = 20000.f;
+    const float maxRotation = 6.28f;
+    const float maxScale = 20.f;
+    const float minScale = 0.5f;
+
+    std::vector<float> floats;
+    floats.reserve(16 * numinstances + sizeof(cubeVertices));
+
+    Transform t;
+
+    //Fill the floats array with matrices. numInstances is the number of instances.
+    for(int i = 0; i < numinstances; ++i)
+    {
+        //Generate an orientation.
+        float x = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * maxDistance;
+        float y = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * maxDistance;
+        float z = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * maxDistance;
+        float rotx = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * maxRotation;
+        float roty = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * maxRotation;
+        float rotz = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * maxRotation;
+
+        float scalex = minScale + ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxScale - minScale));
+        float scaley = minScale + ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxScale - minScale));
+        float scalez = minScale + ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxScale - minScale));
+
+        t.SetTranslation({ x, y, z });
+        t.SetRotation(Transform::GetWorldUp(), roty);
+        t.SetRotation(Transform::GetWorldRight(), rotx);
+        t.SetRotation(Transform::GetWorldForward(), rotz);
+        t.SetScale({ scalex, scaley, scalez });
+
+        glm::mat4 mat = t.GetTransformation();
+
+        float* ptr = reinterpret_cast<float*>(&mat);
+
+        for(int i = 0; i < 16; ++i)
+        {
+            floats.push_back(ptr[i]);
+        }
+    }
+
+    //Emplace the actual mesh data in the floats array.
+    for(auto& f : cubeVertices)
+    {
+        floats.push_back(f);
+    }
+
+    //Data for the mesh with all vertex attribs and pointers to the data.
+    MeshSettings instanceMeshSettings;
+    instanceMeshSettings.indexData = &cubeIndices;
+    instanceMeshSettings.vertexData = &floats[0];
+    instanceMeshSettings.indexDataType = DataType::USHORT;
+    instanceMeshSettings.usage = AccessMode::READ;
+    instanceMeshSettings.vertexDataSizeBytes = floats.size() * sizeof(float);
+    instanceMeshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 16 * numinstances * sizeof(float), 24, 0);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, (16 * numinstances * sizeof(float)) + 12, 24, 0);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::MATRIX, 0, 16 * sizeof(float), 1);
+    instanceMeshSettings.instanceCount = numinstances;
+
+    //Creat the mesh from the generated data.
+    std::shared_ptr<Mesh> instanced = engine.GetResourceManager().CreateMesh(instanceMeshSettings);
+
+    //Generate the queue data and mark the mesh for drawing.
+    Transform iMTransform;
+    iMTransform.SetTranslation({ 0.f, 0.f, -40.f });
+    glm::mat4 m = iMTransform.GetTransformation();
+    InstanceData iData;
+    iData.mesh = instanced.get();
+    iData.count = 1;
+    iData.transform = &m;
+    forwardPass->QueueForDraw(iData);
 
     /*
      * Main loop. Render as long as the window remains open.
@@ -229,6 +312,52 @@ int main()
 
             mat = glm::translate(mat, {x, y, z});
         }
+
+        //Update the camera based on input.
+        {
+            auto& transform = camera->GetTransform();
+            bool shift = input.getKeyState(KEY_SHIFT) != ButtonState::NOT_PRESSED;
+
+            const float movespeed = 2.f * (shift ? 20.f : 2.f);
+
+            if(input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
+            {
+                transform.Translate(transform.GetForward() * -movespeed);
+            }
+            if (input.getKeyState(KEY_A) != ButtonState::NOT_PRESSED)
+            {
+                transform.Translate(transform.GetLeft() * movespeed);
+            }
+            if (input.getKeyState(KEY_S) != ButtonState::NOT_PRESSED)
+            {
+                transform.Translate(transform.GetBack() * -movespeed);
+            }
+            if (input.getKeyState(KEY_D) != ButtonState::NOT_PRESSED)
+            {
+                transform.Translate(transform.GetRight() * movespeed);
+            }
+
+            if (input.getKeyState(KEY_UP) != ButtonState::NOT_PRESSED)
+            {
+                transform.Rotate(transform.GetRight(), 0.05f);
+            }
+            if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
+            {
+                transform.Rotate(transform.GetUp(), 0.05f);
+            }
+            if (input.getKeyState(KEY_DOWN) != ButtonState::NOT_PRESSED)
+            {
+                transform.Rotate(transform.GetRight(), -0.05f);
+            }
+            if (input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
+            {
+                transform.Rotate(transform.GetUp(), -0.05f);
+            }
+        }
+
+        //Update the rotation of the instanced mesh.
+        iMTransform.Rotate(Transform::GetWorldUp(), 0.00005f);
+        m = iMTransform.GetTransformation();
 
         //Update the rendering pipeline.
         pipeline->Execute();

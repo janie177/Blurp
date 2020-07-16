@@ -72,9 +72,6 @@ namespace blurp
             m_CaptureCursor = true;
         }
 
-        //Finally calculate the screen dimensions and possibly update the swapchain size.
-        OnMoveResize();
-
         //Finally set the window focus.
         //First set to null to ensure it resets the focus state.
         SetFocus(NULL);
@@ -98,6 +95,9 @@ namespace blurp
             // Save the DXSample* passed in to CreateWindow.
             LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
             SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
+
+            //Finally calculate the screen dimensions and possibly update the swapchain size.
+            if(windowPtr) windowPtr->OnMoveResize();
         }
         return 0;
         case WM_SYSKEYDOWN:

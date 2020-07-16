@@ -191,7 +191,7 @@ namespace blurp
         BONE_WEIGHT = 1 << 7,
 
         //Matrices for instancing.
-        MATRIX
+        MATRIX = 1 << 8,
     };
 
     //All vertex attributes in an iterable format.
@@ -605,6 +605,7 @@ namespace blurp
             numIndices = 0;
             indexDataType = DataType::SHORT;
             vertexDataSizeBytes = 0;
+            instanceCount = 1;
         }
 
         //Which vertex attributes are enabled for this mesh?
@@ -631,6 +632,10 @@ namespace blurp
 
         //Data type for the index buffer
         DataType indexDataType;
+
+        //Instance count (how many to draw).
+        //One by default. Only enable if there is instanced vertex attributes.
+        std::uint32_t instanceCount;
     };
 
     struct LightSettings

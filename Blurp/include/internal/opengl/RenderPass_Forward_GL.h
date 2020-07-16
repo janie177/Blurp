@@ -2,6 +2,7 @@
 
 #include "RenderPass_Forward.h"
 #include "opengl/Shader_GL.h"
+#include "MeshShaderCache.h"
 
 namespace blurp
 {
@@ -24,7 +25,8 @@ namespace blurp
         void Execute() override;
 
     private:
-        std::shared_ptr<Shader_GL> m_Shader;
+        MeshShaderCache m_MeshShaderRegistry;
+        //std::shared_ptr<Shader_GL> m_Shader;
         GLuint m_Ssbo;
     };
 }

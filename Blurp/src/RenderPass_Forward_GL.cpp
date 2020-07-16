@@ -9,30 +9,36 @@ namespace blurp
 {
     bool RenderPass_Forward_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
-        //Load the shaders from file.
         auto shaderPath = a_BlurpEngine.GetEngineSettings().shadersPath + "opengl/";
-        auto vertexShaderPath = shaderPath + "Default_Forward.vs";
-        auto fragmentShaderPath = shaderPath + "Default_Forward.fs";
 
-        FileReader vsReader(vertexShaderPath);
-        FileReader fsReader(fragmentShaderPath);
+        MeshShaderPaths paths;
+        paths.vertex = shaderPath + "Default_Forward.vs";
+        paths.fragment = shaderPath + "Default_Forward.fs";
 
-        if(!vsReader.Open() || !fsReader.Open())
-        {
-            std::string str = "Can't find forward shaders! Is the shader path configured correctly? " + shaderPath;
-            throw std::exception(str.c_str());
-        }
+        std::vector<std::string> definitions;
+        m_MeshShaderRegistry.Init(a_BlurpEngine.GetResourceManager(), definitions, paths);
 
-        //Read the source from the files and compile the shaders.
-        ShaderSettings shaderSettings;
-        shaderSettings.type = ShaderType::GRAPHICS;
+        //Load the shaders from file.
 
-        auto vertexSrc = vsReader.ToArray();
-        auto fragmentSrc = fsReader.ToArray();
-        shaderSettings.vertexShaderSource = vertexSrc.get();
-        shaderSettings.fragmentShaderSource = fragmentSrc.get();
+        //FileReader vsReader(vertexShaderPath);
+        //FileReader fsReader(fragmentShaderPath);
 
-        m_Shader = std::reinterpret_pointer_cast<Shader_GL>(a_BlurpEngine.GetResourceManager().CreateShader(shaderSettings));
+        //if(!vsReader.Open() || !fsReader.Open())
+        //{
+        //    std::string str = "Can't find forward shaders! Is the shader path configured correctly? " + shaderPath;
+        //    throw std::exception(str.c_str());
+        //}
+
+        ////Read the source from the files and compile the shaders.
+        //ShaderSettings shaderSettings;
+        //shaderSettings.type = ShaderType::GRAPHICS;
+
+        //auto vertexSrc = vsReader.ToArray();
+        //auto fragmentSrc = fsReader.ToArray();
+        //shaderSettings.vertexShaderSource = vertexSrc.get();
+        //shaderSettings.fragmentShaderSource = fragmentSrc.get();
+
+        //m_Shader = std::reinterpret_pointer_cast<Shader_GL>(a_BlurpEngine.GetResourceManager().CreateShader(shaderSettings));
 
         glGenBuffers(1, &m_Ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_Ssbo);
@@ -64,7 +70,6 @@ namespace blurp
         const auto clearColor = m_Output->GetClearColor();
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId());
 
         //Camera matrices.
         const auto projection = m_Camera->GetProjectionMatrix();
@@ -79,9 +84,24 @@ namespace blurp
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+        //Shader attribute mask.
+        auto mask = static_cast<VertexAttribute>(0);
+         
         for(auto& instanceData : m_DrawQueue)
         {
             const Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh);
+
+            //If the current mask is not the same as the one needed, switch shader.
+            if(mask != mesh->GetVertexAttributeMask())
+            {
+                mask = mesh->GetVertexAttributeMask();
+                glUseProgram(std::reinterpret_pointer_cast<Shader_GL>(m_MeshShaderRegistry.GetShader(mesh->GetVertexAttributeMask()))->GetProgramId());
+            }
+
+            //Set the number of instances from the mesh itself in the uniform.
+            glUniform1i(0, mesh->GetInstanceCount());
+
+            //Bind the VAO of the mesh.
             glBindVertexArray(mesh->GetVaoId());
 
             std::vector<MeshInstanceData> transformed;
@@ -95,7 +115,7 @@ namespace blurp
 
             glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(MeshInstanceData) * instanceData.count, &transformed[0], GL_DYNAMIC_DRAW);
 
-            glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.count);
+            glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.count * mesh->GetInstanceCount());
         }
 
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);

@@ -1,5 +1,10 @@
 #include "opengl/Mesh_GL.h"
 
+
+#include <iostream>
+#include <ostream>
+
+
 #include "opengl/GLUtils.h"
 
 namespace blurp
@@ -58,24 +63,33 @@ namespace blurp
 
         /*
          * Enable the vertex attributes that are set enabled.
+         * The index is always the same for each attribute, no matter which ones are enabled.
+         * GLSL shaders should always specify each one at the order they are specified in VertexAttribute.
+         * Disabled ones will simply not have a value in the shader.
+         * Logic related to using these variables can be enabled and disabled through the use of ifdefs.
          */
         int index = 0;
 
         for (const auto attrib : VERTEX_ATTRIBUTES)
         {
+            const auto info = VertexSettings::GetVertexAttributeInfo(attrib);
+            const auto numIndicesRequired = ((info.numElements - 1) / 4) + 1;
+
             if (m_Settings.vertexSettings.IsEnabled(attrib))
             {
-                const auto info = VertexSettings::GetVertexAttributeInfo(attrib);
                 const auto data = m_Settings.vertexSettings.GetAttributeData(attrib);
                 const auto glDataType = ToGL(info.dataType);
-
-                const auto numIndicesRequired = ((info.numElements -1) / 4) + 1;
                 int elementsLeft = info.numElements;
                 GLenum normalize = ToGL(data.normalize);
                 for(std::uint32_t i = 0; i < numIndicesRequired; ++i)
                 {
-                    glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<int>(i) * 4))));
+                    glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * sizeof(glDataType)))));
                     glEnableVertexAttribArray(index + i);
+
+                    if(attrib == VertexAttribute::MATRIX)
+                    {
+                        std::cout << "Enabling matrix at index: " << (index + i) << " with " << (elementsLeft <= 4 ? elementsLeft : 4) << " elements. Stride is " << data.byteStride << " bytes and offset is " << static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * sizeof(glDataType))) << std::endl;
+                    }
 
                     elementsLeft -= 4;
 
@@ -85,10 +99,10 @@ namespace blurp
                         glVertexAttribDivisor(index + i, data.instanceDivisor);
                     }
                 }
-
-
-                index += numIndicesRequired;
             }
+
+            //Increment index.
+            index += numIndicesRequired;
         }
 
         //Unbind.

@@ -8,7 +8,8 @@ namespace blurp
 {
     Window::Window(const WindowSettings& a_Settings) : m_Settings(a_Settings)
     {
-
+        //Set the render target dimensions to match the window.
+        m_Settings.swapChainSettings.renderTargetSettings.viewPort = { 0.f, 0.f, m_Settings.dimensions };
     }
 
     std::shared_ptr<SwapChain> Window::GetSwapChain() const
