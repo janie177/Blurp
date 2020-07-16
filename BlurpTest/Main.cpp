@@ -83,7 +83,9 @@ int main()
     auto renderTarget = engine.GetResourceManager().CreateRenderTarget(renderTargetSettings);
 
     //Set up a pipeline that draws a triangle onto a texture. Then it draws a triangle with the first texture on it on the 2nd triangle on the screen.
-    auto pipeline = engine.GetResourceManager().CreatePipeline();
+    PipelineSettings pSettings;
+    pSettings.waitForGpu = true;
+    auto pipeline = engine.GetResourceManager().CreatePipeline(pSettings);
 
     //Draw a triangle in the render target.
     auto triangleRenderPass = pipeline->AppendRenderPass<RenderPass_HelloTriangle>(RenderPassType::RP_HELLOTRIANGLE);
@@ -225,16 +227,16 @@ int main()
     /*
      * Main loop. Render as long as the window remains open.
      */
-    while(!window->IsClosed())
+    while (!window->IsClosed())
     {
         auto input = window->PollInput();
 
         KeyboardEvent kEvent;
         MouseEvent mEvent;
 
-        while(input.getNextEvent(kEvent))
+        while (input.getNextEvent(kEvent))
         {
-            if(kEvent.keyCode >= 48 && kEvent.keyCode <= 90)
+            if (kEvent.keyCode >= 48 && kEvent.keyCode <= 90)
             {
                 std::cout << "Key input: " << std::string(1, static_cast<char>(kEvent.keyCode)) << " was " << (kEvent.action == KeyboardAction::KEY_PRESSED ? "pressed" : "released") << "." << std::endl;
             }
@@ -243,7 +245,7 @@ int main()
                 std::cout << "System Key input: " << kEvent.keyCode << " was " << (kEvent.action == KeyboardAction::KEY_PRESSED ? "pressed" : "released") << "." << std::endl;
             }
 
-            if(kEvent.keyCode == KEY_ESCAPE)
+            if (kEvent.keyCode == KEY_ESCAPE)
             {
                 std::cout << "Closing window";
                 window->Close();
@@ -252,7 +254,7 @@ int main()
 
         while (input.getNextEvent(mEvent))
         {
-            if(mEvent.action == MouseAction::RELEASE || mEvent.action == MouseAction::CLICK)
+            if (mEvent.action == MouseAction::RELEASE || mEvent.action == MouseAction::CLICK)
             {
                 std::string mButton;
                 switch (mEvent.button)
@@ -288,7 +290,7 @@ int main()
         }
 
         //Handle alt enter:
-        if(input.getKeyState(KEY_ALT) != ButtonState::NOT_PRESSED && input.getKeyState(KEY_ENTER) == ButtonState::FIRST_PRESSED)
+        if (input.getKeyState(KEY_ALT) != ButtonState::NOT_PRESSED && input.getKeyState(KEY_ENTER) == ButtonState::FIRST_PRESSED)
         {
             std::cout << "Toggling fullscreen mode" << std::endl;
             window->SetFullScreen(!window->IsFullScreen());
@@ -310,7 +312,7 @@ int main()
             float y = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;
             float z = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;
 
-            mat = glm::translate(mat, {x, y, z});
+            mat = glm::translate(mat, { x, y, z });
         }
 
         //Update the camera based on input.
@@ -320,7 +322,7 @@ int main()
 
             const float movespeed = 2.f * (shift ? 20.f : 2.f);
 
-            if(input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
+            if (input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
             {
                 transform.Translate(transform.GetForward() * -movespeed);
             }

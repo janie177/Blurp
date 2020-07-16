@@ -132,6 +132,12 @@
     <ClInclude Include="include\api\MeshShaderCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\api\Lockable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\ResourceLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
@@ -213,6 +219,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\MeshShaderCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ResourceLock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Lockable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

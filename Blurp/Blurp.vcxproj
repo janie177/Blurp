@@ -172,6 +172,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\InputQueue.h" />
     <ClInclude Include="include\api\KeyCodes.h" />
     <ClInclude Include="include\api\Light.h" />
+    <ClInclude Include="include\api\Lockable.h" />
     <ClInclude Include="include\api\Material.h" />
     <ClInclude Include="include\api\Mesh.h" />
     <ClInclude Include="include\api\MeshShaderCache.h" />
@@ -201,6 +202,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\internal\opengl\Shader_GL.h" />
     <ClInclude Include="include\internal\opengl\SwapChain_GL_Win32.h" />
     <ClInclude Include="include\internal\opengl\Texture_GL.h" />
+    <ClInclude Include="include\api\ResourceLock.h" />
     <ClInclude Include="include\internal\Window_Win32.h" />
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +211,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\FileReader.cpp" />
     <ClCompile Include="src\InputQueue.cpp" />
     <ClCompile Include="src\Light.cpp" />
+    <ClCompile Include="src\Lockable.cpp" />
     <ClCompile Include="src\MeshShaderCache.cpp" />
     <ClCompile Include="src\Mesh_GL.cpp" />
     <ClCompile Include="src\Mouse.cpp" />
@@ -224,6 +227,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\RenderResourceManager.cpp" />
     <ClCompile Include="src\RenderTarget.cpp" />
     <ClCompile Include="src\RenderTarget_GL.cpp" />
+    <ClCompile Include="src\ResourceLock.cpp" />
     <ClCompile Include="src\Shader_GL.cpp" />
     <ClCompile Include="src\SwapChain_GL_Win32.cpp" />
     <ClCompile Include="src\Texture.cpp" />

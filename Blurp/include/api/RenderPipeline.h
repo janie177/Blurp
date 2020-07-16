@@ -4,15 +4,17 @@
 
 #include "RenderDevice.h"
 #include "RenderPass.h"
+#include "ResourceLock.h"
 
 namespace blurp
 {
     class RenderPass;
+    class ResourceLock;
 
     class RenderPipeline : public RenderResource
     {
     public:
-        RenderPipeline(BlurpEngine& a_BlurpEngine, RenderDevice& a_RenderDevice) : m_RenderDevice(a_RenderDevice), m_Engine(a_BlurpEngine) {}
+        RenderPipeline(const PipelineSettings& a_Settings, BlurpEngine& a_BlurpEngine, RenderDevice& a_RenderDevice) : m_Settings(a_Settings), m_RenderDevice(a_RenderDevice), m_Engine(a_BlurpEngine) {}
 
         //Don't allow copy or move.
         RenderPipeline(RenderPipeline&) = delete;
@@ -32,6 +34,8 @@ namespace blurp
         /*
          * Execute this RenderPipeline.
          * This consecutively executes each of the render passes.
+         * If settings.waitForGpu is true, this stalls the GPU until drawing is completed.
+         * In that scenario this will automatically release all resource locks upon completion.
          */
         void Execute();
 
@@ -39,6 +43,8 @@ namespace blurp
          * Set the state of this entire RenderPipeline in every RenderPass to default.
          * This cleans out caches and queues that are only valid for a single frame.
          * Set state that can last more than a single frame is not touched.
+         *
+         * This does NOT free resource locks, and this function can be called when HasFinishedExecuting() is still false.
          */
         void Reset();
 
@@ -46,6 +52,13 @@ namespace blurp
          * Returns true when this RenderPipeline has finished doing GPU work.
          */
         virtual bool HasFinishedExecuting() = 0;
+
+        /*
+         * Unlock all resources that were locked when Execute() was called.
+         * HasFinishedExecuting has to return true before this can be called.
+         * After calling this, resources can be used again by other pipelines.
+         */
+        void ReleaseResourceLocks();
 
     protected:
         /*
@@ -59,11 +72,15 @@ namespace blurp
         virtual void PostExecute() = 0;
 
     protected:
+        PipelineSettings m_Settings;
         RenderDevice& m_RenderDevice;
         BlurpEngine& m_Engine;
 
     private:
         std::vector<std::shared_ptr<RenderPass>> m_RenderPasses;
+
+        //Locks that keep all resources locked while executing.
+        std::vector<ResourceLock> m_Locks;
     };
 
     template <typename T>

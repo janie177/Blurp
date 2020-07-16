@@ -97,7 +97,7 @@ namespace blurp
         /*
          * Create a render pipeline.
          */
-        virtual std::shared_ptr<RenderPipeline> CreatePipeline() = 0;
+        virtual std::shared_ptr<RenderPipeline> CreatePipeline(const PipelineSettings& a_Settings) = 0;
 
         /*
          * Create a shader from the given settings.

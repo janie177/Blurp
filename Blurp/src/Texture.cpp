@@ -46,4 +46,14 @@ namespace blurp
     {
         return m_Settings.memoryAccess;
     }
+
+    void Texture::OnLock()
+    {
+        assert(m_Settings.memoryAccess != AccessMode::READ && "Locking read only resource. This is not necessary and should not happen.");
+    }
+
+    void Texture::OnUnlock()
+    {
+
+    }
 }

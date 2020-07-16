@@ -33,6 +33,7 @@ namespace blurp
 
     bool RenderTarget::SetColorAttachment(std::uint16_t a_Slot, std::shared_ptr<Texture> a_Attachment)
     {
+        assert(!IsLocked() && "Cannot switch attachments in a RenderTarget that is currently locked!");
         assert(a_Attachment != nullptr && "Error: Trying to set null as color attachment.");
         assert(m_AllowAttachments && "This RenderTarget does not allow you to switch attachments!");
         assert(a_Slot <= MAX_NUM_COLOR_ATTACHMENTS && "Index for color attachments out of bounds!");
@@ -60,6 +61,7 @@ namespace blurp
 
     bool RenderTarget::SetDepthStencilAttachment(std::shared_ptr<Texture> a_Attachment)
     {
+        assert(!IsLocked() && "Cannot switch attachments in a RenderTarget that is currently locked!");
         assert(a_Attachment != nullptr && "Error: Trying to set null as color attachment.");
         assert(m_AllowAttachments && "This RenderTarget does not allow you to switch attachments!");
         assert(a_Attachment->GetPixelFormat() == PixelFormat::DEPTH || a_Attachment->GetPixelFormat() == PixelFormat::DEPTH_STENCIL);
@@ -78,13 +80,45 @@ namespace blurp
         return m_ColorAttachments[a_Slot];
     }
 
-    std::shared_ptr<Texture> RenderTarget::GetDepthStencilAttachment()
+    std::shared_ptr<Texture> RenderTarget::GetDepthStencilAttachment() const
     {
         return m_DepthStencilAttachment;
     }
 
-    bool RenderTarget::AllowsAttachments()
+    bool RenderTarget::AllowsAttachments() const
     {
         return m_AllowAttachments;
+    }
+
+    std::vector<Lockable*> RenderTarget::GetLockableAttachments()
+    {
+        std::vector<Lockable*> lockables;
+
+        //Add the color attachments that can be written into.
+        for(auto& attachment : m_ColorAttachments)
+        {
+            if(attachment != nullptr && attachment->GetAccessMode() != AccessMode::READ)
+            {
+                lockables.emplace_back(attachment.get());
+            }
+        }
+
+        //Add the depth stencil attachment to the lockables.
+        if(m_DepthStencilAttachment != nullptr && m_DepthStencilAttachment->GetAccessMode() != AccessMode::READ)
+        {
+            lockables.emplace_back(m_DepthStencilAttachment.get());
+        }
+
+        return lockables;
+    }
+
+    void RenderTarget::OnLock()
+    {
+
+    }
+
+    void RenderTarget::OnUnlock()
+    {
+
     }
 }

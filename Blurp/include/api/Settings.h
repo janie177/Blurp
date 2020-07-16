@@ -730,4 +730,21 @@ namespace blurp
         //The type of shader
         ShaderType type;
     };
+
+    /*
+     * Settings related to RenderPipelines.
+     */
+    struct PipelineSettings
+    {
+        PipelineSettings()
+        {
+            waitForGpu = true;
+        }
+
+        /*
+         * When true, calling Execute() on a pipeline will stall the CPU until the GPU has finished executing.
+         * Once execution has finished, all locked resources are automatically freed.
+         */
+        bool waitForGpu;
+    };
 }

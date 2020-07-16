@@ -26,7 +26,7 @@ namespace blurp
         std::shared_ptr<SwapChain> CreateSwapChain(const WindowSettings& a_Settings) override;
         std::shared_ptr<Material> CreateMaterial(const MaterialSettings& a_Settings) override;
         std::shared_ptr<RenderPass> CreateRenderPass(RenderPassType& a_Type, RenderPipeline& a_Pipeline) override;
-        std::shared_ptr<RenderPipeline> CreatePipeline() override;
+        std::shared_ptr<RenderPipeline> CreatePipeline(const PipelineSettings& a_Settings) override;
         std::shared_ptr<Shader> CreateShader(const ShaderSettings& a_Settings) override;
     };
 

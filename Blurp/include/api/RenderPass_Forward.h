@@ -103,6 +103,9 @@ namespace blurp
     protected:
         bool IsStateValid() override;
 
+        //Get all resources used in this pass that should not be modified while the GPU is busy rendering.
+        std::vector<Lockable*> GetLockableResources() const override;
+
     protected:
         std::shared_ptr<Camera> m_Camera;
         std::shared_ptr<RenderTarget> m_Output;

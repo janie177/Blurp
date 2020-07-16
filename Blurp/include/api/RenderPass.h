@@ -4,6 +4,7 @@
 namespace blurp
 {
     class RenderPipeline;
+    class Lockable;
 
     class RenderPass : public RenderResource
     {
@@ -40,6 +41,12 @@ namespace blurp
         virtual void Reset() = 0;
 
     protected:
+
+        /*
+         * Get a vector containing every resource that should be locked while this pass is executing.
+         * Resources marked as READ_ONLY don't have to be locked.
+         */
+        virtual std::vector<Lockable*> GetLockableResources() const = 0;
 
         /*
          * Checks if the state inside this render target is valid.

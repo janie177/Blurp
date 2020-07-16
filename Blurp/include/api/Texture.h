@@ -1,9 +1,10 @@
 #pragma once
+#include "Lockable.h"
 #include "RenderResource.h"
 
 namespace blurp
 {
-    class Texture : public RenderResource
+    class Texture : public RenderResource, public Lockable
     {
     public:
         Texture(const TextureSettings& a_Settings) : m_Settings(a_Settings) {}
@@ -63,6 +64,9 @@ namespace blurp
         AccessMode GetAccessMode() const;
 
     protected:
+        void OnLock() override;
+        void OnUnlock() override;
+
         TextureSettings m_Settings;
 
     };

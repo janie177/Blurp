@@ -108,9 +108,9 @@ namespace blurp
         return ptr;
     }
 
-    std::shared_ptr<RenderPipeline> RenderResourceManager::CreatePipeline()
+    std::shared_ptr<RenderPipeline> RenderResourceManager::CreatePipeline(const PipelineSettings& a_Settings)
     {
-        auto ptr = m_RenderDevice.CreatePipeline();
+        auto ptr = m_RenderDevice.CreatePipeline(a_Settings);
         m_Resources.emplace_back(ptr);
         ptr->Load(m_Engine);
         return ptr;

@@ -35,4 +35,10 @@ namespace blurp
     {
         return m_Target != nullptr && m_Target->HasColorAttachment();
     }
+
+    std::vector<Lockable*> RenderPass_HelloTriangle::GetLockableResources() const
+    {
+        //TODO get all lockable resources.
+        return std::vector<Lockable*>();
+    }
 }

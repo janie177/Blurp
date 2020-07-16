@@ -120,9 +120,9 @@ namespace blurp
         }
     }
 
-    std::shared_ptr<RenderPipeline> RenderDevice_GL::CreatePipeline()
+    std::shared_ptr<RenderPipeline> RenderDevice_GL::CreatePipeline(const PipelineSettings& a_Settings)
     {
-        return std::make_shared<RenderPipeline_GL>(m_Engine, *this);
+        return std::make_shared<RenderPipeline_GL>(a_Settings, m_Engine, *this);
     }
 
     std::shared_ptr<Shader> RenderDevice_GL::CreateShader(const ShaderSettings& a_Settings)

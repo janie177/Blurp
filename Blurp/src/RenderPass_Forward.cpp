@@ -38,4 +38,20 @@ namespace blurp
         //TODO
         return m_Output != nullptr && m_Camera != nullptr;
     }
+
+    std::vector<Lockable*> RenderPass_Forward::GetLockableResources() const
+    {
+        //TODO return every lockable resource.
+        
+        std::vector<Lockable*> lockables;
+
+        if(m_Output != nullptr)
+        {
+            lockables.emplace_back(m_Output.get());
+            auto vec = m_Output->GetLockableAttachments();
+            lockables.insert(lockables.end(), vec.begin(), vec.end());
+        }
+
+        return lockables;
+    }
 }

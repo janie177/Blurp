@@ -41,6 +41,8 @@ namespace blurp
 
         bool IsStateValid() override;
 
+        std::vector<Lockable*> GetLockableResources() const override;
+
     protected:
         glm::vec4 m_Color;
         std::shared_ptr<RenderTarget> m_Target;
