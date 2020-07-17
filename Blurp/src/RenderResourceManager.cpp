@@ -12,6 +12,7 @@
 #include "RenderPipeline.h"
 #include "SwapChain.h"
 #include "Shader.h"
+#include "GpuBuffer.h"
 
 namespace blurp
 {
@@ -119,6 +120,14 @@ namespace blurp
     std::shared_ptr<Shader> RenderResourceManager::CreateShader(const ShaderSettings& a_Settings)
     {
         auto ptr = m_RenderDevice.CreateShader(a_Settings);
+        m_Resources.emplace_back(ptr);
+        ptr->Load(m_Engine);
+        return ptr;
+    }
+
+    std::shared_ptr<GpuBuffer> RenderResourceManager::CreateGpuBuffer(const GpuBufferSettings& a_Settings)
+    {
+        auto ptr = m_RenderDevice.CreateGpuBuffer(a_Settings);
         m_Resources.emplace_back(ptr);
         ptr->Load(m_Engine);
         return ptr;

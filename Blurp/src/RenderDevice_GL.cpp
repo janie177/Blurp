@@ -10,6 +10,7 @@
 #include "opengl/Texture_GL.h"
 #include "Camera.h"
 #include "Light.h"
+#include "opengl/GpuBuffer_GL.h"
 #include "opengl/RenderPass_Forward_GL.h"
 
 
@@ -128,6 +129,11 @@ namespace blurp
     std::shared_ptr<Shader> RenderDevice_GL::CreateShader(const ShaderSettings& a_Settings)
     {
         return std::make_shared<Shader_GL>(a_Settings);
+    }
+
+    std::shared_ptr<GpuBuffer> RenderDevice_GL::CreateGpuBuffer(const GpuBufferSettings& a_Settings)
+    {
+        return std::make_shared<GpuBuffer_GL>(a_Settings);
     }
 
     void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)

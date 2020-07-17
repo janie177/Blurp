@@ -17,6 +17,7 @@ namespace blurp
     struct SwapChainSettings;
     struct MaterialSettings;
     struct ShaderSettings;
+    struct GpuBufferSettings;
 
     //Resources forward declarations.
     class Window;
@@ -28,6 +29,7 @@ namespace blurp
     class SwapChain;
     class Material;
     class Shader;
+    class GpuBuffer;
 
     class RenderPass;
     class RenderPipeline;
@@ -103,6 +105,11 @@ namespace blurp
          * Create a shader from the given settings.
          */
         virtual std::shared_ptr<Shader> CreateShader(const ShaderSettings& a_Settings) = 0;
+
+        /*
+         * Create a GpuBuffer from the given settings.
+         */
+        virtual std::shared_ptr<GpuBuffer> CreateGpuBuffer(const GpuBufferSettings& a_Settings) = 0;
 
     protected:
         /*

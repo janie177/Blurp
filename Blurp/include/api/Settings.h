@@ -747,4 +747,34 @@ namespace blurp
          */
         bool waitForGpu;
     };
+
+    /*
+     * Settings related to GPU buffers.
+     */
+    struct GpuBufferSettings
+    {
+        GpuBufferSettings()
+        {
+            size = 1024;
+            resizeWhenFull = false;
+            memoryUsage = AccessMode::READ_WRITE;
+        }
+
+        /*
+         * How big should this GPU buffer be?
+         */
+        std::uint32_t size;
+
+        /*
+         * If true, the buffer will silently double in size if size is exceeded.
+         */
+        bool resizeWhenFull;
+
+        /*
+         * How will this GPU buffer be used?
+         * If data is uploaded sporadically, use READ.
+         * If data changes every frame, use READ_WRITE.
+         */
+        AccessMode memoryUsage;
+    };
 }

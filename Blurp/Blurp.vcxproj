@@ -169,6 +169,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
   <ItemGroup>
     <ClInclude Include="include\api\BlurpEngine.h" />
     <ClInclude Include="include\api\Camera.h" />
+    <ClInclude Include="include\api\GpuBuffer.h" />
     <ClInclude Include="include\api\InputQueue.h" />
     <ClInclude Include="include\api\KeyCodes.h" />
     <ClInclude Include="include\api\Light.h" />
@@ -193,6 +194,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\Window.h" />
     <ClInclude Include="include\internal\FileReader.h" />
     <ClInclude Include="include\internal\opengl\GLUtils.h" />
+    <ClInclude Include="include\internal\opengl\GpuBuffer_GL.h" />
     <ClInclude Include="include\internal\opengl\Mesh_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderDevice_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPass_Forward_GL.h" />

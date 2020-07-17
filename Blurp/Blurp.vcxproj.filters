@@ -138,6 +138,12 @@
     <ClInclude Include="include\api\ResourceLock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\internal\opengl\GpuBuffer_GL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\GpuBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">

@@ -358,7 +358,7 @@ int main()
         }
 
         //Update the rotation of the instanced mesh.
-        iMTransform.Rotate(Transform::GetWorldUp(), 0.00005f);
+        iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
         m = iMTransform.GetTransformation();
 
         //Update the rendering pipeline.
