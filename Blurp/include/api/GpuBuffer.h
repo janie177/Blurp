@@ -6,7 +6,15 @@ namespace blurp
 {
     struct GpuBufferRange
     {
+        //Pointer to the start of the data added in the GPU buffer.
+        //This is measured as an offset from the start of the buffer.
         void* start;
+
+        //The total size in bytes of the data between start and end.
+        std::uint64_t size;
+
+        //Pointer to the end of the data added in the GPU buffer.
+        //This is measured as the offset from the start of the buffer.
         void* end;
     };
 
@@ -18,7 +26,8 @@ namespace blurp
         /*
          * Write raw data into this GPU buffer.
          * a_Offset indicates the offset into the GPU buffer to start writing.
-         * a_Size is the amount of elements of type T to upload.
+         * a_Count is the amount of elements of type T to upload.
+         * a_LargestMemberSize is the size in bytes of the largest member of the data type provided.
          * a_Data is a pointer to the first element of type T.
          *
          * Padding is automatically added to ensure hardware compatibility.
@@ -26,7 +35,7 @@ namespace blurp
          * A void pointer indicating the offset into the buffer is returned.
          */
         template<typename T>
-        GpuBufferRange WriteData(void* a_Offset, std::uint32_t a_Size, T* a_Data);
+        GpuBufferRange WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, T* a_Data);
 
     protected:
         /*
@@ -40,16 +49,16 @@ namespace blurp
          *
          * A struct containing pointers to the start and end of the data in the 
          */
-        virtual GpuBufferRange OnWrite(void* a_Offset, std::uint32_t a_Size, std::uint32_t a_PerDataSize, void* a_Data) = 0;
+        virtual GpuBufferRange OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, void* a_Data) = 0;
 
-    private:
+    protected:
         GpuBufferSettings m_Settings;
     };
 
     template <typename T>
-    GpuBufferRange GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Size, T* a_Data)
+    GpuBufferRange GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, T* a_Data)
     {
         assert(!IsLocked() && "Cannot write data into a locked GPUBuffer!");
-        return OnWrite(a_Offset, a_Size, static_cast<std::uint32_t>(sizeof(T)), static_cast<void*>(a_Data));
+        return OnWrite(a_Offset, a_Count, a_LargestMemberSize, static_cast<std::uint32_t>(sizeof(T)), static_cast<void*>(a_Data));
     }
 }

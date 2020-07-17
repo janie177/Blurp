@@ -130,19 +130,14 @@ int main()
     Transform transform;
     transform.SetTranslation({ 0, 0, 0.f });
 
+    const int numSpasmCubes = 1000;
+
     //Init the scene graph.
-    for(int i = 0; i < 10000; ++i)
+    for(int i = 0; i < numSpasmCubes; ++i)
     {
         transforms.emplace_back(transform.GetTransformation());
     }
 
-    //Set the meshes to be drawn.
-    InstanceData data;
-    data.mesh = mesh.get();
-    data.count = transforms.size();
-    data.transform = &transforms[0];
-
-    forwardPass->QueueForDraw(data);
 
 
 
@@ -150,7 +145,7 @@ int main()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 10000000;
+    const int numinstances = 1000;
     const float maxDistance = 20000.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;
@@ -218,11 +213,60 @@ int main()
     Transform iMTransform;
     iMTransform.SetTranslation({ 0.f, 0.f, -40.f });
     glm::mat4 m = iMTransform.GetTransformation();
-    InstanceData iData;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     * GPU BUFFER TESTING.
+     */
+
+    GpuBufferSettings gpuBufferSettings;
+    gpuBufferSettings.size = std::pow(2, 15);
+    gpuBufferSettings.resizeWhenFull = true;
+    gpuBufferSettings.memoryUsage = AccessMode::READ_WRITE;
+    auto gpuBuffer = engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
+
+    forwardPass->SetGpuBuffer(gpuBuffer);
+
+
+    //Draw one instance of the massively instanced mesh.
+    InstanceDrawQueueData iData;
     iData.mesh = instanced.get();
     iData.count = 1;
-    iData.transform = &m;
-    forwardPass->QueueForDraw(iData);
+
+    //Draw many instances of the single cubes that spasm around.
+    InstanceDrawQueueData data;
+    data.mesh = mesh.get();
+    data.count = transforms.size();
+
+
+    //Vector containing all PV multiplied transforms. Will be updated each frame.
+    std::vector<glm::mat4> transformed;
+    transformed.resize(transforms.size());
+
+
+
+
+
+
+
+
+
+
+
 
     /*
      * Main loop. Render as long as the window remains open.
@@ -304,7 +348,7 @@ int main()
         //
 
         //Update the positions of the cubes.
-        for (int i = 0; i < 10000; ++i)
+        for (int i = 0; i < numSpasmCubes; ++i)
         {
             auto& mat = transforms[i];
 
@@ -360,6 +404,33 @@ int main()
         //Update the rotation of the instanced mesh.
         iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
         m = iMTransform.GetTransformation();
+
+
+        /*
+         * Upload the updated matrix data to the GPU.
+         */
+
+        //Reset old data.
+        forwardPass->Reset();
+
+        //Get camera.
+        auto pv = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+
+        //Transforms all matrices with the camera and store them.
+        for (size_t i = 0; i < transforms.size(); ++i)
+        {
+            transformed[i] = pv * transforms[i];
+        }
+
+        //Update the single transform for the 20 million cubes.
+        m = pv * iMTransform.GetTransformation();
+
+        data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transformed.size(), 16, &transformed[0]);
+        iData.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &m);
+
+        //Queue for draw.
+        forwardPass->QueueForDraw(data);
+        forwardPass->QueueForDraw(iData);
 
         //Update the rendering pipeline.
         pipeline->Execute();

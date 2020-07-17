@@ -16,7 +16,7 @@ struct InstanceData
     mat4 transform;
 };
 
-layout (std140, binding = 0) buffer Instances
+layout (std140, location = 0) buffer Instances
 {
     InstanceData data[];
 } aInstances;

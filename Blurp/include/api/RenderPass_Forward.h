@@ -1,19 +1,20 @@
 #pragma once
 #include "RenderTarget.h"
 #include "Camera.h"
+#include "GpuBuffer.h"
 #include "Light.h"
 #include "Mesh.h"
 #include "RenderPass.h"
-#include "Material.h"
 
 namespace blurp
 {
     /*
-     * Passing this struct to the forward renderer guarantees in to be drawn
-     * in the order it was provided.
-     * The order of transforms is also kept.
+     * Object containing information about a draw call.
+     * The mesh specified will be drawn count times.
+     * The data related to this instance will be fetched from the GPU buffer bound.
+     * The pointers to the start and size of the data in the gpu buffer are found in dataRange.
      */
-    struct InstanceData
+    struct InstanceDrawQueueData
     {
         //Pointer to the mesh to draw.
         Mesh* mesh;
@@ -21,8 +22,8 @@ namespace blurp
         //The amount of instances.
         std::uint32_t count;
 
-        //Pointer to the start of the transforms.
-        glm::mat4* transform;
+        //GpuBufferRange object containing pointers to the offsets in the GPU buffer where the data is stored.
+        GpuBufferRange dataRange;
     };
 
     /*
@@ -86,12 +87,17 @@ namespace blurp
         void SetTarget(const std::shared_ptr<RenderTarget>& a_RenderTarget);
 
         /*
+         * Set the GPU buffer to read from in the shaders.
+         */
+        void SetGpuBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
+
+        /*
          * Add one or more meshes to the drawing queue.
          * The InstanceData object contains a pointer to the mesh to use.
          * It also contains the number of instances, and a pointer to the start of the instance data.
          * Data is rendered in the order provided.
          */
-        void QueueForDraw(InstanceData a_Data);
+        void QueueForDraw(InstanceDrawQueueData a_Data);
 
         /*
          * Add a light to be taken into consideration when drawing.
@@ -112,7 +118,9 @@ namespace blurp
 
         //Drawqueue sorted by meshes{materials{transforms}}
         //std::unordered_map<Mesh*, std::unordered_map<Material*, std::vector<glm::mat4>>> m_DrawQueue;
-        std::vector<InstanceData> m_DrawQueue;
+        std::vector<InstanceDrawQueueData> m_DrawQueue;
+
+        std::shared_ptr<GpuBuffer> m_GpuBuffer;
 
         //Light data.
         std::vector<PointLightData> m_PointLights;
