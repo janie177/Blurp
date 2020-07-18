@@ -95,7 +95,7 @@ int main()
 
     //Draw a triangle on the screen. Texture the triangle with the previously rendered texture.
     auto triangleRenderPass2 = pipeline->AppendRenderPass<RenderPass_HelloTriangle>(RenderPassType::RP_HELLOTRIANGLE);
-    window->GetRenderTarget()->SetClearColor({ 1.f, 0.1f, 0.1f,1.f });
+    window->GetRenderTarget()->SetClearColor({ 0.f, 0.1f, 0.1f,1.f });
     triangleRenderPass2->SetTarget(window->GetRenderTarget());
     triangleRenderPass2->SetColor({ 1.f, 0.6f, 0.2f, 1.f });
     triangleRenderPass2->SetTexture(renderTarget->GetColorAttachment(0));

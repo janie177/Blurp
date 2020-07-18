@@ -47,7 +47,7 @@ namespace blurp
         glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxBuffers);
         assert(static_cast<std::uint32_t>(maxBuffers) > m_BufferCounter && ("Too many GpuBuffers! The current GPU does not support this many."));
 
-        glGenBuffers(GL_SHADER_STORAGE_BUFFER, &m_Ssbo);
+        glGenBuffers(1, &m_Ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_Ssbo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BufferBaseBinding, m_Ssbo);
@@ -67,8 +67,8 @@ namespace blurp
     {
         //Alignment for std430 is equal to the largest member size.
         const std::uint64_t alignment = std::min(16u, a_LargestMemberSize);
-        const std::uint64_t startPadding = a_Offset == static_cast<void*>(0) ? 0 : (alignment - (reinterpret_cast<std::uint64_t>(a_Offset) - ((reinterpret_cast<std::uint64_t>(a_Offset) / alignment) * alignment)));
-        const std::uint64_t elementPadding = alignment - (static_cast<std::uint32_t>(a_PerDataSize) - (a_PerDataSize / alignment) * alignment);
+        const std::uint64_t startPadding = (alignment - (reinterpret_cast<std::uint64_t>(a_Offset) & (alignment - 1))) & (alignment - 1);
+        const std::uint64_t elementPadding = (alignment - (a_PerDataSize & (alignment - 1))) & (alignment - 1);
         const std::uint64_t elementPaddedSize = elementPadding +  a_PerDataSize;
         const std::uint64_t sizeFromAlignedStart = elementPaddedSize * a_Count;
 
@@ -95,7 +95,7 @@ namespace blurp
 
                 //Create a new bigger buffer.
                 GLuint tempBuffer;
-                glGenBuffers(GL_SHADER_STORAGE_BUFFER, &tempBuffer);
+                glGenBuffers(1, &tempBuffer);
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, tempBuffer);
                 glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
                 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, tempBuffer);

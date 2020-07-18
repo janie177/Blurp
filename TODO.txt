@@ -1,0 +1,64 @@
+TODO list:
+	API IMPLEMENTATION:
+		- Create GPUBuffer object that allows writing data to the GPU.
+			- Inherits from RenderResource.
+			- RenderPasses can take them in as GPU backed buffer.
+			- Offers function to write data: void* offset Write<T>(offset, amount, T* data).
+			- Offers function to set read offset: void SetReadOffset(void*);
+			
+			- Padding is automatically added. That's why T is required and why the offset is returned. IT doesn't always match the actual size.
+			- When queueing instance data for draw, the offset pointer that was returned is provided.
+			- The render pass can then set the offset to read from the buffer, and the shader will get the right data for each draw call.
+			- A single buffer can be used for multiple shaders this way.
+			- Construct the buffer with: max size (0 for unbound), read/write mode (DYNAMIC or STATIC draw)
+			
+			- OpenGL implementation:
+				- SSBO
+				- std430 (16 byte alignment I think but not sure)
+				- glBindBufferRange(TARGET, shaderBlockBindingID, ssboID, offset(byte), size(byte)) <- Tells the shader to read from the ssbo from the specified offset.
+					- This is called for each draw call and the offset is set to the instance data provided offset.
+			
+		- Window resize callback.
+			
+		- Lockable interface.
+			- Lock, Unlock functions.
+			- Thread safety through mutexes.
+			- Can be implemented by specific Resources (texture, rendertarget).
+			- Ensures that a resources state can only be changed by one pipeline at a time.
+			- Make an equivalent LockGuard class that holds a lockable object. Use RAII to lock and unlock.
+			- Inside RenderPipeline, keep a list of all active locks. On Execute(), gather all lockable resources from each render pass in the pipeline. Then create locks for them.
+			- Once the pipeline finishes executing, unlock all resources. The GPU may still be busy executing the command list. use IsDoneExecuting to manually unlock.
+				- Specify on pipeline creation if the pipeline should unlock and if the CPU should be stalled before returning from Execute(). If stalled, auto unlock.
+			- When execute is called, destroy all existing locks.
+			- When a lock is created for a resource that already had a lock, throw an exception and stop execution.
+			- Resources that allow manual user input (Write function of GPUBuffer) will have to be implemented to ensure that they are NOT locked when this is called.
+
+		- Implement the material class (different textures, attributes). Logic for animations and such are performed outside of the material itself.
+		
+	API THREAD SAFETY:
+		- Locking mechanism for read/write mode switching and ensuring only a single pipeline changes state at a time.
+			- Add Lock() function to render target and texture (rendertarget calls it on attachments).
+			- Inside renderpasses, call lock on resources that are bound. This takes the pipeline ID in.
+			- When another pipeline tries to lock a resource, it will know it's already locked and can throw an error.
+			- Locking READ_ONLY resources would not be necessary. 
+
+	RENDERING PIPELINE
+		DEBUG TOOLS:
+			- 2D renderpass for efficient 2D drawing.
+			- Line renderpass for line drawing.
+			- Geometry renderpass for drawing shapes (spheres, cubes, cones etc.).
+			
+		GRAPHICS PIPELINE:
+			- Clearing render targets.
+			- Draw forward geometry with lights, materials and shadowmaps (just geometry first).
+			- Create shadowmap for lights with a chosen set of geometry (cubemap for point lights, 2D texture for directional lights).
+			- Drawing cubemap for the given set of geometry.
+			- Rendering the skybox from a cubemap.
+			
+		LOW PRIORITY GRAPHICS:
+			- Deferred rendering pipeline.
+			- Animation support (skeletal mesh class and animation pipeline).
+			- Post processing (ssao, dof, motion blur).
+			- GPU based particle system.
+			- Fast renderer for lots of geometry (bundling materials and minimizing draw calls).
+	
