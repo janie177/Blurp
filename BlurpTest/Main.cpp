@@ -145,8 +145,8 @@ int main()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 1000;
-    const float maxDistance = 20000.f;
+    const int numinstances = 5000000;
+    const float maxDistance = 200000.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;
     const float minScale = 0.5f;

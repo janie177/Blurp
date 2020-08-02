@@ -62,22 +62,22 @@ namespace blurp
         return true;
     }
 
-    GpuBufferRange GpuBuffer_GL::OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize,
+    GpuBufferView GpuBuffer_GL::OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize,
         std::uint32_t a_PerDataSize, void* a_Data)
     {
         //Alignment for std430 is equal to the largest member size.
-        const std::uint64_t alignment = std::min(16u, a_LargestMemberSize);
-        const std::uint64_t startPadding = (alignment - (reinterpret_cast<std::uint64_t>(a_Offset) & (alignment - 1))) & (alignment - 1);
-        const std::uint64_t elementPadding = (alignment - (a_PerDataSize & (alignment - 1))) & (alignment - 1);
-        const std::uint64_t elementPaddedSize = elementPadding +  a_PerDataSize;
-        const std::uint64_t sizeFromAlignedStart = elementPaddedSize * a_Count;
+        const std::uintptr_t alignment = std::min(16u, a_LargestMemberSize);
+        const std::uintptr_t startPadding = (alignment - (reinterpret_cast<std::uintptr_t>(a_Offset) & (alignment - 1))) & (alignment - 1);
+        const std::uintptr_t elementPadding = (alignment - (a_PerDataSize & (alignment - 1))) & (alignment - 1);
+        const std::uintptr_t elementPaddedSize = elementPadding +  a_PerDataSize;
+        const std::uintptr_t sizeFromAlignedStart = elementPaddedSize * a_Count;
 
 
         //The size of the newly added data when padded.
-        const std::uint64_t paddedSize = startPadding + (a_Count * elementPaddedSize);
+        const std::uintptr_t paddedSize = startPadding + (a_Count * elementPaddedSize);
 
         //The total size required with the new data.
-        const auto totalSize = reinterpret_cast<std::uint64_t>(a_Offset) + paddedSize;
+        const auto totalSize = reinterpret_cast<std::uintptr_t>(a_Offset) + paddedSize;
 
         //Overwriting buffer limits.
         if (totalSize > m_Settings.size)
@@ -129,15 +129,15 @@ namespace blurp
         for(std::uint32_t i = 0; i < a_Count; ++i)
         {
             const auto index = startPadding + (i * elementPaddedSize);
-            memcpy(static_cast<void*>(&paddedData[index]), reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(a_Data) + (i * static_cast<std::uint64_t>(a_PerDataSize))), a_PerDataSize);
+            memcpy(static_cast<void*>(&paddedData[index]), reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(a_Data) + (i * static_cast<std::uintptr_t>(a_PerDataSize))), a_PerDataSize);
         }
 
         //Upload the padded data to the GPU.
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, reinterpret_cast<std::uint64_t>(a_Offset), paddedSize, &paddedData[0]);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, reinterpret_cast<std::uintptr_t>(a_Offset), paddedSize, &paddedData[0]);
 
         //Unbind the buffer.
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-        return GpuBufferRange{reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(a_Offset) + startPadding), sizeFromAlignedStart, reinterpret_cast<void*>(totalSize)};
+        return GpuBufferView{reinterpret_cast<std::uintptr_t>(a_Offset) + startPadding, sizeFromAlignedStart, elementPaddedSize, totalSize};
     }
 }

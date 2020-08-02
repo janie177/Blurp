@@ -35,6 +35,9 @@ namespace blurp
          */
         void SetTarget(std::shared_ptr<RenderTarget> a_Target);
 
+        /*
+         * For triangle drawing this doesn't do anything.
+         */
         void Reset() override;
 
     protected:

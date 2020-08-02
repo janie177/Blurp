@@ -1,4 +1,147 @@
 TODO list:
+	Passes:
+		ComputeMatrices:
+			Input:
+				- GpuBuffer in
+				- {GpuBufferView inputView, mat4 transform, uintptr_t offset}[] toTransform
+				- GpuBuffer out
+			Output:
+				- GpuBufferView[]& output
+			Process:
+				- Assert that output size is equal to input toTransform size.
+				- Read from the input buffer at each input view. Transform it with the given mat4 and store it in the output. Put views at matching index with the offset into the output buffer specified.
+
+		Shadowmap:
+			Input:
+				- {Mesh, GpuBufferView transforms}[]
+				- Light[]
+			Output:
+				- Tex2D || Tex2D[] || Tex2DCube || Tex2DCube[]
+			Process:
+				- Bind the output to a render target. Transform the matrices on the GPU. Draw depth into output texture.
+				- Draw to 2d/cube | single/array.
+				
+		Forward:
+			Input:
+				- {Mesh, Transform[], InstanceData[]}[]
+				- {Light, shadowmap}[]
+				- Camera
+				- AmbientLight;
+			Output:
+				- RenderTarget
+			Process:
+				- Upload every light. Bind mesh. Transform on GPU into empty buffer. Bind buffer and instance data etc. Draw and perform light calculations. Order of input is kept.
+				
+		Clear:
+			Input:
+				- {RenderTarget, clearflag}[]
+			
+			Output:
+				- Nothing. 
+			Process:
+				- Clears all buffers attached to the render target. Flags (depth, attachment1, attachment2 etc.) determine which are cleared.
+
+		Blit:
+			Input:
+				- {RenderTarget, RenderTarget, BlendMode, SrcRect, DstRect, Attachment[], DepthStencil}[]
+			Output:
+				- Nothing
+			Process:
+				- Copy contents of A into B. Blend pixels with the given BlendMode.
+				- If multiple attachments exist, Attachment[] specifies which ones will be copied over. DepthStencil determines if the depth stencil will also be copied.
+				
+		DOF:
+			Input:
+				- {RenderTarget, RenderTarget, strength, focalPoint}
+			Output:
+				- Nothing
+			Process:
+				- Copy src into destination and apply a blur effect that changes based on the depth distance from the focal point depth.
+				- If src and dest are the same, use a temporary buffer or something to store the data in while it's being processed.
+				
+	Conclusion:
+		- Transforms can be uploaded once to a single GpuBuffer. Shadowmap and Forward will use the same GpuBufferViews. They transform them against different pv matrices.
+		- InstanceData is uploaded separate from the transforms. It has a separate GpuBuffer.
+		- If the set of rendered geometry changes, the GpuBuffers have to be re-uploaded.
+		
+		- GpuBufferView should offer a stride to then know where a specific element on the GPU resides to allow partial overrides.
+		
+	MemoryAccess:
+		- CPU_R (The CPU can read and the GPU can write).
+		- CPU_W (The CPU can write and the GPU can read).
+		- GPU	(The CPU cannot access this memory at all).
+		
+	Rendering of a single frame breakdown:
+		Setup:
+			- Create GpuBuffer for uploading (MemoryAccess::CPU_W) to store transforms in.
+			- Create a GpuBuffer that only the GPU can access (MemoryAccess::GPU) to store output from the compute shader in.
+			- Create a pipeline that has a ComputeTransformPass, ShadowMap pass and Forward pass.
+			- Upload all transforms of the entire scene into the upload buffer contiguously.
+			- Let the ComputeTransformPass calculate the MVP for each, and store it in the GPU only buffer.
+			- Do this for every light (the input for compute accepts an array which will perform multiple calculations.
+			- Calculate the views for each lights matrices for the geometry that should cast a shadow.
+			- Pass each light in combination with the transform views of the matrices and the meshes + instances to the ShadowMapPass.
+			- Generate a shadow map for each light.
+			- Pass the shadow maps, lights, transformed matrices and other instance data to the forward pass.
+			- Draw all geometry instanced with the right views bound. 
+			- Pray that this all works.
+			
+	Drawing multiple lights:
+		- Put if/else in shader that checks: if(shadowMapPresent && shadowMap.getShadow(x,y)) to determine if in shadow. The branch is always required anyways.
+		- Let the user upload light data to a GpuBuffer and set the view for them (separate for spot/point/directional). Set ambient as a uniform variable.
+		- Repurpose MeshShaderCache to a generic shader cache that can take uint16/32/64_t as key. Add defines to ForwardPass for each possible shader setting (light/shadowmap/shadowmaparray, material).
+		- When execute is called on ForwardPass, create the key for the current settings to get the right shader from the registry. Combine AttributeSettings with the shader specific defines to make the key.
+		- Render the scene by iterating over the lights of each type, and checking if a shadowmap is present. Then if not in shadow do shading and add ambient shading to it.
+		- Add MaterialID to mesh settings.
+		
+	Materials:
+		
+		MaterialAttribute:
+			- DIFFUSE(RGB), NORMAL(XYZ), EMISSIVE(RGB), {Occlusion(R), Metallic(G), Roughness(B), Height(A)}
+			- Each attribute has a single bit, and they can be combined into a bitmask.
+			- Occlusion/Metallic/Roughness/Height are stored in a single texture.
+
+		Material:
+			- Contains MaterialAttribute mask to show which textures are enabled.
+			- Can be bound to shader with matching MATERIAL_SINGLE preprocessor definition.
+			- Each material texture can be set using a function. That function then automatically enables the right bitmask flag.
+			- Setting textures etc can be done in the MaterialSettings object. This can then be set for the Material in the contructor or at runtime to allow for modifying materials.
+			
+		MaterialBatch:
+			- Multiple materials in a single object. Amount is determined on creation. All are the same dimensions.
+			- Contains material data array that can be uploaded to a GpuBuffer.
+			- Contains a tex2darray containing every material texture. Tightly packed, order always the same dependent on which textures are enabled.
+			- In the shader, dynamic incrementing of index will have to be used to obtain the index of the right texture.
+			- Has a mask that is the same for every material in the array.
+			- Can be bound to the shader with matching MATERIAL_BATCH preprocessor definition.
+			- Mesh will contain materialID per vertex, which is used to fetch the right texture in the shader.
+			- Validate that materialID attribute is enabled when this is used to draw a mesh.
+			
+			- MaterialBatch data can be provided to the resource through a MaterialBatchSettings object.
+			- It cannot be altered at runtime, unlike regular single materials.
+			
+		- Possibly use inheritance to have MaterialBatch and MaterialSingle inherit from Material. Enumeration type can be used to determine how to bind and which shader to use.
+		
+		RenderState:
+			- Culling, cullface, winding order, blend mode and depth testing can all be enabled or disabled.
+			- Each mesh might have different settings.
+			- Create an object that contains these settings (that can be mapped to OpenGL or D3D).
+			- In the renderer, specify the state for each draw call.
+			
+	ShaderRegistry:
+		- Key (16/32/64 bit)
+		- Register Bit/String combination.
+		- Get(Key) -> Checks each bit of key, then finds the matching string and adds it to the shader as preprocessor to then compile. Or retrieves already loaded shader.
+		- Maybe have a global instance of this for each renderer type to prevent double loading of the same shader.
+		- These can be stored inside the api abstract part of the framework. Implementation is not different per API.
+			
+			
+	Lockable:
+		- RecursiveLock function that locks internal resources. This is useful for material and render target.
+		
+
+
+
 	API IMPLEMENTATION:
 		- Create GPUBuffer object that allows writing data to the GPU.
 			- Inherits from RenderResource.

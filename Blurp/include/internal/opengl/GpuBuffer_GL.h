@@ -19,7 +19,7 @@ namespace blurp
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
-        GpuBufferRange OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, void* a_Data) override;
+        GpuBufferView OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, void* a_Data) override;
     private:
         GLuint m_Ssbo;
         std::uint32_t m_BufferBaseBinding;

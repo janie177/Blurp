@@ -22,8 +22,8 @@ namespace blurp
         //The amount of instances.
         std::uint32_t count;
 
-        //GpuBufferRange object containing pointers to the offsets in the GPU buffer where the data is stored.
-        GpuBufferRange dataRange;
+        //GpuBufferView object containing pointers to the offsets in the GPU buffer where the data is stored.
+        GpuBufferView dataRange;
     };
 
     /*

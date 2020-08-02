@@ -75,7 +75,7 @@ namespace blurp
             }
 
             //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, glGpuBuffer->GetBufferBaseBinding(), glGpuBuffer->GetBufferId(), reinterpret_cast<GLintptr>(instanceData.dataRange.start), instanceData.dataRange.size);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, glGpuBuffer->GetBufferBaseBinding(), glGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.dataRange.start), instanceData.dataRange.size);
 
             //Set the number of instances from the mesh itself in the uniform.
             glUniform1i(0, mesh->GetInstanceCount());
