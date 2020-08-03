@@ -12,13 +12,35 @@ namespace blurp
     bool RenderPass_Forward_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
         auto shaderPath = a_BlurpEngine.GetEngineSettings().shadersPath + "opengl/";
+        auto vertex =  "Default_Forward.vs";
+        auto fragment = "Default_Forward.fs";
 
-        MeshShaderPaths paths;
-        paths.vertex = shaderPath + "Default_Forward.vs";
-        paths.fragment = shaderPath + "Default_Forward.fs";
+        FileReader vertexReader(shaderPath + vertex);
+        FileReader fragmentReader(shaderPath + fragment);
 
+        if(!vertexReader.Open() || !fragmentReader.Open())
+        {
+            throw std::exception("Could not find forward shaders at path specified.");
+        }
+
+        auto vertexSrc = vertexReader.ToArray();
+        auto fragmentSrc = fragmentReader.ToArray();
+
+        ShaderSettings sSettings;
+        sSettings.vertexShaderSource = vertexSrc.get();
+        sSettings.fragmentShaderSource = fragmentSrc.get();
+        sSettings.type = ShaderType::GRAPHICS;
+
+        //Preprocessor definitions at their respective bit indices.
         std::vector<std::string> definitions;
-        m_MeshShaderRegistry.Init(a_BlurpEngine.GetResourceManager(), definitions, paths);
+
+        //Add every mesh bitmask to it as the first set of bits.
+        for(auto& attrib : VERTEX_ATTRIBUTES)
+        {
+            definitions.emplace_back(VertexSettings::GetVertexAttributeInfo(attrib).defineName);
+        }
+
+        m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
         return true;
     }
@@ -67,7 +89,7 @@ namespace blurp
             {
                 //Bind the new shader.
                 mask = mesh->GetVertexAttributeMask();
-                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_MeshShaderRegistry.GetShader(mesh->GetVertexAttributeMask()));
+                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(mesh->GetVertexAttributeMask()));
                 glUseProgram(currentShader->GetProgramId());
 
                 //Link the shader to the ssbo binding point.

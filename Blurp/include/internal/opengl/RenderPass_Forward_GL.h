@@ -1,7 +1,8 @@
 #pragma once
 
 #include "RenderPass_Forward.h"
-#include "MeshShaderCache.h"
+#include "ShaderCache.h"
+#include "Settings.h"
 
 namespace blurp
 {
@@ -19,6 +20,7 @@ namespace blurp
         void Execute() override;
 
     private:
-        MeshShaderCache m_MeshShaderRegistry;
+        //Shader cache that compiles shaders dynamically based on required attributes.
+        ShaderCache<VertexAttribute, std::uint16_t> m_ShaderCache;
     };
 }

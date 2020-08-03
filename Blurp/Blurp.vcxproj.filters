@@ -129,9 +129,6 @@
     <ClInclude Include="include\internal\opengl\RenderPass_Forward_GL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\api\MeshShaderCache.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\api\Lockable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -142,6 +139,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\api\GpuBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\ShaderCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -222,9 +222,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RenderPass_Forward_GL.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\MeshShaderCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ResourceLock.cpp">

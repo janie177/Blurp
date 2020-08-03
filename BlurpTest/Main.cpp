@@ -107,7 +107,7 @@ int main()
     CameraSettings camSettings;
     camSettings.width = window->GetDimensions().x;
     camSettings.height = window->GetDimensions().y;
-    camSettings.farPlane = 100000000000.f;
+    camSettings.farPlane = 100000000000000.f;
     auto camera = engine.GetResourceManager().CreateCamera(camSettings);
     auto forwardPass = pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     forwardPass->SetCamera(camera);
@@ -145,7 +145,7 @@ int main()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 5000000;
+    const int numinstances = 100000;
     const float maxDistance = 200000.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;

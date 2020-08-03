@@ -9,6 +9,7 @@ TODO list:
 				- GpuBufferView[]& output
 			Process:
 				- Assert that output size is equal to input toTransform size.
+				- Ensure that no overflow can happen when writing to an output buffer.
 				- Read from the input buffer at each input view. Transform it with the given mat4 and store it in the output. Put views at matching index with the offset into the output buffer specified.
 
 		Shadowmap:
@@ -61,7 +62,7 @@ TODO list:
 				
 	Conclusion:
 		- Transforms can be uploaded once to a single GpuBuffer. Shadowmap and Forward will use the same GpuBufferViews. They transform them against different pv matrices.
-		- InstanceData is uploaded separate from the transforms. It has a separate GpuBuffer.
+		- InstanceData is uploaded separate from the transforms. It has a separate GpuBuffer possibly. Could also share one if proper management of memory is done.
 		- If the set of rendered geometry changes, the GpuBuffers have to be re-uploaded.
 		
 		- GpuBufferView should offer a stride to then know where a specific element on the GPU resides to allow partial overrides.
