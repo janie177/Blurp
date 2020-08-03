@@ -6,22 +6,22 @@ namespace blurp
 {
     static constexpr GLenum MAG_TYPES[]{ GL_NEAREST, GL_LINEAR };
     static constexpr GLenum TEXTURE_TYPES[]{ GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_2D_ARRAY };
-    static constexpr GLenum MIN_TYPES[]{ GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR};
+    static constexpr GLenum MIN_TYPES[]{ GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR };
     static constexpr GLenum WRAP_TYPES[]{ GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT, GL_REPEAT };
 
-    static constexpr GLenum PIXEL_FORMATS[]{ GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL};
+    static constexpr GLenum PIXEL_FORMATS[]{ GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL };
     static constexpr GLenum DATA_FORMATS[]{ GL_FLOAT, GL_INT, GL_UNSIGNED_INT, GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT };
+    static constexpr GLenum MEMORY_USAGE[]{ GL_DYNAMIC_READ, GL_DYNAMIC_DRAW, GL_STATIC_DRAW};
 
-    static constexpr GLenum MEMORY_MODES[]{GL_STATIC_DRAW, GL_DYNAMIC_DRAW};
 
     /*
      * Get the OpenGL enum type for access modes.
      * Returns STATIC_DRAW or DYNAMIC_DRAW.
      * These are used to determine in which type of video memory something should reside.
      */
-    inline constexpr GLenum ToGL(AccessMode a_Mode)
+    inline constexpr GLenum ToGL(MemoryUsage a_Usage)
     {
-        return MEMORY_MODES[static_cast<int>(a_Mode)];
+        return MEMORY_USAGE[static_cast<int>(a_Usage)];
     }
 
     /*

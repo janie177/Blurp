@@ -53,8 +53,6 @@ namespace blurp
         if(m_Output != nullptr)
         {
             lockables.emplace_back(m_Output.get());
-            auto vec = m_Output->GetLockableAttachments();
-            lockables.insert(lockables.end(), vec.begin(), vec.end());
         }
 
         if(m_GpuBuffer != nullptr)

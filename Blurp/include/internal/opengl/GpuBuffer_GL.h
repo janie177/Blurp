@@ -20,6 +20,10 @@ namespace blurp
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
         GpuBufferView OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, void* a_Data) override;
+
+    public:
+        std::vector<Lockable*> GetRecursiveLockables() override;
+
     private:
         GLuint m_Ssbo;
         std::uint32_t m_BufferBaseBinding;

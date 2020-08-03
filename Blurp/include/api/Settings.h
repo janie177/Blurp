@@ -3,9 +3,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #define NUM_VERTEX_ATRRIBS 11
-#include <unordered_map>
+#define NUM_MATERIAL_ATRRIBS 7
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -90,9 +91,30 @@ namespace blurp
         REPEAT
     };
 
+
+    /*
+     * Enumeration that can be used to specify how memory will be accessed.
+     * CPU_R means that the memory should be optimized for CPU reading. GPU access is not optimal. Used for reading back compute output.
+     * CPU_W means that the memory should be optimized for CPU writing. GPU access is not optimal. Used for frequently changing data like transforms.
+     * GPU means that the memory should be optimized for GPU access. CPU access will be slow. Used for data that does not change often.
+     *
+     * Note: This does not prevent the CPU or GPU from accessing the memory. It just allows for the memory to be faster when used in this scenario.
+     */
+    enum class MemoryUsage
+    {
+        CPU_R,
+        CPU_W,
+        GPU
+    };
+
+    /*
+     * Enumeration that can be used to specify whether a resource is mutable or not.
+     * READ_ONLY means a resource will never be written to once it is uploaded.
+     * READ_WRITE means that a resource may change, and requires locking and state tracking.
+     */
     enum class AccessMode
     {
-        READ,
+        READ_ONLY,
         READ_WRITE
     };
 
@@ -264,7 +286,8 @@ namespace blurp
             minFilter = MinFilterType::LINEAR;
             magFilter = MagFilterType::LINEAR;
             wrapMode = WrapMode::REPEAT;
-            memoryAccess = AccessMode::READ;
+            memoryUsage = MemoryUsage::GPU;
+            memoryAccess = AccessMode::READ_ONLY;
             numMipMaps = 0;
 
             textureCubeMap.data[0] = nullptr;
@@ -305,6 +328,10 @@ namespace blurp
 
         //How will this texture be accessed? If READ, can not be set as render target.
         AccessMode memoryAccess;
+
+        //How will the memory be used? GPU means only the GPU reads and writes from this texture.
+        //CPU modes imply that the CPU either often reads and writes to this texture.
+        MemoryUsage memoryUsage;
 
         //Raw texture data pointer. Leave this as nullptr to not upload any data.
         union
@@ -609,7 +636,8 @@ namespace blurp
     {
         MeshSettings()
         {
-            usage = AccessMode::READ;
+            usage = MemoryUsage::GPU;
+            access = AccessMode::READ_ONLY;
             vertexData = nullptr;
             indexData = nullptr;
             numIndices = 0;
@@ -621,11 +649,19 @@ namespace blurp
         //Which vertex attributes are enabled for this mesh?
         VertexSettings vertexSettings;
 
-        //The memory access mode for this mesh.
-        //This is not enforced, but should be carefully considered.
-        //If a mesh does not change for more than a single frame, READ is recommended.
-        //If a mesh data is updated every frame, then READ_WRITE should be used.
-        AccessMode usage;
+        /*
+         * How will the memory be used?
+         * CPU_R means the CPU will often read from this memory.
+         * CPU_W means the CPU will often write to this memory.
+         * GPU means the CPU does not often interact with this memory.
+         */
+        MemoryUsage usage;
+
+        /*
+         * How will this mesh be accessed? READ_ONLY means the mesh will never be modified after initially uploading data.
+         * READ_WRITE means the data can be altered.
+         */
+        AccessMode access;
 
         //The raw data of this mesh in the provided vertex format.
         //Offsets and strides between attributes are configured in vertexSettings.
@@ -720,7 +756,6 @@ namespace blurp
             fragmentShaderSource = nullptr;
             computeShaderSource = nullptr;
 
-
             type = ShaderType::GRAPHICS;
         }
 
@@ -767,7 +802,7 @@ namespace blurp
         {
             size = 1024;
             resizeWhenFull = false;
-            memoryUsage = AccessMode::READ_WRITE;
+            memoryUsage = MemoryUsage::CPU_W;
         }
 
         /*
@@ -782,9 +817,10 @@ namespace blurp
 
         /*
          * How will this GPU buffer be used?
-         * If data is uploaded sporadically, use READ.
-         * If data changes every frame, use READ_WRITE.
+         * If data is often uploaded from the GPU between frames, use GPU_W.
+         * If data is not changed often, use GPU.
+         * If the CPU has to read the data often, use CPU_R.
          */
-        AccessMode memoryUsage;
+        MemoryUsage memoryUsage;
     };
 }

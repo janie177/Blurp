@@ -1,4 +1,114 @@
 TODO list:
+	[X] Create AccessMode mapping and integrate it in existing systems.
+	
+	[ ] Create Material and MaterialBatch. Mask and attributes and Settings objects. Functions to provide data and all that. Same as VertexAttribute with define names and all those.
+		Combined textures should only enable the parts that are present. Asserts in place to make sure the formats are correct.
+		
+	[ ] Implement OnLock and OnUnlock in the lockable interfaces that in turn need unlocking.
+	
+	[ ] Add a callback to the window class that is called when the window resizes.
+	
+	[ ] Update forward render pass to use materials and correctly generate shaders.
+	
+	[ ] Add a static light to the shader for temporary light calculations.
+	
+	[ ] Update forward shaders to use materials with ifdefs and attributs. 
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	[ ] d
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	Passes:
 		ComputeMatrices:
 			Input:
@@ -64,7 +174,6 @@ TODO list:
 		- Transforms can be uploaded once to a single GpuBuffer. Shadowmap and Forward will use the same GpuBufferViews. They transform them against different pv matrices.
 		- InstanceData is uploaded separate from the transforms. It has a separate GpuBuffer possibly. Could also share one if proper management of memory is done.
 		- If the set of rendered geometry changes, the GpuBuffers have to be re-uploaded.
-		
 		- GpuBufferView should offer a stride to then know where a specific element on the GPU resides to allow partial overrides.
 		
 	MemoryAccess:
@@ -90,8 +199,9 @@ TODO list:
 	Drawing multiple lights:
 		- Put if/else in shader that checks: if(shadowMapPresent && shadowMap.getShadow(x,y)) to determine if in shadow. The branch is always required anyways.
 		- Let the user upload light data to a GpuBuffer and set the view for them (separate for spot/point/directional). Set ambient as a uniform variable.
+		- Store light data in a GPU friendly format (struct). Let each light class type have a GPU friendly format struct that can be made for the light. These can then be stored on the GPU directly.
 		- Repurpose MeshShaderCache to a generic shader cache that can take uint16/32/64_t as key. Add defines to ForwardPass for each possible shader setting (light/shadowmap/shadowmaparray, material).
-		- When execute is called on ForwardPass, create the key for the current settings to get the right shader from the registry. Combine AttributeSettings with the shader specific defines to make the key.
+		- When execute is called on ForwardPass, create the key for the current settings to get the right shader from the registry. Combine AttributeSettings with the shader specific defines to make the key. Also material.
 		- Render the scene by iterating over the lights of each type, and checking if a shadowmap is present. Then if not in shadow do shading and add ambient shading to it.
 		- Add MaterialID to mesh settings.
 		

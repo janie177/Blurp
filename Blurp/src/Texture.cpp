@@ -49,11 +49,16 @@ namespace blurp
 
     void Texture::OnLock()
     {
-        assert(m_Settings.memoryAccess != AccessMode::READ && "Locking read only resource. This is not necessary and should not happen.");
+        assert(m_Settings.memoryAccess != AccessMode::READ_ONLY && "Locking read only resource. This is not necessary and should not happen.");
     }
 
     void Texture::OnUnlock()
     {
 
+    }
+
+    std::vector<Lockable*> Texture::GetRecursiveLockables()
+    {
+        return std::vector<Lockable*>();
     }
 }

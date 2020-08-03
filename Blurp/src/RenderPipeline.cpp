@@ -7,6 +7,7 @@
 #include "ResourceLock.h"
 #include <unordered_set>
 #include "Settings.h"
+#include "Lockable.h"
 
 namespace blurp
 {
@@ -39,6 +40,27 @@ namespace blurp
                 for(auto& ptr : resources)
                 {
                     lockedResources.insert(ptr);
+
+                    //Add all recursive lockables recursively.
+                    std::vector<Lockable*> vec = ptr->GetRecursiveLockables();
+
+                    auto size = static_cast<int>(vec.size());
+
+                    for(int i = 0; i < size; ++i)
+                    {
+                        //First add the current lockable to the resource lock list.
+                        lockedResources.insert(vec[i]);
+
+                        //Get the recursive of the recursive.
+                        auto nestedVec = vec[i]->GetRecursiveLockables();
+
+                        //If there is more recursion, add each to the vector. Increment loop size.
+                        if(!nestedVec.empty())
+                        {
+                            vec.insert(vec.end(), nestedVec.begin(), nestedVec.end());
+                            size += static_cast<int>(nestedVec.size());
+                        }
+                    }
                 }
             }
         }

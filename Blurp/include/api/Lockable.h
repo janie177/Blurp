@@ -1,5 +1,6 @@
 #pragma once
 #include <mutex>
+#include <vector>
 
 namespace blurp
 {
@@ -19,6 +20,11 @@ namespace blurp
          */
         bool IsLocked() const;
 
+        /*
+         * Get a vector of pointers to all lockables that need to be recursively locked.
+         */
+        virtual std::vector<Lockable*> GetRecursiveLockables() = 0;
+
     protected:
         /*
          * Lock this resource.
@@ -32,6 +38,7 @@ namespace blurp
 
         /*
          * Called when this resource is locked.
+         * Returns a vector with pointers to all internal resources that need to be locked.
          */
         virtual void OnLock() = 0;
 

@@ -140,4 +140,10 @@ namespace blurp
 
         return GpuBufferView{reinterpret_cast<std::uintptr_t>(a_Offset) + startPadding, sizeFromAlignedStart, elementPaddedSize, totalSize};
     }
+
+    std::vector<Lockable*> GpuBuffer_GL::GetRecursiveLockables()
+    {
+        //Return an empty vector because there's no internal lockables.
+        return std::vector<Lockable*>();
+    }
 }

@@ -90,28 +90,6 @@ namespace blurp
         return m_AllowAttachments;
     }
 
-    std::vector<Lockable*> RenderTarget::GetLockableAttachments()
-    {
-        std::vector<Lockable*> lockables;
-
-        //Add the color attachments that can be written into.
-        for(auto& attachment : m_ColorAttachments)
-        {
-            if(attachment != nullptr && attachment->GetAccessMode() != AccessMode::READ)
-            {
-                lockables.emplace_back(attachment.get());
-            }
-        }
-
-        //Add the depth stencil attachment to the lockables.
-        if(m_DepthStencilAttachment != nullptr && m_DepthStencilAttachment->GetAccessMode() != AccessMode::READ)
-        {
-            lockables.emplace_back(m_DepthStencilAttachment.get());
-        }
-
-        return lockables;
-    }
-
     void RenderTarget::OnLock()
     {
 
@@ -120,5 +98,29 @@ namespace blurp
     void RenderTarget::OnUnlock()
     {
 
+    }
+
+    std::vector<Lockable*> RenderTarget::GetRecursiveLockables()
+    {
+        //Vector containing all lockables inside this resource that also need locking.
+        std::vector<Lockable*> lockables;
+
+        //Recursively lock all internal attachments.
+        //Add the color attachments that can be written into.
+        for (auto& attachment : m_ColorAttachments)
+        {
+            if (attachment != nullptr && attachment->GetAccessMode() != AccessMode::READ_ONLY)
+            {
+                lockables.emplace_back(attachment.get());
+            }
+        }
+
+        //Add the depth stencil attachment to the lockables.
+        if (m_DepthStencilAttachment != nullptr && m_DepthStencilAttachment->GetAccessMode() != AccessMode::READ_ONLY)
+        {
+            lockables.emplace_back(m_DepthStencilAttachment.get());
+        }
+
+        return lockables;
     }
 }

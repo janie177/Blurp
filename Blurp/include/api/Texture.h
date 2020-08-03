@@ -63,9 +63,13 @@ namespace blurp
          */
         AccessMode GetAccessMode() const;
 
+        std::vector<Lockable*> GetRecursiveLockables() override;
+
     protected:
         void OnLock() override;
         void OnUnlock() override;
+
+    protected:
 
         TextureSettings m_Settings;
 
