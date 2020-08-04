@@ -4,7 +4,7 @@ TODO list:
 	[ ] Create Material and MaterialBatch. Mask and attributes and Settings objects. Functions to provide data and all that. Same as VertexAttribute with define names and all those.
 		Combined textures should only enable the parts that are present. Asserts in place to make sure the formats are correct.
 		
-	[ ] Implement OnLock and OnUnlock in the lockable interfaces that in turn need unlocking.
+	[X] Implement OnLock and OnUnlock in the lockable interfaces that in turn need unlocking. (This is not possible because the pipeline itself needs to do the locking).
 	
 	[ ] Add a callback to the window class that is called when the window resizes.
 	

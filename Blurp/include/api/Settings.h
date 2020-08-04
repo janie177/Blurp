@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #define NUM_VERTEX_ATRRIBS 11
-#define NUM_MATERIAL_ATRRIBS 7
+#define NUM_MATERIAL_ATRRIBS 13
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -152,12 +152,21 @@ namespace blurp
     {
         FLOAT,
         INT,
-        UINT,
         BYTE,
-        UBYTE,
         SHORT,
+        UINT,
+        UBYTE,
         USHORT
     };
+
+    /*
+     * Helper function to see if a DataType is signed or unsigned.
+     */
+    bool IsSigned(DataType a_Type)
+    {
+        //NOTE: This only works if the order of DataType remains the same with all unsigned numbers last.
+        return a_Type < DataType::UINT;
+    }
 
     enum class WindowFlags : std::uint16_t
     {
@@ -261,6 +270,119 @@ namespace blurp
     {
         return static_cast<std::uint16_t>(a_Lhs) == static_cast<std::uint16_t>(a_Rhs);
     }
+
+    /*
+     * Enumeration containing the bitmasks for various material attributes.
+     */
+    enum class MaterialAttribute : std::uint16_t
+    {
+        //Diffuse texture used for coloring this material.
+        //Enabling this disables DIFFUSE_CONSTANT_VALUE
+        //RGB format.
+        DIFFUSE_TEXTURE = 1 << 0,
+
+        //Normal texture containing the direction of each pixel in XYZ format. Can only be used with meshes that contain normal information.
+        //RGB format.
+        NORMAL_TEXTURE = 1 << 1,
+
+        //Emissive texture indicating the brightness in R, G and B channels. Added on top of calculated light value to appear glowing.
+        //Enabling this disables EMISSIVE_CONSTANT_VALUE.
+        //RGB format.
+        EMISSIVE_TEXTURE = 1 << 2,
+
+        //Occlusion texture containing a single byte value per pixel indicating how much it should be darkened.
+        //Stored in the R channel of an Occlusion/Metallic/Roughness/Alpha texture.
+        OCCLUSION_TEXTURE = 1 << 3,
+
+        //Metallicness of the surface stored as a single byte value.
+        //Enabling this disables the METALLIC_CONSTANT_VALUE setting.
+        //Stored in the G channel of an Occlusion/Metallic/Roughness/Height texture.
+        METALLIC_TEXTURE = 1 << 4,
+
+        //Roughness of the surface.
+        //Enabling this disables this ROUGHNESS_CONSTANT_VALUE setting.
+        //Stored in the B channel of an Occlusion/Metallic/Roughness/Height texture.
+        ROUGHNESS_TEXTURE = 1 << 5,
+
+        //Alpha of the surface. Stored as an RG texture.
+        //Enabling this disables the ALPHA_CONSTANT_VALUE setting.
+        //Stored in the G channel of an Occlusion/Metallic/Roughness/Height texture.
+        ALPHA_TEXTURE = 1 << 6,
+
+        //Height offset from the surface. This moves vertices along their normal direction.
+        //RG Format.
+        HEIGHT_TEXTURE = 1 << 7,
+
+        //Allows using a single color for the diffuse texture of this material.
+        //Enabling this disables DIFFUSE_TEXTURE texture.
+        //Colors scaled between 0 and 1.
+        DIFFUSE_CONSTANT_VALUE = 1 << 8,
+
+        //Allows the setting of a single color for the emissive texture of this material.
+        //Enabling this disables EMISSIVE_TEXTURE texture.
+        //Emissive color specified as RGB normalized between 0 and 1.
+        EMISSIVE_CONSTANT_VALUE = 1 << 9,
+
+        //Allows the setting of the metallicness of the entire surface.
+        //Enabling this disables METALLIC_TEXTURE texture.
+        //Float normalized between 0 and 1.
+        METALLIC_CONSTANT_VALUE = 1 << 10,
+
+        //Allows the setting of a single float value to measure the roughness of the entire material.
+        //Enabling this disables the ROUGHNESS_TEXTURE texture.
+        //Normalized between 0 and 1.
+        ROUGHNESS_CONSTANT_VALUE = 1 << 11,
+
+        //Allows the setting of a single float value representing the opacity of the entire material.
+        //This disables the ALPHA_TEXTURE texture.
+        //Normalized between 0 (translucent) and 1 (opaque).
+        ALPHA_CONSTANT_VALUE = 1 << 12,
+    };
+
+    /*
+     * All material attributes sorted in order of the bitmask.
+     */
+    const static MaterialAttribute MATERIAL_ATTRIBUTES[NUM_MATERIAL_ATRRIBS]{
+        MaterialAttribute::DIFFUSE_TEXTURE,
+        MaterialAttribute::NORMAL_TEXTURE,
+        MaterialAttribute::EMISSIVE_TEXTURE,
+        MaterialAttribute::OCCLUSION_TEXTURE,
+        MaterialAttribute::METALLIC_TEXTURE,
+        MaterialAttribute::ROUGHNESS_TEXTURE,
+        MaterialAttribute::ALPHA_TEXTURE,
+        MaterialAttribute::HEIGHT_TEXTURE,
+
+        MaterialAttribute::DIFFUSE_CONSTANT_VALUE,
+        MaterialAttribute::EMISSIVE_CONSTANT_VALUE,
+        MaterialAttribute::METALLIC_CONSTANT_VALUE,
+        MaterialAttribute::ROUGHNESS_CONSTANT_VALUE,
+        MaterialAttribute::ALPHA_CONSTANT_VALUE,
+    };
+
+    struct MaterialAttributeInfo
+    {
+        std::string defineName;
+    };
+
+    /*
+     * Unordered map containing information about each material attribute.
+     */
+    static const std::unordered_map<MaterialAttribute, MaterialAttributeInfo> VERTEX_ATTRIBUTE_INFO = {
+        {MaterialAttribute::DIFFUSE_TEXTURE, {"MAT_DIFFUSE_TEXTURE_DEFINE"}},
+        {MaterialAttribute::NORMAL_TEXTURE, {"MAT_NORMAL_TEXTURE_DEFINE"}},
+        {MaterialAttribute::EMISSIVE_TEXTURE, {"MAT_EMISSIVE_TEXTURE_DEFINE"}},
+        {MaterialAttribute::OCCLUSION_TEXTURE, {"MAT_OCCLUSION_TEXTURE_DEFINE"}},
+        {MaterialAttribute::METALLIC_TEXTURE, {"MAT_METALLIC_TEXTURE_DEFINE"}},
+        {MaterialAttribute::ROUGHNESS_TEXTURE, {"MAT_ROUGHNESS_TEXTURE_DEFINE"}},
+        {MaterialAttribute::ALPHA_TEXTURE, {"MAT_ALPHA_TEXTURE_DEFINE"}},
+        {MaterialAttribute::HEIGHT_TEXTURE, {"MAT_HEIGHT_TEXTURE_DEFINE"}},
+
+        {MaterialAttribute::DIFFUSE_CONSTANT_VALUE, {"MAT_DIFFUSE_CONSTANT_DEFINE"}},
+        {MaterialAttribute::EMISSIVE_CONSTANT_VALUE, {"MAT_EMISSIVE_CONSTANT_DEFINE"}},
+        {MaterialAttribute::METALLIC_CONSTANT_VALUE, {"MAT_METALLIC_CONSTANT_DEFINE"}},
+        {MaterialAttribute::ROUGHNESS_CONSTANT_VALUE, {"MAT_ROUGHNESS_CONSTANT_DEFINE"}},
+        {MaterialAttribute::ALPHA_CONSTANT_VALUE, {"MAT_ALPHA_CONSTANT_DEFINE"}},
+    };
 
     /*
      * The settings structs.
@@ -734,9 +856,184 @@ namespace blurp
         };
     };
 
+    /*
+     * Object used to construct a Material.
+     * To use, set constant values or textures.
+     * Then enable the corresponding attribute by calling EnableAttribute.
+     *
+     * Some textures require a specific format to be compatible with the shader samplers.
+     */
     struct MaterialSettings
     {
-        //TODO   
+    public:
+        MaterialSettings()
+        {
+            m_Mask = static_cast<MaterialAttribute>(0);
+
+            //Raw data stored in this material.
+            m_DiffuseValue = {1.f, 1.f, 1.f};
+            m_EmissiveValue = {0.8f, 0.3f, 0.9f};
+            m_MetallicValue = 1.f;
+            m_RoughnessValue = 1.f;
+            m_AlphaValue = 1.f;
+        }
+
+        /*
+         * Enable specific attributes for this material.
+         */
+        void EnableAttribute(MaterialAttribute a_Attribute);
+
+        /*
+         * Disable a specific attribute for this material.
+         */
+        void DisableAttribute(MaterialAttribute a_Attribute);
+
+        /*
+         * Get the unsigned 16 bit int mask of alll enabled attributes.
+         */
+        std::uint32_t GetMask() const
+        {
+            return static_cast<std::uint16_t>(m_Mask);
+        }
+
+        /*
+         * Set the texture to be used for the diffuse color of the material.
+         * RGB format required.
+         */
+        void SetDiffuseTexture(const std::shared_ptr<Texture>& a_Texture);
+
+        /*
+         * Set the texture to be used for the emissive color of the material.
+         * RGB byte format required.
+         */
+        void SetEmissiveTexture(const std::shared_ptr<Texture>& a_Texture);
+
+        /*
+         * Set the texture to be used for the normals of the material.
+         * RGB format required.
+         */
+        void SetNormalTexture(const std::shared_ptr<Texture>& a_Texture);
+
+        /*
+         * Set the texture to be used for the height offset of the material.
+         * RG format required.
+         */
+        void SetHeightTexture(const std::shared_ptr<Texture>& a_Texture);
+
+        /*
+         * Set the texture to be used for the O/M/R/A of the material.
+         * R = Occlusion byte.
+         * G = Metallic byte.
+         * B = Roughness byte.
+         * A = Alpha byte.
+         *
+         * RGBA format required.
+         */
+        void SetOMRATexture(const std::shared_ptr<Texture>& a_Texture);
+
+        /*
+         * Set the constant to be used as the diffuse color of the material.
+         * Only values normalized between 0 and 1 are accepted.
+         */
+        void SetDiffuseConstant(const glm::vec3& a_Value);
+
+        /*
+         * Set the constant to be used as the emissive color of the material.
+         * Only values normalized between 0 and 1 are accepted.
+         */
+        void SetEmissiveConstant(const glm::vec3& a_Value);
+
+        /*
+         * Set the constant to be used as the metallicness of the material.
+         * Only values between 0 and 1 are accepted.
+         */
+        void SetMetallicConstant(float a_Value);
+
+        /*
+         * Set the constant to be used as the roughness of the material.
+         * Only values between 0 and 1 are accepted.
+         */
+        void SetRoughnessConstant(float a_Value);
+
+        /*
+         * Set the constant to be used as the alpha of the material.
+         * Only values between 0 and 1 are accepted.
+         */
+        void SetAlphaConstant(float a_Value);
+
+        /*
+         * Get the texture currently set as DiffuseTexture.
+         */
+        std::shared_ptr<Texture> GetDiffuseTexture() const;
+
+        /*
+         * Get the texture currently set as emissive texture.
+         */
+        std::shared_ptr<Texture> GetEmissiveTexture() const;
+
+        /*
+         * Get the texture currently set as normal texture.
+         */
+        std::shared_ptr<Texture> GetNormalTexture() const;
+
+        /*
+         * Get the texture currently set as height texture.
+         */
+        std::shared_ptr<Texture> GetHeightTexture() const;
+
+        /*
+         * Get the texture currently set for the Occlusion, Metallic, Roughness and Alpha of the material.
+         */
+        std::shared_ptr<Texture> GetOMRATexture() const;
+
+        /*
+         * Get the constant value currently set as the diffuse color.
+         */
+        glm::vec3 GetDiffuseValue() const;
+
+        /*
+         * Get the constant value currently set as the emissive color.
+         */
+        glm::vec3 GetEmissiveValue() const;
+
+        /*
+         * Get the constant value currently set as the metallicness.
+         */
+        float GetMetallicValue() const;
+
+        /*
+         * Get the constant value currently set as the roughness.
+         */
+        float GetRoughnessValue() const;
+
+        /*
+         * Get the constanct value currently set as the alpha of the material.
+         */
+        float GetAlphaValue() const;
+
+        /*
+         * Returns true if the provided attribute is enabled.
+         */
+        bool IsAttributeEnabled(MaterialAttribute a_Attribute) const;
+        
+
+    private:
+        //Mask of enabled attributes.
+        MaterialAttribute m_Mask;
+
+        //Textures stored in this material
+        std::shared_ptr<Texture> m_DiffuseTexture;
+        std::shared_ptr<Texture> m_EmissiveTexture;
+        std::shared_ptr<Texture> m_NormalTexture;
+        std::shared_ptr<Texture> m_HeightTexture;
+        std::shared_ptr<Texture> m_OcclusionMetallicRoughnessAlphaTexture;
+
+        //Raw data stored in this material.
+        glm::vec3 m_DiffuseValue;
+        glm::vec3 m_EmissiveValue;
+        std::float_t m_MetallicValue;
+        std::float_t m_RoughnessValue;
+        std::float_t m_AlphaValue;
     };
 
     /*
