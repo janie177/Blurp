@@ -3,6 +3,8 @@
 #include "Camera.h"
 #include "GpuBuffer.h"
 #include "Light.h"
+#include "Material.h"
+#include "MaterialBatch.h"
 #include "Mesh.h"
 #include "RenderPass.h"
 
@@ -17,7 +19,13 @@ namespace blurp
     struct InstanceDrawQueueData
     {
         //Pointer to the mesh to draw.
-        Mesh* mesh;
+        std::shared_ptr<Mesh> mesh;
+
+        //Pointer to the material to use for drawing.
+        std::shared_ptr<Material> material;
+
+        //Pointer to the material batch to use for drawing.
+        std::shared_ptr<MaterialBatch> materialBatch;
 
         //The amount of instances.
         std::uint32_t count;
@@ -104,6 +112,9 @@ namespace blurp
          */
         void AddLight(const std::shared_ptr<Light>& a_Light, const std::shared_ptr<Texture>& a_ShadowMap);
 
+        //TODO reset may need to have a virtual layer. In D3D12 it could be used to keep the command list to have efficient drawing.
+        //TODO example: all static lights and geometry are drawn without rebuilding anything. Then on top of that image the dynamic stuff happens.
+        //TODO but that may cause issues with shadows from dynamic objects. Idk. Blend? Deferred?
         void Reset() override;
 
     protected:

@@ -3,6 +3,7 @@
 #include "RenderPass_Forward.h"
 #include "ShaderCache.h"
 #include "Settings.h"
+#include <stdint.h>
 
 namespace blurp
 {
@@ -21,6 +22,6 @@ namespace blurp
 
     private:
         //Shader cache that compiles shaders dynamically based on required attributes.
-        ShaderCache<VertexAttribute, std::uint16_t> m_ShaderCache;
+        ShaderCache<std::uint32_t, std::uint32_t> m_ShaderCache;
     };
 }

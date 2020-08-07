@@ -19,7 +19,10 @@ namespace blurp
     class ShaderCache
     {
         //Ensure that an enumeration and internal format are provided.
-        static_assert((std::is_convertible_v<T, INTERNAL_FORMAT> || (std::is_enum_v<T> && std::is_convertible_v<std::underlying_type_t<T>, INTERNAL_FORMAT>)) && std::is_integral_v<INTERNAL_FORMAT>, "T has to be convertible to the internal format provided which has to be interpretable as an integer.");
+        //TODO use conditional to only enable underlying type when is_enum is true. Disabled for now because dark magic is at hand with these templates.
+        ///* && std::is_convertible_v<std::underlying_type_t<T>, INTERNAL_FORMAT>) */
+        static_assert((std::is_same_v<T, INTERNAL_FORMAT> || std::is_convertible_v<T, INTERNAL_FORMAT> || std::is_enum_v<T>) && std::is_integral_v<INTERNAL_FORMAT>, "T has to be convertible to the internal format provided which has to be interpretable as an integer.");
+
     public:
         ShaderCache();
 

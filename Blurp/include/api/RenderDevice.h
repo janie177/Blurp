@@ -15,6 +15,7 @@ namespace blurp
     struct LightSettings;
     struct RenderTargetSettings;
     struct SwapChainSettings;
+    struct MaterialBatchSettings;
     struct MaterialSettings;
     struct ShaderSettings;
     struct GpuBufferSettings;
@@ -28,6 +29,7 @@ namespace blurp
     class RenderTarget;
     class SwapChain;
     class Material;
+    class MaterialBatch;
     class Shader;
     class GpuBuffer;
 
@@ -90,6 +92,11 @@ namespace blurp
          * Create a resource of this type specific to the active graphics API.
          */
         virtual std::shared_ptr<Material> CreateMaterial(const MaterialSettings& a_Settings) = 0;
+
+        /*
+         * Create a resource of this type specific to the active graphics API.
+         */
+        virtual std::shared_ptr<MaterialBatch> CreateMaterialBatch(const MaterialBatchSettings& a_Settings) = 0;
 
         /*
          * Create a render pass from the given type.

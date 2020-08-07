@@ -40,6 +40,18 @@ namespace blurp
             definitions.emplace_back(VertexSettings::GetVertexAttributeInfo(attrib).defineName);
         }
 
+        //Add all the bitmask defines for the material settings.
+        for (auto& attrib : MATERIAL_ATTRIBUTES)
+        {
+            auto found = MATERIAL_ATTRIBUTE_INFO.find(attrib);
+            assert(found != MATERIAL_ATTRIBUTE_INFO.end());
+            definitions.emplace_back(found->second.defineName);
+        }
+
+        //Add a define to determine whether to use a single or batch material.
+        definitions.emplace_back("MAT_SINGLE_DEFINE");
+        definitions.emplace_back("MAT_BATCH_DEFINE");
+
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
         return true;
@@ -65,35 +77,77 @@ namespace blurp
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //Camera matrices.
-        const auto projection = m_Camera->GetProjectionMatrix();
-        const auto view = m_Camera->GetViewMatrix();
-        const auto pv = projection * view;
-
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
         //Shader attribute mask.
-        auto mask = static_cast<VertexAttribute>(0);
+        std::uint32_t prevMask = 0;
+        std::shared_ptr<Material> prevMaterial;
+        std::shared_ptr<MaterialBatch> prevMaterialBatch;
+        std::shared_ptr<Mesh> prevMesh;
+
+        constexpr std::uint32_t matSingleBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS);
+        constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
 
         for(auto& instanceData : m_DrawQueue)
         {
-            const Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh);
+            Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
 
             const auto glGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_GpuBuffer);
 
+            //Calculate the new mask.
+            const bool useMaterial = instanceData.material != nullptr;
+            const bool useMaterialBatch = instanceData.materialBatch != nullptr;
+
+            //Has the material and materialbatch changed?
+            const bool changedMaterial = prevMaterial != instanceData.material;
+            const bool changedBatch = prevMaterialBatch != instanceData.materialBatch;
+
+            //Ensure that either only one is enabled, or both are disabled. Never both enabled.
+            assert((useMaterial != useMaterialBatch) || (!useMaterial && !useMaterialBatch));
+
+            //Shader mask matching the vertex layout.
+            std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask());
+
+            //If materials or batches are enabled, append those to the mask.
+            if(useMaterialBatch)
+            {
+                shaderMask &= matBatchBit & static_cast<std::uint32_t>(instanceData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS;
+            }
+            else if(useMaterial)
+            {
+                shaderMask &= matSingleBit & static_cast<std::uint32_t>(instanceData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS;
+            }
+
+            //Has the shader changed?
+            const bool changedShader = shaderMask != prevMask;
+
             //If the current mask is not the same as the one needed, switch shader.
-            if(mask != mesh->GetVertexAttributeMask())
+            if(changedShader)
             {
                 //Bind the new shader.
-                mask = mesh->GetVertexAttributeMask();
-                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(mesh->GetVertexAttributeMask()));
+                prevMask = shaderMask;
+                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(shaderMask));
                 glUseProgram(currentShader->GetProgramId());
 
                 //Link the shader to the ssbo binding point.
                 glShaderStorageBlockBinding(currentShader->GetProgramId(), 0, glGpuBuffer->GetBufferBaseBinding());
+            }
+
+            //If the current material is new or the shader changed, reupload the material data.
+            if (useMaterial && (changedMaterial || changedShader))
+            {
+                //TODO bind material info.
+                //TODO this includes all textures and uniforms.
+            }
+
+            //If the material batch data needs to be bound, bind it.
+            if (useMaterialBatch && (changedBatch || changedShader))
+            {
+                //TODO bind material batch.
+                //TODO this includes array texture and the UBO.
             }
 
             //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
@@ -102,9 +156,14 @@ namespace blurp
             //Set the number of instances from the mesh itself in the uniform.
             glUniform1i(0, mesh->GetInstanceCount());
 
-            //Bind the VAO of the mesh.
-            glBindVertexArray(mesh->GetVaoId());
+            //If the geometry changed, bind the new geometry.
+            if(prevMesh != instanceData.mesh)
+            {
+                //Bind the VAO of the mesh.
+                glBindVertexArray(mesh->GetVaoId());
+            }
 
+            //Finally draw instanced.
             glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.count * mesh->GetInstanceCount());
         }
 

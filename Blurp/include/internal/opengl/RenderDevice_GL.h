@@ -29,6 +29,7 @@ namespace blurp
         std::shared_ptr<RenderPipeline> CreatePipeline(const PipelineSettings& a_Settings) override;
         std::shared_ptr<Shader> CreateShader(const ShaderSettings& a_Settings) override;
         std::shared_ptr<GpuBuffer> CreateGpuBuffer(const GpuBufferSettings& a_Settings) override;
+        std::shared_ptr<MaterialBatch> CreateMaterialBatch(const MaterialBatchSettings& a_Settings) override;
     };
 
     void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);

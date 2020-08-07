@@ -118,7 +118,8 @@ int main()
     meshSettings.indexData = &cubeIndices;
     meshSettings.vertexData = &cubeVertices;
     meshSettings.indexDataType = DataType::USHORT;
-    meshSettings.usage = AccessMode::READ;
+    meshSettings.usage = MemoryUsage::GPU;
+    meshSettings.access = AccessMode::READ_ONLY;
     meshSettings.vertexDataSizeBytes = sizeof(cubeVertices);
     meshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
     meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 24, 0);
@@ -198,7 +199,8 @@ int main()
     instanceMeshSettings.indexData = &cubeIndices;
     instanceMeshSettings.vertexData = &floats[0];
     instanceMeshSettings.indexDataType = DataType::USHORT;
-    instanceMeshSettings.usage = AccessMode::READ;
+    instanceMeshSettings.usage = MemoryUsage::GPU;
+    instanceMeshSettings.access = AccessMode::READ_ONLY;
     instanceMeshSettings.vertexDataSizeBytes = floats.size() * sizeof(float);
     instanceMeshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
     instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 16 * numinstances * sizeof(float), 24, 0);
@@ -236,7 +238,7 @@ int main()
     GpuBufferSettings gpuBufferSettings;
     gpuBufferSettings.size = std::pow(2, 15);
     gpuBufferSettings.resizeWhenFull = true;
-    gpuBufferSettings.memoryUsage = AccessMode::READ_WRITE;
+    gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     auto gpuBuffer = engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     forwardPass->SetGpuBuffer(gpuBuffer);
@@ -244,12 +246,12 @@ int main()
 
     //Draw one instance of the massively instanced mesh.
     InstanceDrawQueueData iData;
-    iData.mesh = instanced.get();
+    iData.mesh = instanced;
     iData.count = 1;
 
     //Draw many instances of the single cubes that spasm around.
     InstanceDrawQueueData data;
-    data.mesh = mesh.get();
+    data.mesh = mesh;
     data.count = transforms.size();
 
 

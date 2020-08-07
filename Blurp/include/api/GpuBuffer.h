@@ -62,6 +62,7 @@ namespace blurp
     GpuBufferView GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, T* a_Data)
     {
         assert(!IsLocked() && "Cannot write data into a locked GPUBuffer!");
+        assert(m_Settings.access != AccessMode::READ_ONLY && "Attempting to write to a read-only GPU Buffer.");
         return OnWrite(a_Offset, a_Count, a_LargestMemberSize, static_cast<std::uint32_t>(sizeof(T)), static_cast<void*>(a_Data));
     }
 }

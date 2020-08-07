@@ -24,13 +24,13 @@ namespace blurp
 
     void RenderPass_Forward::QueueForDraw(InstanceDrawQueueData a_Data)
     {
-        m_DrawQueue.emplace_back(a_Data);
+        m_DrawQueue.emplace_back(std::move(a_Data));
     }
 
     void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light,
         const std::shared_ptr<Texture>& a_ShadowMap)
     {
-        //Nothing TODO
+        //TODO
     }
 
     void RenderPass_Forward::Reset()

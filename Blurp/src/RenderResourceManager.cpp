@@ -13,6 +13,7 @@
 #include "SwapChain.h"
 #include "Shader.h"
 #include "GpuBuffer.h"
+#include "MaterialBatch.h"
 
 namespace blurp
 {
@@ -96,6 +97,14 @@ namespace blurp
     std::shared_ptr<Material> RenderResourceManager::CreateMaterial(const MaterialSettings& a_Settings)
     {
         auto ptr = m_RenderDevice.CreateMaterial(a_Settings);
+        m_Resources.emplace_back(ptr);
+        ptr->Load(m_Engine);
+        return ptr;
+    }
+
+    std::shared_ptr<MaterialBatch> RenderResourceManager::CreateMaterialBatch(const MaterialBatchSettings& a_Settings)
+    {
+        auto ptr = m_RenderDevice.CreateMaterialBatch(a_Settings);
         m_Resources.emplace_back(ptr);
         ptr->Load(m_Engine);
         return ptr;
