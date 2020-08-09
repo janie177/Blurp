@@ -114,6 +114,9 @@ namespace blurp
             //If materials or batches are enabled, append those to the mask.
             if(useMaterialBatch)
             {
+                //Ensure that material ID is enabled when using a batch (to fetch the material at the right index). 
+                assert((instanceData.mesh->GetVertexAttributeMask() & VertexAttribute::MATERIAL_ID) == VertexAttribute::MATERIAL_ID && "To use a material batch, the provided mesh needs to have material IDs defined in its attributes!");
+
                 shaderMask &= matBatchBit & static_cast<std::uint32_t>(instanceData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS;
             }
             else if(useMaterial)

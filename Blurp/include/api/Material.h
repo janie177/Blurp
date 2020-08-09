@@ -22,7 +22,10 @@ namespace blurp
         MaterialSettings& GetSettings() { return m_Settings; };
 
     protected:
-        bool OnLoad(BlurpEngine& a_BlurpEngine) override { return true; };
+        bool OnLoad(BlurpEngine& a_BlurpEngine) override
+        {
+            return true;
+        };
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override { return true; };
         MaterialSettings m_Settings;
     };
