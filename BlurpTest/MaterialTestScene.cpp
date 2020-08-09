@@ -115,6 +115,11 @@ void MaterialTestScene::Init()
     MaterialData materialData;
     materialData.path = "materials/eggs/";
     materialData.diffuseTextureName = "diffuse.jpg";
+    materialData.normalTextureName = "normal.jpg";
+    materialData.metallicTextureName = "metallic.jpg";
+    materialData.roughnessTextureName = "roughness.jpg";
+    materialData.aoTextureName = "ao.jpg";
+    materialData.heightTextureName = "height.jpg";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
 
     //Set up the object containing info about how to draw the mesh.
@@ -147,8 +152,74 @@ void MaterialTestScene::Update()
         }
     }
 
+    MaterialAttribute attribute = static_cast<MaterialAttribute>(0);
 
-    //TODO: Listen for keyboard input to toggle different parts of the material on or off.
+    //Buttons pressed:
+    if(input.getKeyState(KEY_0) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::DIFFUSE_TEXTURE;
+    }
+    if (input.getKeyState(KEY_1) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::NORMAL_TEXTURE;
+    }
+    if (input.getKeyState(KEY_2) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::EMISSIVE_TEXTURE;
+    }
+    if (input.getKeyState(KEY_3) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::METALLIC_TEXTURE;
+    }
+    if (input.getKeyState(KEY_4) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::ROUGHNESS_TEXTURE;
+    }
+    if (input.getKeyState(KEY_5) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::ALPHA_TEXTURE;
+    }
+    if (input.getKeyState(KEY_6) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::OCCLUSION_TEXTURE;
+    }
+    if (input.getKeyState(KEY_7) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::HEIGHT_TEXTURE;
+    }
+    if (input.getKeyState(KEY_8) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::DIFFUSE_CONSTANT_VALUE;
+    }
+    if (input.getKeyState(KEY_9) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::EMISSIVE_CONSTANT_VALUE;
+    }
+    if (input.getKeyState(KEY_Q) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::METALLIC_CONSTANT_VALUE;
+    }
+    if (input.getKeyState(KEY_W) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::ROUGHNESS_CONSTANT_VALUE;
+    }
+    if (input.getKeyState(KEY_E) == ButtonState::FIRST_PRESSED)
+    {
+        attribute = MaterialAttribute::ALPHA_CONSTANT_VALUE;
+    }
+
+    //If a switch was made, toggle it.
+    if(static_cast<std::uint32_t>(attribute) != 0)
+    {
+        if (m_Material->GetSettings().IsAttributeEnabled(attribute))
+        {
+            m_Material->GetSettings().DisableAttribute(attribute);
+        }
+        else
+        {
+            m_Material->GetSettings().EnableAttribute(attribute);
+        }
+    }
 
 
     const static float MOVE_SENSITIVITY = 0.001f;

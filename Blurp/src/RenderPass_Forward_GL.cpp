@@ -143,12 +143,10 @@ namespace blurp
             //If the current material is new or the shader changed, reupload the material data.
             if (useMaterial && (changedMaterial || changedShader))
             {
-                //TODO bind material info.
-                //TODO this includes all textures and uniforms.
-
-                //If diffuse is enabled, bind diffuse to the right texture slot.
                 auto& matSettings = instanceData.material->GetSettings();
-                if(matSettings.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
+
+                //DIFFUSE
+                if(matSettings.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE) && matSettings.GetDiffuseTexture() != nullptr)
                 {
                     glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetDiffuseTexture())->GetTextureId());
@@ -157,6 +155,51 @@ namespace blurp
                 {
                     const auto diffuse = matSettings.GetDiffuseValue();
                     glUniform3f(1, diffuse.x, diffuse.y, diffuse.z);
+                }
+
+                //NORMAL
+                if (matSettings.IsAttributeEnabled(MaterialAttribute::NORMAL_TEXTURE) && matSettings.GetNormalTexture() != nullptr)
+                {
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetNormalTexture())->GetTextureId());
+                }
+
+                //EMISSIVE
+                if (matSettings.IsAttributeEnabled(MaterialAttribute::EMISSIVE_TEXTURE) && matSettings.GetEmissiveTexture() != nullptr)
+                {
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetEmissiveTexture())->GetTextureId());
+                }
+                else if (matSettings.IsAttributeEnabled(MaterialAttribute::EMISSIVE_CONSTANT_VALUE))
+                {
+                    const auto diffuse = matSettings.GetEmissiveValue();
+                    glUniform3f(2, diffuse.x, diffuse.y, diffuse.z);
+                }
+
+                //METAL/ROUGHNESS/ALPHA
+                if ((matSettings.IsAttributeEnabled(MaterialAttribute::METALLIC_TEXTURE) || matSettings.IsAttributeEnabled(MaterialAttribute::ROUGHNESS_TEXTURE) || matSettings.IsAttributeEnabled(MaterialAttribute::ALPHA_TEXTURE)) && matSettings.GetMRATexture() != nullptr)
+                {
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetMRATexture())->GetTextureId());
+                }
+                if (matSettings.IsAttributeEnabled(MaterialAttribute::METALLIC_CONSTANT_VALUE))
+                {
+                    glUniform1f(3, matSettings.GetAlphaValue());
+                }
+                if (matSettings.IsAttributeEnabled(MaterialAttribute::ROUGHNESS_CONSTANT_VALUE))
+                {
+                    glUniform1f(4, matSettings.GetAlphaValue());
+                }
+                if (matSettings.IsAttributeEnabled(MaterialAttribute::ALPHA_CONSTANT_VALUE))
+                {
+                    glUniform1f(5, matSettings.GetAlphaValue());
+                }
+
+                //OCCLUSION/HEIGHT
+                if ((matSettings.IsAttributeEnabled(MaterialAttribute::OCCLUSION_TEXTURE) || matSettings.IsAttributeEnabled(MaterialAttribute::HEIGHT_TEXTURE)) && matSettings.GetOHTexture() != nullptr)
+                {
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetOHTexture())->GetTextureId());
                 }
             }
 
