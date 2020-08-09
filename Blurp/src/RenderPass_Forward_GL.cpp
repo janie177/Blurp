@@ -5,6 +5,7 @@
 #include "opengl/Mesh_GL.h"
 #include "opengl/RenderTarget_GL.h"
 #include "opengl/Shader_GL.h"
+#include "opengl/Texture_GL.h"
 #include "RenderResourceManager.h"
 
 namespace blurp
@@ -117,11 +118,11 @@ namespace blurp
                 //Ensure that material ID is enabled when using a batch (to fetch the material at the right index). 
                 assert((instanceData.mesh->GetVertexAttributeMask() & VertexAttribute::MATERIAL_ID) == VertexAttribute::MATERIAL_ID && "To use a material batch, the provided mesh needs to have material IDs defined in its attributes!");
 
-                shaderMask &= matBatchBit & static_cast<std::uint32_t>(instanceData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS;
+                shaderMask = shaderMask | matBatchBit | (static_cast<std::uint32_t>(instanceData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS);
             }
             else if(useMaterial)
             {
-                shaderMask &= matSingleBit & static_cast<std::uint32_t>(instanceData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS;
+                shaderMask = shaderMask | matSingleBit | (static_cast<std::uint32_t>(instanceData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS);
             }
 
             //Has the shader changed?
@@ -144,6 +145,19 @@ namespace blurp
             {
                 //TODO bind material info.
                 //TODO this includes all textures and uniforms.
+
+                //If diffuse is enabled, bind diffuse to the right texture slot.
+                auto& matSettings = instanceData.material->GetSettings();
+                if(matSettings.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
+                {
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, std::static_pointer_cast<Texture_GL>(matSettings.GetDiffuseTexture())->GetTextureId());
+                }
+                else if(matSettings.IsAttributeEnabled(MaterialAttribute::DIFFUSE_CONSTANT_VALUE))
+                {
+                    const auto diffuse = matSettings.GetDiffuseValue();
+                    glUniform3f(1, diffuse.x, diffuse.y, diffuse.z);
+                }
             }
 
             //If the material batch data needs to be bound, bind it.

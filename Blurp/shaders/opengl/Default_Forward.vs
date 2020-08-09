@@ -25,7 +25,14 @@ layout (std140, location = 0) buffer Instances
 
 layout(location = 0) uniform int numInstances;
 
-out vec3 color;
+
+//Output
+out VERTEX_OUT
+{
+    vec2 uv;
+    vec3 color;
+} outData;
+
 
 void main()
 {
@@ -37,6 +44,15 @@ void main()
 
     vPos = aInstances.data[gl_InstanceID / numInstances].transform * vPos;
 
-    color = aColor; 
+    
+#ifdef VA_COLOR_DEF
+    outData.color = aColor;
+#endif
+
+#ifdef VA_UVCOORD_DEF
+    outData.uv = aUv;
+#endif
+
+
     gl_Position = vPos;
 }

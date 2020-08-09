@@ -2,7 +2,11 @@
 
 #define MAX_MATERIAL_BATCH_SIZE 512
 
-in vec3 color;
+in VERTEX_OUT
+{
+    vec2 uv;
+    vec3 color;
+} inData;
 
 //Samplers for single texture.
 layout(binding = 0) uniform sampler2D diffuseTexture;
@@ -61,12 +65,19 @@ void main()
 	//SINGLE MATERIAL
 	#ifdef MAT_SINGLE_DEFINE
 
+		//Diffuse constant
 		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
 			outColor = vec4(diffuseConstant, 1.0);
 		#endif
 
+		//Diffuse texture
 		#ifdef MAT_DIFFUSE_TEXTURE_DEFINE
-			outColor = texture2D(diffuseTexture, );
+			outColor = texture2D(diffuseTexture, inData.uv);
+		#endif
+
+		//Vertex color attribute
+		#ifdef VA_COLOR_DEF
+			outColor *= vec4(inData.color, 1.0);
 		#endif
 
 
@@ -82,5 +93,5 @@ void main()
 	//END MATERIAL BATCH
 	#endif
 
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = outColor;
 }

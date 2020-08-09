@@ -6,8 +6,10 @@
 #include <Window.h>
 #include <RenderPass_Forward.h>
 #include <RenderResourceManager.h>
-
 #include <iostream>
+
+#include "MaterialLoader.h"
+
 
 using namespace blurp;
 
@@ -106,6 +108,15 @@ void MaterialTestScene::Init()
     //Let the forward pass read data from this GPU buffer.
     m_ForwardPass->SetGpuBuffer(m_GpuBuffer);
 
+
+    /*
+     * Set up the material from the given paths.
+     */
+    MaterialData materialData;
+    materialData.path = "materials/eggs/";
+    materialData.diffuseTextureName = "diffuse.jpg";
+    m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
+
     //Set up the object containing info about how to draw the mesh.
     m_QueueData.mesh = m_Mesh;
     m_QueueData.count = 1;
@@ -113,10 +124,6 @@ void MaterialTestScene::Init()
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
-
-
-    //TODO: setup the material.
-
 }
 
 void MaterialTestScene::Update()
@@ -179,7 +186,7 @@ void MaterialTestScene::Update()
     //Handle zooming in and out.
     if(mouseScroll != 0)
     {
-        const static float MIN_DISTANCE = 3.f;
+        const static float MIN_DISTANCE = 1.0f;
         auto moved = m_Camera->GetTransform().GetForward() * SCROLL_SENSITIVITY * mouseScroll;
 
         //Zooming out is always possible.

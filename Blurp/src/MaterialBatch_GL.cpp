@@ -14,7 +14,7 @@ namespace blurp
         //Ensure that the settings are valid.
         assert(m_Settings.GetMask() != 0 && "MaterialBatch needs at least one attribute enabled!");
         assert(m_Settings.materialCount > 0 && m_Settings.textureSettings.dimensions.x > 0 && m_Settings.textureSettings.dimensions.y > 0 && "Material count, width and height in a batch need to be at least 1.");
-        assert(IsSigned(m_Settings.textureSettings.dataType) && "Data type for material batch has to be signed.");
+        assert(!IsSigned(m_Settings.textureSettings.dataType) && "Data type for material batch has to be unsigned.");
 
         //If at least one texture is enabled, make sure that the provided data is not nullptr.
         for(auto& attrib : MATERIAL_ATTRIBUTES)

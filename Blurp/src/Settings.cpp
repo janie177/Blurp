@@ -105,35 +105,35 @@ namespace blurp
     void MaterialSettings::SetDiffuseTexture(const std::shared_ptr<Texture>& a_Texture)
     {
         //Ensure that the right pixel format and data type are used.
-        assert(a_Texture == nullptr || IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
+        assert(a_Texture == nullptr || !IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
         m_DiffuseTexture = a_Texture;
     }
 
     void MaterialSettings::SetEmissiveTexture(const std::shared_ptr<Texture>& a_Texture)
     {
         //Ensure that the right pixel format and data type are used.
-        assert(a_Texture == nullptr || IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
+        assert(a_Texture == nullptr || !IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
         m_EmissiveTexture = a_Texture;
     }
 
     void MaterialSettings::SetNormalTexture(const std::shared_ptr<Texture>& a_Texture)
     {
         //Ensure that the right pixel format and data type are used.
-        assert(a_Texture == nullptr || IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
+        assert(a_Texture == nullptr || !IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
         m_NormalTexture = a_Texture;
     }
 
     void MaterialSettings::SetOHTexture(const std::shared_ptr<Texture>& a_Texture)
     {
         //Ensure that the right pixel format and data type are used.
-        assert(a_Texture == nullptr || IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
+        assert(a_Texture == nullptr || !IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
         m_OcclusionHeightTexture = a_Texture;
     }
 
     void MaterialSettings::SetMRATexture(const std::shared_ptr<Texture>& a_Texture)
     {
         //Ensure that the right pixel format and data type are used.
-        assert(a_Texture == nullptr || IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
+        assert(a_Texture == nullptr || !IsSigned(a_Texture->GetDataType()) && a_Texture->GetPixelFormat() == PixelFormat::RGB);
         m_MetallicRoughnessAlphaTexture = a_Texture;
     }
 
