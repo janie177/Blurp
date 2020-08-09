@@ -7,7 +7,7 @@ namespace blurp
     class Camera : public RenderResource
     {
     public:
-        Camera(const CameraSettings& a_Settings) : m_Settings(a_Settings), m_DirtyFlag(true), m_View(1.f), m_Projection(1.f) {}
+        Camera(const CameraSettings& a_Settings) : m_Settings(a_Settings), m_DirtyFlag(true), m_RebuildView(true), m_View(1.f), m_Projection(1.f) {}
 
         /*
          * Get the view matrix of this camera.
@@ -29,6 +29,11 @@ namespace blurp
          */
         Transform& GetTransform();
 
+        /*
+         * Get the transform from a const context. This means no rebuilding has to be done.
+         */
+        const Transform& GetTransform() const;
+
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
@@ -37,6 +42,7 @@ namespace blurp
         CameraSettings m_Settings;
         Transform m_Transform;
         mutable bool m_DirtyFlag;
+        mutable bool m_RebuildView;
 
         mutable glm::mat4 m_View;
         mutable glm::mat4 m_Projection;

@@ -16,11 +16,6 @@ namespace blurp
 
     }
 
-    bool Transform::NeedsRebuilding() const
-    {
-        return m_Flag;
-    }
-
     glm::mat4 Transform::GetTransformation() const
     {
         if (m_Flag)
@@ -62,7 +57,7 @@ namespace blurp
     void Transform::LookAt(const glm::vec3& a_Position, const glm::vec3& a_Target, const glm::vec3& a_Up)
     {
         //Make sure up is normalized.
-        assert(glm::length2(a_Up) - 1.f <= std::numeric_limits<float>::epsilon() * 5.f && "a_Up must be normalized!");
+        assert(glm::length(a_Up) - 1.f <= std::numeric_limits<float>::epsilon() * 5.f && "a_Up must be normalized!");
 
         //Make sure that position and target are not the same.
         assert(glm::length2(a_Up - a_Position) - 1.f != 0.f && "Position and target cannot be equal!");
@@ -182,7 +177,7 @@ namespace blurp
 
         //Flag not set, so return cached matrix data.
         const auto column = glm::column(m_Transformation, 2);
-        return glm::vec3(column.x, column.y, column.z);
+        return glm::normalize(glm::vec3(column.x, column.y, column.z));
     }
 
     glm::vec3 Transform::GetUp() const
@@ -193,9 +188,9 @@ namespace blurp
             return glm::mat3_cast(m_Rotation) * GetWorldUp();
         }
 
-        //Flag not set, so return cached matrix data.
+        //Flag not set, so return cached matrix data. Normalize because scale may have affected it.
         const auto column = glm::column(m_Transformation, 1);
-        return glm::vec3(column.x, column.y, column.z);
+        return glm::normalize(glm::vec3(column.x, column.y, column.z));
     }
 
     glm::vec3 Transform::GetRight() const
@@ -208,7 +203,7 @@ namespace blurp
 
         //Flag not set, so return cached matrix data.
         const auto column = glm::column(m_Transformation, 0);
-        return glm::vec3(column.x, column.y, column.z);
+        return glm::normalize(glm::vec3(column.x, column.y, column.z));
     }
 
     glm::vec3 Transform::GetBack() const

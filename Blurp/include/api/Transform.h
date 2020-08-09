@@ -9,11 +9,6 @@ namespace blurp
     public:
         Transform();
 
-        /*
-         * Returns true when this Transform has its dirty flag set to true.
-         */
-        bool NeedsRebuilding() const;
-
         /**
          * Return the transformation.
          * If the dirty flag is set, this will rebuild the matrix.

@@ -5,9 +5,10 @@ namespace blurp
     glm::mat4 Camera::GetViewMatrix() const
     {
         //Rebuild the inverse if required.
-        if(m_Transform.NeedsRebuilding())
+        if(m_RebuildView)
         {
            m_View = glm::inverse(m_Transform.GetTransformation());
+           m_RebuildView = false;
         }
 
         return m_View;
@@ -38,6 +39,13 @@ namespace blurp
     }
 
     Transform& Camera::GetTransform()
+    {
+        //Accessed from a non-const context. Changes may be made so rebuild.
+        m_RebuildView = true;
+        return m_Transform;
+    }
+
+    const Transform& Camera::GetTransform() const
     {
         return m_Transform;
     }

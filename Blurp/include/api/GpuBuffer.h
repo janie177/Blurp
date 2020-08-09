@@ -38,7 +38,7 @@ namespace blurp
          * A void pointer indicating the offset into the buffer is returned.
          */
         template<typename T>
-        GpuBufferView WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, T* a_Data);
+        GpuBufferView WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, const T* a_Data);
 
     protected:
         /*
@@ -52,17 +52,17 @@ namespace blurp
          *
          * A struct containing pointers to the start and end of the data in the 
          */
-        virtual GpuBufferView OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, void* a_Data) = 0;
+        virtual GpuBufferView OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, const void* a_Data) = 0;
 
     protected:
         GpuBufferSettings m_Settings;
     };
 
     template <typename T>
-    GpuBufferView GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, T* a_Data)
+    GpuBufferView GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, const T* a_Data)
     {
         assert(!IsLocked() && "Cannot write data into a locked GPUBuffer!");
         assert(m_Settings.access != AccessMode::READ_ONLY && "Attempting to write to a read-only GPU Buffer.");
-        return OnWrite(a_Offset, a_Count, a_LargestMemberSize, static_cast<std::uint32_t>(sizeof(T)), static_cast<void*>(a_Data));
+        return OnWrite(a_Offset, a_Count, a_LargestMemberSize, static_cast<std::uint32_t>(sizeof(T)), static_cast<const void*>(a_Data));
     }
 }

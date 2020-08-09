@@ -63,7 +63,7 @@ namespace blurp
     }
 
     GpuBufferView GpuBuffer_GL::OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize,
-        std::uint32_t a_PerDataSize, void* a_Data)
+        std::uint32_t a_PerDataSize, const void* a_Data)
     {
         //Alignment for std430 is equal to the largest member size.
         const std::uintptr_t alignment = std::min(16u, a_LargestMemberSize);
