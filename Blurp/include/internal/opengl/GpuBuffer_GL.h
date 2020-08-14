@@ -11,7 +11,6 @@ namespace blurp
         GpuBuffer_GL(const GpuBufferSettings& a_Settings);
 
         GLuint GetBufferId() const;
-        std::uint32_t GetBufferBaseBinding() const;
 
     protected:
         void OnLock() override;
@@ -26,7 +25,5 @@ namespace blurp
 
     private:
         GLuint m_Ssbo;
-        std::uint32_t m_BufferBaseBinding;
-        static std::uint32_t m_BufferCounter;
     };
 }

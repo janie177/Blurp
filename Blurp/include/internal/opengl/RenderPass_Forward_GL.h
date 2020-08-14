@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GL/glew.h>
+
 #include "RenderPass_Forward.h"
 #include "ShaderCache.h"
 #include "Settings.h"
@@ -7,11 +9,17 @@
 
 namespace blurp
 {
+    struct CameraData
+    {
+        glm::mat4 pv;
+        glm::vec4 camPos;
+    };
+
     class RenderPass_Forward_GL : public RenderPass_Forward
     {
     public:
         RenderPass_Forward_GL(RenderPipeline& a_Pipeline)
-            : RenderPass_Forward(a_Pipeline)
+            : RenderPass_Forward(a_Pipeline), m_CameraUbo(0)
         {
         }
 
@@ -23,5 +31,8 @@ namespace blurp
     private:
         //Shader cache that compiles shaders dynamically based on required attributes.
         ShaderCache<std::uint32_t, std::uint32_t> m_ShaderCache;
+
+        //Camera buffer.
+        GLuint m_CameraUbo;
     };
 }

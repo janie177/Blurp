@@ -22,7 +22,7 @@ namespace blurp
         m_GpuBuffer = a_Buffer;
     }
 
-    void RenderPass_Forward::QueueForDraw(InstanceDrawQueueData a_Data)
+    void RenderPass_Forward::QueueForDraw(ForwardDrawData a_Data)
     {
         m_DrawQueue.emplace_back(std::move(a_Data));
     }

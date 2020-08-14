@@ -23,9 +23,8 @@ private:
     int numSpasmCubes;
     std::vector<glm::mat4> transforms;
     std::shared_ptr<blurp::Camera> camera;
-    std::vector<glm::mat4> transformed;
     std::shared_ptr<blurp::RenderPipeline> pipeline;
-    blurp::InstanceDrawQueueData iData;
-    blurp::InstanceDrawQueueData data;
+    blurp::ForwardDrawData iData;
+    blurp::ForwardDrawData data;
     std::shared_ptr<blurp::GpuBuffer> gpuBuffer;
 };

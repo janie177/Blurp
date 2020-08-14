@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 
-#define NUM_VERTEX_ATRRIBS 11
+#define NUM_VERTEX_ATRRIBS 12
 #define NUM_MATERIAL_ATRRIBS 13
 
 /*
@@ -224,7 +224,10 @@ namespace blurp
         MATRIX = 1 << 9,
 
         //The Integer material ID to use. Used in combination with Material Batches.
-        MATERIAL_ID = 1 << 10
+        MATERIAL_ID = 1 << 10,
+
+        //Transpose of the inverse instance matrix. Used with MATRIX to allow for uneven scaling with correct lighting normals.
+        ITMATRIX = 1 << 11,
     };
 
     //All vertex attributes in an iterable format.
@@ -239,7 +242,8 @@ namespace blurp
         VertexAttribute::BONE_INDEX,
         VertexAttribute::BONE_WEIGHT,
         VertexAttribute::MATRIX,
-        VertexAttribute::MATERIAL_ID
+        VertexAttribute::MATERIAL_ID,
+        VertexAttribute::ITMATRIX,
     };
 
     inline VertexAttribute operator|(VertexAttribute a_Lhs, VertexAttribute a_Rhs)
@@ -354,6 +358,7 @@ namespace blurp
         MaterialAttribute::ROUGHNESS_CONSTANT_VALUE,
         MaterialAttribute::ALPHA_CONSTANT_VALUE,
     };
+
 
     /*
      * Array of all texture material attributes.
@@ -774,6 +779,7 @@ namespace blurp
             {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF"}},
             {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF"}},
             {VertexAttribute::MATERIAL_ID, {1, DataType::USHORT, "va_MaterialID", "VA_MATERIALID_DEF"}},
+            {VertexAttribute::ITMATRIX, {16, DataType::FLOAT, "va_ITMatrix", "VA_ITMATRIX_DEF"}},
         };
     };
 

@@ -4,8 +4,26 @@
 
 in VERTEX_OUT
 {
-    vec2 uv;
+    //Vertex position in world space without the projection applied.
+    vec4 fragPos;
+
+    #ifdef VA_COLOR_DEF
     vec3 color;
+    #endif
+
+    //Texture coordinates are used.
+    #ifdef VA_UVCOORD_DEF
+    vec2 uv;
+    #endif
+
+    //If normalmapping is enabled and a normal and tangent are provided. Bitangent is optional in the calculation (cross product possible).
+    #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+    mat4 tbn;
+
+    //Normal in light space.
+    #elif defined(VA_NORMAL_DEF)
+    vec3 normal;
+    #endif
 } inData;
 
 //Samplers for single texture.
@@ -49,9 +67,9 @@ struct ConstMatAttribs
 };
 
 //Uniform block containing batched material info.
-layout (std140, location = 0) uniform constData
+layout (std140, binding = 2) uniform constData
 { 
-  ConstMatAttribs constAttribData[MAX_MATERIAL_BATCH_SIZE];
+	ConstMatAttribs constAttribData[MAX_MATERIAL_BATCH_SIZE];
 };
 
 //MAT_BATCH_DEFINE
@@ -60,45 +78,47 @@ layout (std140, location = 0) uniform constData
 
 void main()
 {
-	vec4 outColor = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 outColor = vec4(0.0, 1.0, 1.0, 1.0);
 
 	//SINGLE MATERIAL
 	#ifdef MAT_SINGLE_DEFINE
 
-
-
 		//Diffuse constant
 		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
-			outColor = vec4(diffuseConstant, 1.0);
+			//outColor = vec4(diffuseConstant, 1.0);
 		#endif
+
 		//Diffuse texture
-		#ifdef MAT_DIFFUSE_TEXTURE_DEFINE
+		#if defined(MAT_DIFFUSE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
 			outColor = texture2D(diffuseTexture, inData.uv);
 		#endif
 
 
 
 		//Normal texture
-		#ifdef MAT_NORMAL_TEXTURE_DEFINE
+		#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
 			outColor = texture2D(normalTexture, inData.uv);
+
+		//Regular normal
+		#elif defined(VA_NORMAL_DEF)
+
 		#endif
 
 
 
 		//Emissive constant
 		#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
-			outColor = vec4(emissiveConstant, 1.0);
+			outColor *= vec4(emissiveConstant, 1.0);
 		#endif
 		//Emissive texture
-		#ifdef MAT_EMISSIVE_TEXTURE_DEFINE
-			outColor = texture2D(emissiveTexture, inData.uv);
+		#if defined(MAT_EMISSIVE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+			outColor *= texture2D(emissiveTexture, inData.uv);
 		#endif
 
 
 		//MetalRoughnessAlpha
-		#if defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ALPHA_TEXTURE_DEFINE)
+		#if (defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ALPHA_TEXTURE_DEFINE)) && defined(VA_UVCOORD_DEF)
 			vec4 mra = texture2D(metalroughalphaTexture, inData.uv);
-			outColor = mra;
 
 			#ifdef MAT_METALLIC_TEXTURE_DEFINE
 				float metal = mra.r;
@@ -126,7 +146,7 @@ void main()
 		#endif
 
 		//AmbientOcclusion/Height
-		#if defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE)
+		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE)) && defined(VA_UVCOORD_DEF)
 			vec4 oh = texture2D(metalroughalphaTexture, inData.uv);
 
 			#ifdef MAT_OCCLUSION_TEXTURE_DEFINE
@@ -154,7 +174,6 @@ void main()
 	#ifdef VA_COLOR_DEF
 		outColor *= vec4(inData.color, 1.0);
 	#endif
-
 
 	gl_FragColor = outColor;
 }

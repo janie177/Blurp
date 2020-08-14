@@ -7,11 +7,7 @@
 
 namespace blurp
 {
-    //Init the static counter variable.
-    //Start at 1 so that binding 0 is always available for copying while resizing buffers.
-    std::uint32_t GpuBuffer_GL::m_BufferCounter = 1;
-
-    GpuBuffer_GL::GpuBuffer_GL(const GpuBufferSettings& a_Settings): GpuBuffer(a_Settings), m_Ssbo(0), m_BufferBaseBinding(0)
+    GpuBuffer_GL::GpuBuffer_GL(const GpuBufferSettings& a_Settings): GpuBuffer(a_Settings), m_Ssbo(0)
     {
 
     }
@@ -19,11 +15,6 @@ namespace blurp
     GLuint GpuBuffer_GL::GetBufferId() const
     {
         return m_Ssbo;
-    }
-
-    std::uint32_t GpuBuffer_GL::GetBufferBaseBinding() const
-    {
-        return m_BufferBaseBinding;
     }
 
     void GpuBuffer_GL::OnLock()
@@ -38,19 +29,9 @@ namespace blurp
 
     bool GpuBuffer_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
-        //Up the base binding ID and store it.
-        m_BufferBaseBinding = m_BufferCounter;
-        ++m_BufferCounter;
-
-        //Ensure that the ID is not higher than the max amount
-        GLint maxBuffers;
-        glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxBuffers);
-        assert(static_cast<std::uint32_t>(maxBuffers) > m_BufferCounter && ("Too many GpuBuffers! The current GPU does not support this many."));
-
         glGenBuffers(1, &m_Ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_Ssbo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BufferBaseBinding, m_Ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         return true;
@@ -98,7 +79,6 @@ namespace blurp
                 glGenBuffers(1, &tempBuffer);
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, tempBuffer);
                 glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, tempBuffer);
 
                 //Copy over the contents from the old buffer to the new buffer.
                 glCopyNamedBufferSubData(m_Ssbo, tempBuffer, 0, 0, oldSize);
@@ -108,7 +88,6 @@ namespace blurp
 
                 //Store the new buffer handle and set it to the correct binding point.
                 m_Ssbo = tempBuffer;
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_BufferBaseBinding, m_Ssbo);
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             }
             //Assert and warn.

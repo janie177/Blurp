@@ -6,7 +6,6 @@
 #include "opengl/RenderTarget_GL.h"
 #include "opengl/Shader_GL.h"
 #include "opengl/Texture_GL.h"
-#include "RenderResourceManager.h"
 
 namespace blurp
 {
@@ -52,14 +51,24 @@ namespace blurp
         //Add a define to determine whether to use a single or batch material.
         definitions.emplace_back("MAT_SINGLE_DEFINE");
         definitions.emplace_back("MAT_BATCH_DEFINE");
+        definitions.emplace_back("INSTANCE_DATA_M");
+        definitions.emplace_back("INSTANCE_DATA_IM");
 
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
+
+        //Create the camera buffer. Also bind the buffer to slot 1. The shader is hard coded to read camera data from slot 1.
+        glGenBuffers(1, &m_CameraUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, m_CameraUbo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_CameraUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         return true;
     }
 
     bool RenderPass_Forward_GL::OnDestroy(BlurpEngine& a_BlurpEngine)
     {
+        glDeleteBuffers(1, &m_CameraUbo);
         return true;
     }
 
@@ -91,20 +100,30 @@ namespace blurp
 
         constexpr std::uint32_t matSingleBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS);
         constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
+        constexpr std::uint32_t uploadMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 2);
+        constexpr std::uint32_t uploadIMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 3);
+
+        //Upload the camera matrix to the buffer.
+        CameraData camData;
+        camData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
+        camData.camPos = glm::vec4(m_Camera->GetTransform().GetTranslation(), 0.f);
+        glBindBuffer(GL_UNIFORM_BUFFER, m_CameraUbo);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), static_cast<void*>(&camData));
+
+        //Bind the SSBO to the instance data slot (0).
+        const auto glGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_GpuBuffer);
 
         for(auto& instanceData : m_DrawQueue)
         {
             Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
 
-            const auto glGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_GpuBuffer);
-
             //Calculate the new mask.
-            const bool useMaterial = instanceData.material != nullptr;
-            const bool useMaterialBatch = instanceData.materialBatch != nullptr;
+            const bool useMaterial = instanceData.materialData.material != nullptr;
+            const bool useMaterialBatch = instanceData.materialData.materialBatch != nullptr;
 
             //Has the material and materialbatch changed?
-            const bool changedMaterial = prevMaterial != instanceData.material;
-            const bool changedBatch = prevMaterialBatch != instanceData.materialBatch;
+            const bool changedMaterial = prevMaterial != instanceData.materialData.material;
+            const bool changedBatch = prevMaterialBatch != instanceData.materialData.materialBatch;
 
             //Ensure that either only one is enabled, or both are disabled. Never both enabled.
             assert((useMaterial != useMaterialBatch) || (!useMaterial && !useMaterialBatch));
@@ -118,11 +137,21 @@ namespace blurp
                 //Ensure that material ID is enabled when using a batch (to fetch the material at the right index). 
                 assert((instanceData.mesh->GetVertexAttributeMask() & VertexAttribute::MATERIAL_ID) == VertexAttribute::MATERIAL_ID && "To use a material batch, the provided mesh needs to have material IDs defined in its attributes!");
 
-                shaderMask = shaderMask | matBatchBit | (static_cast<std::uint32_t>(instanceData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS);
+                shaderMask = shaderMask | matBatchBit | (static_cast<std::uint32_t>(instanceData.materialData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS);
             }
             else if(useMaterial)
             {
-                shaderMask = shaderMask | matSingleBit | (static_cast<std::uint32_t>(instanceData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS);
+                shaderMask = shaderMask | matSingleBit | (static_cast<std::uint32_t>(instanceData.materialData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS);
+            }
+
+            //Uploaded data for this shader masking
+            if(instanceData.data.transform)
+            {
+                shaderMask |= uploadMBit;
+            }
+            if(instanceData.data.inverseTransform)
+            {
+                shaderMask |= uploadIMBit;
             }
 
             //Has the shader changed?
@@ -135,15 +164,12 @@ namespace blurp
                 prevMask = shaderMask;
                 const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(shaderMask));
                 glUseProgram(currentShader->GetProgramId());
-
-                //Link the shader to the ssbo binding point.
-                glShaderStorageBlockBinding(currentShader->GetProgramId(), 0, glGpuBuffer->GetBufferBaseBinding());
             }
 
-            //If the current material is new or the shader changed, reupload the material data.
+            //If the current material is new or the shader changed, re-upload the material data.
             if (useMaterial && (changedMaterial || changedShader))
             {
-                auto& matSettings = instanceData.material->GetSettings();
+                auto& matSettings = instanceData.materialData.material->GetSettings();
 
                 //DIFFUSE
                 if(matSettings.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE) && matSettings.GetDiffuseTexture() != nullptr)
@@ -211,7 +237,8 @@ namespace blurp
             }
 
             //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, glGpuBuffer->GetBufferBaseBinding(), glGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.dataRange.start), instanceData.dataRange.size);
+            //Shader is hard coded to use slot 0 for the buffer.
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.data.dataRange.start), instanceData.data.dataRange.size);
 
             //Set the number of instances from the mesh itself in the uniform.
             glUniform1i(0, mesh->GetInstanceCount());

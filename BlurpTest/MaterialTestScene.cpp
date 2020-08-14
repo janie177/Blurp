@@ -125,7 +125,10 @@ void MaterialTestScene::Init()
     //Set up the object containing info about how to draw the mesh.
     m_QueueData.mesh = m_Mesh;
     m_QueueData.count = 1;
-    m_QueueData.material = m_Material;
+    m_QueueData.materialData.material = m_Material;
+
+    //Enable transform uploading. Now a single matrix is expected in the GpuBufferView.
+    m_QueueData.data.transform = true;
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
@@ -298,9 +301,8 @@ void MaterialTestScene::Update()
     m_ForwardPass->Reset();
 
     //Calculate the mesh's MVP and upload it to the GPU buffer.
-    const auto pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
-    const glm::mat4 meshMVP = pv * m_MeshTransform.GetTransformation();
-    m_QueueData.dataRange = m_GpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &meshMVP);
+    auto matrix = m_MeshTransform.GetTransformation();;
+    m_QueueData.data.dataRange = m_GpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
 
     //Queue for draw.
     m_ForwardPass->QueueForDraw(m_QueueData);

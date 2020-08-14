@@ -20,7 +20,7 @@ namespace blurp
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
 
     private:
-        bool CompileShader(GLuint a_ShaderId);
+        bool CompileShader(GLuint a_ShaderId, const char** a_Src, std::size_t a_Size);
         void FindVersionIndices(const char* a_Src, bool& a_HasVersion, const char*& a_SrcStart, const char*& a_VersionStart, std::uint16_t& a_VersionSize) const;
 
     private:

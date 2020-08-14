@@ -1,6 +1,7 @@
 #include "opengl/Shader_GL.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace blurp
 {
@@ -64,7 +65,7 @@ namespace blurp
                 cStrings[cStrings.size() - 1] = srcStart;
 
                 glShaderSource(vertex, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-                bool success = CompileShader(vertex);
+                bool success = CompileShader(vertex, &cStrings[0], cStrings.size());
                 assert(success);
             }
             else
@@ -94,7 +95,7 @@ namespace blurp
                 cStrings[cStrings.size() - 1] = srcStart;
 
                 glShaderSource(fragment, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-                const bool success = CompileShader(fragment);
+                const bool success = CompileShader(fragment, &cStrings[0], cStrings.size());
                 assert(success);
             }
 
@@ -120,7 +121,7 @@ namespace blurp
                 cStrings[cStrings.size() - 1] = srcStart;
 
                 glShaderSource(tess_hull, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-                const bool success = CompileShader(tess_hull);
+                const bool success = CompileShader(tess_hull, &cStrings[0], cStrings.size());
                 assert(success);
             }
 
@@ -146,7 +147,7 @@ namespace blurp
                 cStrings[cStrings.size() - 1] = srcStart;
 
                 glShaderSource(tess_domain, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-                const bool success = CompileShader(tess_domain);
+                const bool success = CompileShader(tess_domain, &cStrings[0], cStrings.size());
                 assert(success);
             }
 
@@ -172,7 +173,7 @@ namespace blurp
                 cStrings[cStrings.size() - 1] = srcStart;
 
                 glShaderSource(geometry, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-                const bool success = CompileShader(geometry);
+                const bool success = CompileShader(geometry, &cStrings[0], cStrings.size());
                 assert(success);
             }
 
@@ -233,7 +234,7 @@ namespace blurp
             cStrings[cStrings.size() - 1] = srcStart;
 
             glShaderSource(compute, static_cast<GLsizei>(cStrings.size()), &cStrings[0], NULL);
-            const bool compiled = CompileShader(compute);
+            const bool compiled = CompileShader(compute, &cStrings[0], cStrings.size());
             assert(compiled);
 
             m_Program = glCreateProgram();
@@ -263,7 +264,7 @@ namespace blurp
         return true;
     }
 
-    bool Shader_GL::CompileShader(GLuint a_ShaderId)
+    bool Shader_GL::CompileShader(GLuint a_ShaderId, const char** a_Src, std::size_t a_Size)
     {
         glCompileShader(a_ShaderId);
         int success;
@@ -273,6 +274,27 @@ namespace blurp
         {
             glGetShaderInfoLog(a_ShaderId, 512, NULL, infoLog);
             std::cout << "Error Could not compile shader: \n" << infoLog << std::endl;
+            std::cout << "Source code: \n";
+
+            int line = 0;
+
+            if(a_Src != nullptr)
+            {
+                for(std::size_t i = 0; i < a_Size; ++i)
+                {
+                    std::stringstream ss(a_Src[i]);
+                    std::string to;
+
+                    if (a_Src[i] != NULL)
+                    {
+                        while (std::getline(ss, to, '\n')) {
+                            std::cout << line << ".     " << to << std::endl;
+                            ++line;
+                        }
+                    }
+                }
+            }
+            
             return false;
         }
 

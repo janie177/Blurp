@@ -210,15 +210,12 @@ void UniverseScene::Init()
     //Draw one instance of the massively instanced mesh.
     iData.mesh = instanced;
     iData.count = 1;
+    iData.data.transform = true;
 
     //Draw many instances of the single cubes that spasm around.
     data.mesh = mesh;
     data.count = transforms.size();
-
-
-    //Vector containing all PV multiplied transforms. Will be updated each frame.
-    transformed.resize(transforms.size());
-
+    data.data.transform = true;
 }
 
 void UniverseScene::Update()
@@ -363,20 +360,11 @@ void UniverseScene::Update()
      //Reset old data.
     forwardPass->Reset();
 
-    //Get camera.
-    auto pv = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-
-    //Transforms all matrices with the camera and store them.
-    for (size_t i = 0; i < transforms.size(); ++i)
-    {
-        transformed[i] = pv * transforms[i];
-    }
-
     //Update the single transform for the 20 million cubes.
-    m = pv * iMTransform.GetTransformation();
+    m = iMTransform.GetTransformation();
 
-    data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transformed.size(), 16, &transformed[0]);
-    iData.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &m);
+    data.data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transforms.size(), 16, &transforms[0]);
+    iData.data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &m);
 
     //Queue for draw.
     forwardPass->QueueForDraw(data);
