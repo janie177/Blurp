@@ -18,33 +18,48 @@ using namespace blurp;
 
 void UniverseScene::Init()
 {
-    float cubeVertices[] = {
-        // front X Y Z   R G B
-        -1.0, -1.0,  1.0, 0.5f, 1.0, 1.0,
-         1.0, -1.0,  1.0, 1.f, 0.5, 1.0,
-         1.0,  1.0,  1.0, 0.f, 1.0, 0.7,
-        -1.0,  1.0,  1.0, 0.f, 0.0, 1.0,
-        // back
-        -1.0, -1.0, -1.0, 0.f, 1.0, 1.0,
-         1.0, -1.0, -1.0, 1.f, 1.0, 1.0,
-         1.0,  1.0, -1.0, 1.f, 0.0, 1.0,
-        -1.0,  1.0, -1.0, 1.f, 1.0, 0.0,
+    const static std::float_t CUBE_DATA[]
+    {
+        //      X    Y     Z            NORMAL              UV              Color             
+                -0.5f, -0.5f, 0.5f,     0.f, 0.f, 1.f,      0.f, 1.f,       0.f, 1.f, 1.f,
+                -0.5f, 0.5f, 0.5f,      0.f, 0.f, 1.f,      0.f, 0.f,       1.f, 0.f, 1.f,
+                0.5f, -0.5f, 0.5f,      0.f, 0.f, 1.f,      1.f, 1.f,       1.f, 1.f, 0.f,
+                0.5f, 0.5f, 0.5f,       0.f, 0.f, 1.f,      1.f, 0.f,       1.f, 1.f, 1.f,
+
+                0.5f, -0.5f, -0.5f,     1.f, 0.f, 0.f,      1.f, 1.f,       1.f, 0.f, 0.f,
+                0.5f, -0.5f, 0.5f,      1.f, 0.f, 0.f,      0.f, 1.f,       0.f, 0.f, 1.f,
+                0.5f, 0.5f, -0.5f,      1.f, 0.f, 0.f,      1.f, 0.f,       0.f, 1.f, 0.f,
+                0.5f, 0.5f, 0.5f,       1.f, 0.f, 0.f,      0.f, 0.f,       1.f, 1.f, 0.5f,
+
+                -0.5f, -0.5f, -0.5f,    0.f, 0.f, -1.f,     1.f, 1.f,       1.f, 0.5f, 1.f,
+                -0.5f, 0.5f, -0.5f,     0.f, 0.f, -1.f,     1.f, 0.f,       0.5f, 1.f, 1.f,
+                0.5f, -0.5f, -0.5f,     0.f, 0.f, -1.f,     0.f, 1.f,       0.6f, 0.72f, 0.42f,
+                0.5f, 0.5f, -0.5f,      0.f, 0.f, -1.f,     0.f, 0.f,       0.23f, 0.8f, 0.1f,
+
+                -0.5f, -0.5f, -0.5f,    -1.f, 0.f, 0.f,     0.f, 1.f,       0.9f, 0.34f, 0.93f,
+                -0.5f, -0.5f, 0.5f,     -1.f, 0.f, 0.f,     1.f, 1.f,       0.73f, 1.f, 0.43f,
+                -0.5f, 0.5f, -0.5f,     -1.f, 0.f, 0.f,     0.f, 0.f,       0.28f, 0.28f, 0.98f,
+                -0.5f, 0.5f, 0.5f,      -1.f, 0.f, 0.f,     1.f, 0.f,       0.3f, 0.7f, 0.5f,
+
+                -0.5f, 0.5f, -0.5f,     0.f, 1.f, 0.f,      1.f, 1.f,       0.2f, 0.6f, 0.3f,
+                -0.5f, 0.5f, 0.5f,      0.f, 1.f, 0.f,      1.f, 0.f,       0.7f, 0.8f, 0.9f,
+                0.5f, 0.5f, -0.5f,      0.f, 1.f, 0.f,      0.f, 1.f,       0.5f, 0.6f, 0.3f,
+                0.5f, 0.5f, 0.5f,       0.f, 1.f, 0.f,      0.f, 0.f,       0.1f, 0.3f, 0.5f,
+
+                -0.5f, -0.5f, -0.5f,    0.f, -1.f, 0.f,     1.f, 1.f,       0.5f, 0.1f, 0.1f,
+                -0.5f, -0.5f, 0.5f,     0.f, -1.f, 0.f,     1.f, 0.f,       0.93f, 0.12f, 0.6f,
+                0.5f, -0.5f, -0.5f,     0.f, -1.f, 0.f,     0.f, 1.f,       0.3f, 0.8f, 0.3f,
+                0.5f, -0.5f, 0.5f,      0.f, -1.f, 0.f,     0.f, 0.f,       0.2f, 0.9f, 0.7f,
     };
 
-    std::uint16_t cubeIndices[]
+    const static std::uint16_t CUBE_INDICES[]
     {
-            0, 1, 2,
-            2, 3, 0,
-            1, 5, 6,
-            6, 2, 1,
-            7, 6, 5,
-            5, 4, 7,
-            4, 0, 3,
-            3, 7, 4,
-            4, 5, 1,
-            1, 0, 4,
-            3, 2, 6,
-            6, 7, 3
+        0, 3, 1, 0, 2, 3,	    //SOUTH
+        4, 7, 5, 4, 6, 7,	    //EAST
+        8, 11, 10, 8, 9, 11,	//NORTH
+        12, 15, 14, 12, 13, 15,	//WEST
+        16, 19, 18, 16, 17, 19,	//UP
+        20, 23, 21, 20, 22, 23,	//DOWN
     };
 
     //Create a test render target.
@@ -95,22 +110,24 @@ void UniverseScene::Init()
 
     //Scene graph with a mesh and transforms.
     MeshSettings meshSettings;
-    meshSettings.indexData = &cubeIndices;
-    meshSettings.vertexData = &cubeVertices;
+    meshSettings.indexData = &CUBE_INDICES;
+    meshSettings.vertexData = &CUBE_DATA;
     meshSettings.indexDataType = DataType::USHORT;
     meshSettings.usage = MemoryUsage::GPU;
     meshSettings.access = AccessMode::READ_ONLY;
-    meshSettings.vertexDataSizeBytes = sizeof(cubeVertices);
-    meshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 24, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 12, 24, 0);
+    meshSettings.vertexDataSizeBytes = sizeof(CUBE_DATA);
+    meshSettings.numIndices = sizeof(CUBE_INDICES) / sizeof(CUBE_INDICES[0]);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 44, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 12, 44, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 44, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 32, 44, 0);
 
     std::shared_ptr<Mesh> mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
 
     Transform transform;
     transform.SetTranslation({ 0, 0, 0.f });
 
-    numSpasmCubes = 1000;
+    numSpasmCubes = 1;
 
     //Init the scene graph.
     for (int i = 0; i < numSpasmCubes; ++i)
@@ -125,14 +142,14 @@ void UniverseScene::Init()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 100000;
-    const float maxDistance = 200000.f;
+    const int numinstances = 4;
+    const float maxDistance = 100.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;
     const float minScale = 0.5f;
 
     std::vector<float> floats;
-    floats.reserve(16 * numinstances + sizeof(cubeVertices));
+    floats.reserve(16 * numinstances + sizeof(CUBE_DATA));
 
     Transform t;
 
@@ -168,26 +185,28 @@ void UniverseScene::Init()
     }
 
     //Emplace the actual mesh data in the floats array.
-    for (auto& f : cubeVertices)
+    for (auto& f : CUBE_DATA)
     {
         floats.push_back(f);
     }
 
     //Data for the mesh with all vertex attribs and pointers to the data.
     MeshSettings instanceMeshSettings;
-    instanceMeshSettings.indexData = &cubeIndices;
+    instanceMeshSettings.indexData = &CUBE_INDICES;
     instanceMeshSettings.vertexData = &floats[0];
     instanceMeshSettings.indexDataType = DataType::USHORT;
     instanceMeshSettings.usage = MemoryUsage::GPU;
     instanceMeshSettings.access = AccessMode::READ_ONLY;
     instanceMeshSettings.vertexDataSizeBytes = floats.size() * sizeof(float);
-    instanceMeshSettings.numIndices = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
-    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 16 * numinstances * sizeof(float), 24, 0);
-    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, (16 * numinstances * sizeof(float)) + 12, 24, 0);
+    instanceMeshSettings.numIndices = sizeof(CUBE_INDICES) / sizeof(CUBE_INDICES[0]);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 16 * numinstances * sizeof(float) + 0, 44, 0);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 16 * numinstances * sizeof(float) + 12, 44, 0);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 16 * numinstances * sizeof(float) + 24, 44, 0);
+    instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 16 * numinstances * sizeof(float) + 32, 44, 0);
     instanceMeshSettings.vertexSettings.EnableAttribute(VertexAttribute::MATRIX, 0, 16 * sizeof(float), 1);
     instanceMeshSettings.instanceCount = numinstances;
 
-    //Creat the mesh from the generated data.
+    //Create the mesh from the generated data.
     std::shared_ptr<Mesh> instanced = m_Engine.GetResourceManager().CreateMesh(instanceMeshSettings);
 
     //Generate the queue data and mark the mesh for drawing.
@@ -216,6 +235,14 @@ void UniverseScene::Init()
     data.mesh = mesh;
     data.count = transforms.size();
     data.data.transform = true;
+
+    MaterialSettings matSettings;
+    matSettings.SetDiffuseConstant({ 1, 0.8, 0.4 });
+    matSettings.EnableAttribute(MaterialAttribute::DIFFUSE_CONSTANT_VALUE);
+    matSettings.SetEmissiveConstant({ 0.6, 0.25, 0.08f });
+    matSettings.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
+    auto mat = m_Engine.GetResourceManager().CreateMaterial(matSettings);
+    iData.materialData.material = mat;
 }
 
 void UniverseScene::Update()
@@ -380,4 +407,6 @@ void UniverseScene::Update()
             break;
         }
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(6));
 }

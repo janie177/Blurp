@@ -188,11 +188,7 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 
 			if (heightMap != nullptr)
 			{
-				short raw = heightMap[i];
-				unsigned char half1 = raw & 0xff;
-				unsigned char half2 = raw >> 8;
-				ohData[3 * i + 1] = half1;
-				ohData[3 * i + 2] = half2;
+				ohData[3 * i + 1] = heightMap[i];
 			}
 		}
 

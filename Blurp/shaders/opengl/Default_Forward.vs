@@ -138,7 +138,7 @@ void main()
 
     //Regular normals are active.
 #elif defined(VA_NORMAL_DEF)
-    outData.normal = normalize(vec3( normalMatrix * vec4(aNormal, 0.0)));
+    outData.normal = normalize(normalMatrix * aNormal);
 #endif
     
 #ifdef VA_COLOR_DEF

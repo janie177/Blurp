@@ -310,7 +310,7 @@ namespace blurp
         OCCLUSION_TEXTURE = 1 << 6,
 
         //Height offset from the surface. This moves vertices along their normal direction.
-        //Stored as the G and B channels of the Occlusion/Height texture.
+        //Stored as the G channel of the Occlusion/Height texture.
         HEIGHT_TEXTURE = 1 << 7,
 
         //Allows using a single color for the diffuse texture of this material.
@@ -403,7 +403,7 @@ namespace blurp
         {MaterialAttribute::ROUGHNESS_TEXTURE, {"MAT_ROUGHNESS_TEXTURE_DEFINE", 1}},
         {MaterialAttribute::ALPHA_TEXTURE, {"MAT_ALPHA_TEXTURE_DEFINE", 1}},
         {MaterialAttribute::OCCLUSION_TEXTURE, {"MAT_OCCLUSION_TEXTURE_DEFINE", 1}},
-        {MaterialAttribute::HEIGHT_TEXTURE, {"MAT_HEIGHT_TEXTURE_DEFINE", 2}},
+        {MaterialAttribute::HEIGHT_TEXTURE, {"MAT_HEIGHT_TEXTURE_DEFINE", 1}},
 
         {MaterialAttribute::DIFFUSE_CONSTANT_VALUE, {"MAT_DIFFUSE_CONSTANT_DEFINE", 3}},
         {MaterialAttribute::EMISSIVE_CONSTANT_VALUE, {"MAT_EMISSIVE_CONSTANT_DEFINE", 3}},

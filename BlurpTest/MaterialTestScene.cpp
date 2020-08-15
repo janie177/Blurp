@@ -199,6 +199,7 @@ void MaterialTestScene::Init()
     materialData.metallicTextureName = "metallic.jpg";
     materialData.roughnessTextureName = "roughness.jpg";
     materialData.aoTextureName = "ao.jpg";
+    //materialData.emissiveTextureName = "emissive.jpg";
     materialData.heightTextureName = "height.jpg";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
 
@@ -210,6 +211,9 @@ void MaterialTestScene::Init()
     //Enable transform uploading. Now a single matrix is expected in the GpuBufferView.
     m_QueueData.data.transform = true;
 
+
+    m_MeshTransform.Scale({ 3.0, 3.0, 1.0 });
+
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
 }
@@ -217,7 +221,7 @@ void MaterialTestScene::Init()
 void MaterialTestScene::Update()
 {
     //Rotate the mesh a bit each frame.
-    const static float ROTATION_SPEED = 0.0005;
+    const static float ROTATION_SPEED = 0.00005;
     m_MeshTransform.Rotate(m_MeshTransform.GetUp(), ROTATION_SPEED);
 
     //Read the input from the window.

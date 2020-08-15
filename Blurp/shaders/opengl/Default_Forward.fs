@@ -91,21 +91,39 @@ layout (std140, binding = 2) uniform constData
 void main()
 {
 	vec4 outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	vec2 texCoords = inData.uv;
 	vec3 viewDirection = normalize(inData.camPos - inData.fragPos);
 
+	//Texture coordinates that can be updated by the parallax mapping.
+	#ifdef VA_UVCOORD_DEF
+	vec2 texCoords = inData.uv;
+	#endif
+
+	#if defined(MAT_EMISSIVE_CONSTANT_DEFINE) || defined(MAT_EMISSIVE_TEXTURE_DEFINE)
+	vec4 emissiveModifier = vec4(0, 0, 0, 0);
+	#endif
+
+	#if defined(MAT_OCCLUSION_TEXTURE_DEFINE)
+	float aoModifier = 1.0;
+	#endif
+
+	#if defined(MAT_ALPHA_TEXTURE_DEFINE) || defined(MAT_ALPHA_CONSTANT_DEFINE)
+	float alphaModifier = 1.0;
+	#endif
+
 	vec3 lPos = light_pos_world;
+
+	//Normals are used, but no normalmapping is enabled.
+	#if defined(VA_NORMAL_DEF) && !(defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF))
+	vec3 surfaceNormal = inData.normal;
+	#endif
 
 	//SINGLE MATERIAL
 	#ifdef MAT_SINGLE_DEFINE
 
 			//AmbientOcclusion/Height. Requires normalmapping to be active too.
 		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE))
-			vec4 oh = texture2D(occlusionheightTexture, texCoords);
-
 			#if defined(MAT_HEIGHT_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF) && defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-				//float height = float( ((((int(round(oh.g * 255))) << 8) + int(round(oh.b * 255))) / 65535.0)) * 10.0;
-
+				//Take multiple samples from different layers, each oriented along the view direction.
 				const float numLayers = 10;
 				float layerDepth = 1.0 / numLayers;
 				float currentLayerDepth = 0.0;
@@ -115,22 +133,15 @@ void main()
 				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;
 				while(currentLayerDepth < currentDepthMapValue)
 				{
-					// shift texture coordinates along direction of P
 					currentTexCoords -= deltaTexCoords;
-					// get depthmap value at current texture coordinates
 					currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;  
-					// get depth of next layer
 					currentLayerDepth += layerDepth;  
 				}
 
-				// get texture coordinates before collision (reverse operations)
+				//Interpolate between the layers to find the best matching depth.
 				vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
-
-				// get depth after and before collision for linear interpolation
 				float afterDepth  = currentDepthMapValue - currentLayerDepth;
 				float beforeDepth = (1.0 - texture(occlusionheightTexture, prevTexCoords).g) - currentLayerDepth + layerDepth;
- 
-				// interpolation of texture coordinates
 				float weight = afterDepth / (afterDepth - beforeDepth);
 				vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
@@ -139,7 +150,7 @@ void main()
 
 				//Retrieve again because texCoords may have changed.
 			#ifdef MAT_OCCLUSION_TEXTURE_DEFINE
-				float ao = texture2D(occlusionheightTexture, texCoords).r;
+				aoModifier = texture2D(occlusionheightTexture, texCoords).r;
 			#endif
 		#endif
 
@@ -164,18 +175,15 @@ void main()
 			lPos = inData.tbn * light_pos_world;
 			//END TODO
 
-		//Regular normal
-		#elif defined(VA_NORMAL_DEF)
-			vec3 surfaceNormal = inData.normal;
 		#endif
 
 		//Emissive constant
 		#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
-			outColor *= vec4(emissiveConstant, 1.0);
+			emissiveModifier = vec4(emissiveConstant, 1.0);
 		#endif
 		//Emissive texture
 		#if defined(MAT_EMISSIVE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor *= texture2D(emissiveTexture, texCoords);
+			emissiveModifier = texture2D(emissiveTexture, texCoords);
 		#endif
 
 
@@ -190,7 +198,7 @@ void main()
 				float rough = mra.g;
 			#endif
 			#ifdef MAT_ALPHA_TEXTURE_DEFINE
-				outColor.a = alphaConstant;
+				alphaModifier = alphaConstant;
 			#endif
 
 			
@@ -205,7 +213,7 @@ void main()
 		#endif
 		//Alpha constant
 		#ifdef MAT_ALPHA_CONSTANT_DEFINE
-			outColor.a = alphaConstant;
+			alphaModifier = alphaConstant;
 		#endif
 
 	//END SINGLE MATERIAL
@@ -234,5 +242,21 @@ void main()
 		outColor = vec4(max(intensity * outColor.xyz, ambient_light), outColor.a);
 	#endif
 
+
+	//Apply AO, alpha and emissive.
+
+	#if defined(MAT_OCCLUSION_TEXTURE_DEFINE)
+	outColor *= aoModifier;
+	#endif
+
+	#if defined(MAT_EMISSIVE_CONSTANT_DEFINE) || defined(MAT_EMISSIVE_TEXTURE_DEFINE)
+	outColor += emissiveModifier;
+	#endif
+	
+	#if defined(MAT_ALPHA_TEXTURE_DEFINE) || defined(MAT_ALPHA_CONSTANT_DEFINE)
+	outColor.a = alphaModifier;
+	#endif
+
+	//Set the final color as the fragment shader output.
 	gl_FragColor = outColor;
 }

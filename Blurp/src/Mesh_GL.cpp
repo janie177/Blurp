@@ -86,11 +86,6 @@ namespace blurp
                     glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * Size_Of(info.dataType)))));
                     glEnableVertexAttribArray(index + i);
 
-                    if(attrib == VertexAttribute::MATRIX)
-                    {
-                        std::cout << "Enabling matrix at index: " << (index + i) << " with " << (elementsLeft <= 4 ? elementsLeft : 4) << " elements. Stride is " << data.byteStride << " bytes and offset is " << static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * Size_Of(info.dataType))) << std::endl;
-                    }
-
                     elementsLeft -= 4;
 
                     //Enable instancing if specified.
