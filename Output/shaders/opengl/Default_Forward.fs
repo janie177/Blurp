@@ -6,9 +6,8 @@
 
 	vec3 light_pos_world = vec3(-5, 10, -5);
 	vec3 light_color = vec3(1, 1, 1);
-	vec3 ambient_light = vec3(0.05, 0.05, 0.05);
+	vec3 ambient_light = vec3(0.02, 0.02, 0.02);
 //END OF LIGHT TEST
-
 
 in VERTEX_OUT
 {
@@ -17,6 +16,11 @@ in VERTEX_OUT
 
     //Camera position.
     vec3 camPos;
+
+	//Material ID in the material batch.
+	#ifdef VA_MATERIALID_DEF
+	flat int materialID;
+	#endif
 
 	//Vertex color modifier.
     #ifdef VA_COLOR_DEF
@@ -54,35 +58,39 @@ layout(location = 5) uniform float alphaConstant;
 
 
 //Material batch
-#ifdef MAT_BATCH_DEFINE
+#if defined(MAT_BATCH_DEFINE) && defined(VA_MATERIALID_DEF)
 
-layout(binding = 5) uniform sampler2DArray materialArray;
+	//The amount of textures currently active in the material batch, representing stride.
+	layout(location = 6) uniform int numActiveBatchTextures;
 
-//Struct that contains the correct layout for all enabled constant material attributes.
-struct ConstMatAttribs
-{
-#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
-	vec4 diffuse;
-#endif
-#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
-	vec4 emissive;
-#endif
-#ifdef MAT_METALLIC_CONSTANT_DEFINE
-	float metallic;
-#endif
-#ifdef MAT_ROUGHNESS_CONSTANT_DEFINE
-	float roughness;
-#endif
-#ifdef MAT_ALPHA_CONSTANT_DEFINE
-	float alpha;
-#endif
-};
+	//The texture array containing all material textures.
+	layout(binding = 5) uniform sampler2DArray materialArray;
 
-//Uniform block containing batched material info.
-layout (std140, binding = 2) uniform constData
-{ 
-	ConstMatAttribs constAttribData[MAX_MATERIAL_BATCH_SIZE];
-};
+	//Struct that contains the correct layout for all enabled constant material attributes.
+	struct ConstMatAttribs
+	{
+	#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
+		vec4 diffuse;
+	#endif
+	#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
+		vec4 emissive;
+	#endif
+	#ifdef MAT_METALLIC_CONSTANT_DEFINE
+		float metallic;
+	#endif
+	#ifdef MAT_ROUGHNESS_CONSTANT_DEFINE
+		float roughness;
+	#endif
+	#ifdef MAT_ALPHA_CONSTANT_DEFINE
+		float alpha;
+	#endif
+	};
+
+	//Uniform block containing batched material info.
+	layout (std140, binding = 2) uniform constData
+	{ 
+		ConstMatAttribs constAttribData[MAX_MATERIAL_BATCH_SIZE];
+	};
 
 //MAT_BATCH_DEFINE
 #endif 
@@ -115,6 +123,16 @@ void main()
 	//Normals are used, but no normalmapping is enabled.
 	#if defined(VA_NORMAL_DEF) && !(defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF))
 	vec3 surfaceNormal = inData.normal;
+	#endif
+
+	//Metallic is used.
+	#if defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_METALLIC_CONSTANT_DEFINE)
+	float metallic = 0;
+	#endif
+
+	//Roughness is used.
+	#if defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_CONSTANT_DEFINE)
+	float roughness = 0;
 	#endif
 
 	//SINGLE MATERIAL
@@ -192,10 +210,10 @@ void main()
 			vec4 mra = texture2D(metalroughalphaTexture, texCoords);
 
 			#ifdef MAT_METALLIC_TEXTURE_DEFINE
-				float metal = mra.r;
+				metallic = mra.r;
 			#endif
 			#ifdef MAT_ROUGHNESS_TEXTURE_DEFINE
-				float rough = mra.g;
+				roughness = mra.g;
 			#endif
 			#ifdef MAT_ALPHA_TEXTURE_DEFINE
 				alphaModifier = alphaConstant;
@@ -205,11 +223,11 @@ void main()
 		#endif
 		//Metal constant
 		#ifdef MAT_METALLIC_CONSTANT_DEFINE
-			float metal = metallicConstant;
+			metallic = metallicConstant;
 		#endif
 		//Roughness constant
 		#ifdef MAT_ROUGHNESS_CONSTANT_DEFINE
-			float rough = roughnessConstant;
+			roughness = roughnessConstant;
 		#endif
 		//Alpha constant
 		#ifdef MAT_ALPHA_CONSTANT_DEFINE
@@ -221,9 +239,112 @@ void main()
 
 
 	//MATERIAL BATCH
-	#ifdef MAT_BATCH_DEFINE
+	#if defined(MAT_BATCH_DEFINE) && defined(VA_MATERIALID_DEF)
+	int texLayerOffset = 0;
+
+					//AmbientOcclusion/Height. Requires normalmapping to be active too.
+		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE))
+			#if defined(MAT_HEIGHT_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF) && defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+				//Take multiple samples from different layers, each oriented along the view direction.
+				const float numLayers = 10;
+				float layerDepth = 1.0 / numLayers;
+				float currentLayerDepth = 0.0;
+				vec2 P = viewDirection.xy * 0.6; 
+				vec2 deltaTexCoords = P / numLayers;
+				vec2  currentTexCoords     = texCoords;
+				float currentDepthMapValue = 1.0 - texture(materialArray, vec3(currentTexCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).g;
+				while(currentLayerDepth < currentDepthMapValue)
+				{
+					currentTexCoords -= deltaTexCoords;
+					currentDepthMapValue = 1.0 - texture(materialArray, vec3(currentTexCoords, inData.materialID + texLayerOffset)).g;  
+					currentLayerDepth += layerDepth;  
+				}
+
+				//Interpolate between the layers to find the best matching depth.
+				vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+				float afterDepth  = currentDepthMapValue - currentLayerDepth;
+				float beforeDepth = (1.0 - texture(materialArray, vec3(prevTexCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).g) - currentLayerDepth + layerDepth;
+				float weight = afterDepth / (afterDepth - beforeDepth);
+				vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+				texCoords = finalTexCoords;
+			#endif
+
+				//Retrieve again because texCoords may have changed.
+			#ifdef MAT_OCCLUSION_TEXTURE_DEFINE
+				aoModifier = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).r;
+			#endif
+
+			//Increment the offset into the texture buffer.
+			++texLayerOffset;
+		#endif
 
 
+		//Diffuse constant
+		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
+
+			outColor = constAttribData[inData.materialID].diffuse;
+		#endif
+
+		//Diffuse texture
+		#if defined(MAT_DIFFUSE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+			outColor = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset));
+			++texLayerOffset;
+
+		#endif
+
+		//Normal texture
+		#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+			vec3 surfaceNormal = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).rgb;
+			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
+			surfaceNormal = normalize(surfaceNormal);
+
+			//TODO remove this whith actual lighting
+			lPos = inData.tbn * light_pos_world;
+			//END TODO
+
+			++texLayerOffset;
+		#endif
+
+		//Emissive constant
+		#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
+			emissiveModifier = constAttribData[inData.materialID].emissive;
+		#endif
+		//Emissive texture
+		#if defined(MAT_EMISSIVE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+			emissiveModifier = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset));
+			++texLayerOffset;
+		#endif
+
+
+		//MetalRoughnessAlpha
+		#if (defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ALPHA_TEXTURE_DEFINE)) && defined(VA_UVCOORD_DEF)
+			vec4 mra = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset));
+
+			#ifdef MAT_METALLIC_TEXTURE_DEFINE
+				metallic = mra.r;
+			#endif
+			#ifdef MAT_ROUGHNESS_TEXTURE_DEFINE
+				roughness = mra.g;
+			#endif
+			#ifdef MAT_ALPHA_TEXTURE_DEFINE
+				alphaModifier = alphaConstant;
+			#endif
+
+			++texLayerOffset;
+		#endif
+		//Metal constant
+		#ifdef MAT_METALLIC_CONSTANT_DEFINE
+			metallic = constAttribData[inData.materialID].metallic;
+		#endif
+		//Roughness constant
+		#ifdef MAT_ROUGHNESS_CONSTANT_DEFINE
+			roughness = constAttribData[inData.materialID].roughness;;
+		#endif
+		//Alpha constant
+		#ifdef MAT_ALPHA_CONSTANT_DEFINE
+			alphaModifier = constAttribData[inData.materialID].alpha;;
+		#endif
 
 	//END MATERIAL BATCH
 	#endif
@@ -238,8 +359,8 @@ void main()
 	#if defined(VA_NORMAL_DEF)
 		vec3 lightDir = normalize(inData.fragPos.xyz - lPos);
 
-		float intensity = max(dot(surfaceNormal, lightDir), 0.0);
-		outColor = vec4(max(intensity * outColor.xyz, ambient_light), outColor.a);
+		float intensity = max(dot(surfaceNormal, -lightDir), 0.0);
+		outColor = vec4((intensity * outColor.rgb) + (outColor.rgb * ambient_light), 1.0);
 	#endif
 
 

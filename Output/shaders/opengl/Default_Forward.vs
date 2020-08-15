@@ -10,7 +10,7 @@ layout(location = 6) in vec3 aBiTangent;
 layout(location = 7) in vec3 aBoneIndices;
 layout(location = 8) in vec3 aBoneWeights;
 layout(location = 9) in mat4 aMatrix;
-layout(location = 13) in unsigned short aMaterialID;
+layout(location = 13) in float aMaterialID;
 layout(location = 14) in mat4 aITMatrix;
 
 
@@ -54,6 +54,11 @@ out VERTEX_OUT
 
     //Camera position.
     vec3 camPos;
+
+    //Material ID in the material batch.
+	#ifdef VA_MATERIALID_DEF
+	flat int materialID;
+	#endif
 
     //Vertex color modifier.
     #ifdef VA_COLOR_DEF
@@ -148,6 +153,10 @@ void main()
 #ifdef VA_UVCOORD_DEF
     outData.uv = aUv;
 #endif  
+
+#ifdef VA_MATERIALID_DEF
+    outData.materialID = int(aMaterialID);
+#endif
 
 
     //WORLD SPACE POSITION FOR LIGHT CALCULATIONS

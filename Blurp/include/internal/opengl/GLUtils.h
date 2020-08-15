@@ -90,6 +90,12 @@ namespace blurp
     /*
      * Convert an internal format and datatype to the correct sized opengl type.
      * If a format could not be found, an exception is thrown.
+     *
+     * NOTE:
+     * OpenGL samplers will sample between {0, 1} for unsigned input, and between {-1, 1} for signed input.
+     * Samplers return a float vec4 when the datatype is not suffixed with U or I.
+     * This means that for RGB and UBYTE, I return GL_RGB8 instead of GL_RGB8UI.
+     * This may seem unintuitive, but the reason is that otherwise in the shader I will get ints between 0 and 255.
      */
     inline constexpr GLenum ToSizedFormat(PixelFormat a_Format, DataType a_DataType)
     {
@@ -104,7 +110,7 @@ namespace blurp
             case DataType::BYTE:
                 return GL_R8;
             case DataType::UBYTE:
-                return GL_R8UI;
+                return GL_R8;
             case DataType::INT:
                 return GL_R32I;
             case DataType::UINT:
@@ -125,7 +131,7 @@ namespace blurp
             case DataType::BYTE:
                 return GL_RG8;
             case DataType::UBYTE:
-                return GL_RG8UI;
+                return GL_RG8;
             case DataType::INT:
                 return GL_RG32I;
             case DataType::UINT:
@@ -146,7 +152,7 @@ namespace blurp
             case DataType::BYTE:
                 return GL_RGB8;
             case DataType::UBYTE:
-                return GL_RGB8UI;
+                return GL_RGB8;
             case DataType::INT:
                 return GL_RGB32I;
             case DataType::UINT:
@@ -167,7 +173,7 @@ namespace blurp
             case DataType::BYTE:
                 return GL_RGBA8;
             case DataType::UBYTE:
-                return GL_RGBA8UI;
+                return GL_RGBA8;
             case DataType::INT:
                 return GL_RGBA32I;
             case DataType::UINT:

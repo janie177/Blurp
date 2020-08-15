@@ -14,30 +14,31 @@ namespace blurp
         //Ensure that the settings are valid.
         assert(m_Settings.GetMask() != 0 && "MaterialBatch needs at least one attribute enabled!");
         assert(m_Settings.materialCount > 0 && m_Settings.textureSettings.dimensions.x > 0 && m_Settings.textureSettings.dimensions.y > 0 && "Material count, width and height in a batch need to be at least 1.");
-        assert(!IsSigned(m_Settings.textureSettings.dataType) && "Data type for material batch has to be unsigned.");
 
         //If at least one texture is enabled, make sure that the provided data is not nullptr.
-        for(auto& attrib : MATERIAL_ATTRIBUTES)
+        for(auto& attrib : TEXTURE_MATERIAL_ATTRIBUTES)
         {
-            const bool enabled = m_Settings.IsAttributeEnabled(attrib);
-            if(attrib <= MaterialAttribute::HEIGHT_TEXTURE && enabled)
+            if (m_Settings.IsAttributeEnabled(attrib))
             {
-                m_HasMaterial = true;
+                m_HasTexture = true;
                 break;
             }
         }
 
-        assert(m_HasMaterial == (m_Settings.textureData != nullptr) && "Material batch that has texture enabled requires textureData to be provided!");
+        assert(m_HasTexture == (m_Settings.textureData != nullptr) && "Material batch that has texture enabled requires textureData to be provided!");
 
         //Upload the texture data to a texture array.
-        if(m_HasMaterial)
+        if(m_HasTexture)
         {
+            //Ensure that a texture count was provided.
+            assert(m_Settings.textureCount != 0 && "Please provide how many textures are in the texture array per material!");
+
             TextureSettings tSettings;
             tSettings.textureType = TextureType::TEXTURE_2D_ARRAY;
             tSettings.pixelFormat = PixelFormat::RGB;
             tSettings.dataType = m_Settings.textureSettings.dataType;
             tSettings.wrapMode = m_Settings.textureSettings.wrapMode;
-            tSettings.dimensions = { m_Settings.textureSettings.dimensions.x, m_Settings.textureSettings.dimensions.y, m_Settings.materialCount };
+            tSettings.dimensions = { m_Settings.textureSettings.dimensions.x, m_Settings.textureSettings.dimensions.y, m_Settings.materialCount * m_Settings.textureCount};    //Total layers is the amount of materials times the amount of textures per material.
             tSettings.generateMipMaps = m_Settings.textureSettings.generateMipMaps;
             tSettings.numMipMaps = m_Settings.textureSettings.numMipMaps;
             tSettings.magFilter = m_Settings.textureSettings.magFilter;
@@ -96,19 +97,19 @@ namespace blurp
                 switch (attrib)
                 {
                 case MaterialAttribute::DIFFUSE_CONSTANT_VALUE:
-                    attribData[i] = m_Settings.diffuseConstantData;
+                    attribData[i] = m_Settings.constantData.diffuseConstantData;
                     break;
                 case MaterialAttribute::EMISSIVE_CONSTANT_VALUE:
-                    attribData[i] = m_Settings.emissiveConstantData;
+                    attribData[i] = m_Settings.constantData.emissiveConstantData;
                     break;
                 case MaterialAttribute::METALLIC_CONSTANT_VALUE:
-                    attribData[i] = m_Settings.metallicConstantData;
+                    attribData[i] = m_Settings.constantData.metallicConstantData;
                     break;
                 case MaterialAttribute::ROUGHNESS_CONSTANT_VALUE:
-                    attribData[i] = m_Settings.roughnessConstantData;
+                    attribData[i] = m_Settings.constantData.roughnessConstantData;
                     break;
                 case MaterialAttribute::ALPHA_CONSTANT_VALUE:
-                    attribData[i] = m_Settings.alphaConstantData;
+                    attribData[i] = m_Settings.constantData.alphaConstantData;
                     break;
                 default:
                     throw std::exception("Oops I forgot to add a new material attribute constant data to the OpenGL implementation.");
@@ -145,9 +146,9 @@ namespace blurp
                     auto startIndex = (matIndex * stride) + accumulatedStride;
                     for(unsigned int elementIndex = 0; elementIndex <= elementCount; ++elementIndex)
                     {
-                        auto dataPtr = attribData[(matIndex * elementCount) + elementIndex];
+                        auto dataPtr = attribData[i];
                         assert(dataPtr != nullptr && "MaterialBatch that has constant data enabled had nullptr provided for that data!");
-                        constantData[static_cast<std::size_t>(startIndex) + elementIndex] = *dataPtr;
+                        constantData[static_cast<std::size_t>(startIndex) + elementIndex] = dataPtr[(matIndex * elementCount) + elementIndex];
                     }
                 }
 

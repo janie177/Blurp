@@ -1,113 +1,41 @@
 TODO list:
-	[X] Create AccessMode mapping and integrate it in existing systems.
 	
-	[ ] Create Material and MaterialBatch. Mask and attributes and Settings objects. Functions to provide data and all that. Same as VertexAttribute with define names and all those.
-		Combined textures should only enable the parts that are present. Asserts in place to make sure the formats are correct.
+	[x]	Correctly set up OpenGL SwapChain window from the settings.
+
+	[x] Implement material batch in the forward shader.
 		
-	[X] Implement OnLock and OnUnlock in the lockable interfaces that in turn need unlocking. (This is not possible because the pipeline itself needs to do the locking).
-	
+	[ ] Implement light uploading.
+		- Uniform buffer 2x size of lights. In vertex shader transform to tangent space and put in the 2nd half of the buffer. 
+		- Each light has a shadowmap index (into array texture).
+		- Uniforms uploaded: numPointLight, numPointLightShadows, numDirLights... etc.
+		- Upload lights in world space.
+		
 	[ ] Add a callback to the window class that is called when the window resizes.
 	
-	[ ] Update forward render pass to use materials and correctly generate shaders.
+	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
 	
-	[ ] Add a static light to the shader for temporary light calculations.
+	[ ]	Implement metallic roughness in the forward shader.
 	
-	[ ] Update forward shaders to use materials with ifdefs and attributs. 
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
+	[ ] Set up locking correctly for forward pass.
 	
 	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
 	
-	[ ] d
+	[ ] Set up shadowmapping.
 	
-	[ ] d
+	[ ]	Look into multisampling / anti aliasing. See where I can add these (RenderState maybe?).
 	
-	[ ] d
+	[ ] Setup basic geometry utility: Geometry::CreateSphere(radius, xcomp, ycomp), Geometry::CreateCube();
 	
-	[ ] d
+	[ ]	Create custom material format. Converter to convert existing data and loader to load from file.
+		- File contains all raw texture data that can be loaded straight into the GPU.
+		- File contains all constants.
+		
+	[ ]	Create model loader in test project that can load GLTF meshes.
 	
-	[ ] d
+	[ ] Add functionality to meshes to overwrite data partially. Ensure not locked and not read only.
 	
-	[ ] d
+	[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
 	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	[ ] d
-	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	Passes:
 		ComputeMatrices:

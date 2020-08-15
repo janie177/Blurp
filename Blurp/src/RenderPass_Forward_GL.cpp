@@ -2,6 +2,7 @@
 #include "BlurpEngine.h"
 #include "FileReader.h"
 #include "opengl/GpuBuffer_GL.h"
+#include "opengl/MaterialBatch_GL.h"
 #include "opengl/Mesh_GL.h"
 #include "opengl/RenderTarget_GL.h"
 #include "opengl/Shader_GL.h"
@@ -98,6 +99,8 @@ namespace blurp
         std::shared_ptr<MaterialBatch> prevMaterialBatch;
         std::shared_ptr<Mesh> prevMesh;
 
+        GLuint currentProgramId = 0;
+
         constexpr std::uint32_t matSingleBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS);
         constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
         constexpr std::uint32_t uploadMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 2);
@@ -163,7 +166,8 @@ namespace blurp
                 //Bind the new shader.
                 prevMask = shaderMask;
                 const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(shaderMask));
-                glUseProgram(currentShader->GetProgramId());
+                currentProgramId = currentShader->GetProgramId();
+                glUseProgram(currentProgramId);
             }
 
             //If the current material is new or the shader changed, re-upload the material data.
@@ -232,8 +236,24 @@ namespace blurp
             //If the material batch data needs to be bound, bind it.
             if (useMaterialBatch && (changedBatch || changedShader))
             {
-                //TODO bind material batch.
-                //TODO this includes array texture and the UBO.
+                auto batchGl = static_cast<MaterialBatch_GL*>(instanceData.materialData.materialBatch.get());
+
+                //Bind the texture
+                if(batchGl->HasTexture())
+                {
+                    auto texture = std::static_pointer_cast<Texture_GL>(batchGl->GetTexture());
+                    glActiveTexture(GL_TEXTURE5);
+                    glBindTexture(GL_TEXTURE_2D_ARRAY, texture->GetTextureId());
+
+                    //Set the stride uniform
+                    glUniform1i(6, batchGl->GetActiveTextureCount());
+                }
+                if(batchGl->HasUbo())
+                {
+                    auto uboId = batchGl->GetUboID();
+                    glBindBuffer(GL_UNIFORM_BUFFER, uboId);
+                    glBindBufferBase(GL_UNIFORM_BUFFER, 2, uboId);
+                }
             }
 
             //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.

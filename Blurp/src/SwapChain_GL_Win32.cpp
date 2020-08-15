@@ -48,21 +48,26 @@ namespace blurp
         auto win32Window = reinterpret_cast<Window_Win32*>(window);
         const auto hwnd = win32Window->GetHwnd();
 
-        //TODO currently bitdepth for color and depthstencil are always static. Make this dynamic.
+        assert(m_Settings.renderTargetSettings.colorChannels == 4 && "Win32 OpenGL requires RGBA window color output!");
+
         PIXELFORMATDESCRIPTOR pfd =
         {
             sizeof(PIXELFORMATDESCRIPTOR),
             1,
             PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
             PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
-            32,                   // Colordepth of the framebuffer.
+            static_cast<std::uint8_t>(m_Settings.renderTargetSettings.channelBits * m_Settings.renderTargetSettings.colorChannels), // Colordepth of the framebuffer.
+
+            //No bitshifting required.
             0, 0, 0, 0, 0, 0,
             0,
             0,
+
             0,
             0, 0, 0, 0,
-            24,                   // Number of bits for the depthbuffer
-            8,                    // Number of bits for the stencilbuffer
+
+            static_cast<std::uint8_t>(m_Settings.renderTargetSettings.depthBits),                   // Number of bits for the depthbuffer
+            static_cast<std::uint8_t>(m_Settings.renderTargetSettings.stencilBits),                    // Number of bits for the stencilbuffer
             0,                    // Number of Aux buffers in the framebuffer.
             PFD_MAIN_PLANE,
             0,
@@ -81,11 +86,15 @@ namespace blurp
 
         std::cout << "OpenGL version: " << (char*)glGetString(GL_VERSION) << std::endl;
 
-        //Don't allow attachments to the default OpenGL created framebuffer.
-        m_Settings.renderTargetSettings.allowAttachments = false;
+        //Create a render target that does not allow attachments.
+        RenderTargetSettings rtSettings;
+        rtSettings.allowAttachments = false;
+        rtSettings.clearColor = m_Settings.renderTargetSettings.clearColor;
+        rtSettings.scissorRect = m_Settings.renderTargetSettings.scissorRect;
+        rtSettings.viewPort = m_Settings.renderTargetSettings.viewPort;
 
-        //Create the default OpenGL rendertarget which is really just a dummy.
-        m_RenderTarget = std::make_shared<RenderTarget_GL>(m_Settings.renderTargetSettings, true);
+        //Create the default OpenGL rendertarget which is really just a dummy. The boolean true makes it a dummy.
+        m_RenderTarget = std::make_shared<RenderTarget_GL>(rtSettings, true);
         m_RenderTarget->Load(a_BlurpEngine);
 
         //Disable vsync if specified

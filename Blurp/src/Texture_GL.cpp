@@ -95,8 +95,9 @@ namespace blurp
             }
 
 
-            glTexStorage3D(GL_TEXTURE_2D_ARRAY, mips, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z);
-            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z, pixelFormat, dataType, m_Settings.texture2DArray.data);
+            //glTexStorage3D(GL_TEXTURE_2D_ARRAY, mips, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z);
+            //glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z, pixelFormat, dataType, m_Settings.texture2DArray.data);
+            glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z, 0, pixelFormat, dataType, m_Settings.texture2DArray.data);
 
             // Always set reasonable texture parameters
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, minFilter);
