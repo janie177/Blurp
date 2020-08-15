@@ -2,11 +2,23 @@
 
 #define MAX_MATERIAL_BATCH_SIZE 512
 
+//LIGHT TEST REMOVE THIS LATER
+
+	vec3 light_pos_world = vec3(-5, 10, -5);
+	vec3 light_color = vec3(1, 1, 1);
+	vec3 ambient_light = vec3(0.05, 0.05, 0.05);
+//END OF LIGHT TEST
+
+
 in VERTEX_OUT
 {
     //Vertex position in world space without the projection applied.
-    vec4 fragPos;
+    vec3 fragPos;
 
+    //Camera position.
+    vec3 camPos;
+
+	//Vertex color modifier.
     #ifdef VA_COLOR_DEF
     vec3 color;
     #endif
@@ -18,7 +30,7 @@ in VERTEX_OUT
 
     //If normalmapping is enabled and a normal and tangent are provided. Bitangent is optional in the calculation (cross product possible).
     #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-    mat4 tbn;
+    mat3x3 tbn;
 
     //Normal in light space.
     #elif defined(VA_NORMAL_DEF)
@@ -78,33 +90,84 @@ layout (std140, binding = 2) uniform constData
 
 void main()
 {
-	vec4 outColor = vec4(0.0, 1.0, 1.0, 1.0);
+	vec4 outColor = vec4(1.0, 1.0, 1.0, 1.0);
+	vec2 texCoords = inData.uv;
+	vec3 viewDirection = normalize(inData.camPos - inData.fragPos);
+
+	vec3 lPos = light_pos_world;
 
 	//SINGLE MATERIAL
 	#ifdef MAT_SINGLE_DEFINE
 
+			//AmbientOcclusion/Height. Requires normalmapping to be active too.
+		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE))
+			vec4 oh = texture2D(occlusionheightTexture, texCoords);
+
+			#if defined(MAT_HEIGHT_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF) && defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
+				//float height = float( ((((int(round(oh.g * 255))) << 8) + int(round(oh.b * 255))) / 65535.0)) * 10.0;
+
+				const float numLayers = 10;
+				float layerDepth = 1.0 / numLayers;
+				float currentLayerDepth = 0.0;
+				vec2 P = viewDirection.xy * 0.6; 
+				vec2 deltaTexCoords = P / numLayers;
+				vec2  currentTexCoords     = texCoords;
+				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;
+				while(currentLayerDepth < currentDepthMapValue)
+				{
+					// shift texture coordinates along direction of P
+					currentTexCoords -= deltaTexCoords;
+					// get depthmap value at current texture coordinates
+					currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;  
+					// get depth of next layer
+					currentLayerDepth += layerDepth;  
+				}
+
+				// get texture coordinates before collision (reverse operations)
+				vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+				// get depth after and before collision for linear interpolation
+				float afterDepth  = currentDepthMapValue - currentLayerDepth;
+				float beforeDepth = (1.0 - texture(occlusionheightTexture, prevTexCoords).g) - currentLayerDepth + layerDepth;
+ 
+				// interpolation of texture coordinates
+				float weight = afterDepth / (afterDepth - beforeDepth);
+				vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+				texCoords = finalTexCoords;
+			#endif
+
+				//Retrieve again because texCoords may have changed.
+			#ifdef MAT_OCCLUSION_TEXTURE_DEFINE
+				float ao = texture2D(occlusionheightTexture, texCoords).r;
+			#endif
+		#endif
+
+
 		//Diffuse constant
 		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
-			//outColor = vec4(diffuseConstant, 1.0);
+			outColor = vec4(diffuseConstant, 1.0);
 		#endif
 
 		//Diffuse texture
 		#if defined(MAT_DIFFUSE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor = texture2D(diffuseTexture, inData.uv);
+			outColor = texture2D(diffuseTexture, texCoords);
 		#endif
-
-
 
 		//Normal texture
 		#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor = texture2D(normalTexture, inData.uv);
+			vec3 surfaceNormal = texture2D(normalTexture, texCoords).rgb;
+			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
+			surfaceNormal = normalize(surfaceNormal);
+
+			//TODO remove this whith actual lighting
+			lPos = inData.tbn * light_pos_world;
+			//END TODO
 
 		//Regular normal
 		#elif defined(VA_NORMAL_DEF)
-
+			vec3 surfaceNormal = inData.normal;
 		#endif
-
-
 
 		//Emissive constant
 		#ifdef MAT_EMISSIVE_CONSTANT_DEFINE
@@ -112,13 +175,13 @@ void main()
 		#endif
 		//Emissive texture
 		#if defined(MAT_EMISSIVE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor *= texture2D(emissiveTexture, inData.uv);
+			outColor *= texture2D(emissiveTexture, texCoords);
 		#endif
 
 
 		//MetalRoughnessAlpha
 		#if (defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ALPHA_TEXTURE_DEFINE)) && defined(VA_UVCOORD_DEF)
-			vec4 mra = texture2D(metalroughalphaTexture, inData.uv);
+			vec4 mra = texture2D(metalroughalphaTexture, texCoords);
 
 			#ifdef MAT_METALLIC_TEXTURE_DEFINE
 				float metal = mra.r;
@@ -145,18 +208,6 @@ void main()
 			outColor.a = alphaConstant;
 		#endif
 
-		//AmbientOcclusion/Height
-		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE)) && defined(VA_UVCOORD_DEF)
-			vec4 oh = texture2D(metalroughalphaTexture, inData.uv);
-
-			#ifdef MAT_OCCLUSION_TEXTURE_DEFINE
-				float ao = oh.r;
-			#endif
-			#ifdef MAT_HEIGH_TEXTURE_DEFINE
-				short height = (((short)oh.g) << 8) + oh.b;
-			#endif
-		#endif
-
 	//END SINGLE MATERIAL
 	#endif
 
@@ -170,9 +221,17 @@ void main()
 	#endif
 
 	
-	//Vertex color attribute
+	//Modify diffuse with vertex color.
 	#ifdef VA_COLOR_DEF
 		outColor *= vec4(inData.color, 1.0);
+	#endif
+
+	//Calculate light if a normal is present.
+	#if defined(VA_NORMAL_DEF)
+		vec3 lightDir = normalize(inData.fragPos.xyz - lPos);
+
+		float intensity = max(dot(surfaceNormal, lightDir), 0.0);
+		outColor = vec4(max(intensity * outColor.xyz, ambient_light), outColor.a);
 	#endif
 
 	gl_FragColor = outColor;

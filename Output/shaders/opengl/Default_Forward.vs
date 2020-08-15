@@ -50,8 +50,12 @@ layout(std140, binding = 1) uniform CameraMatrices
 out VERTEX_OUT
 {
     //Vertex position in world space without the projection applied.
-    vec4 fragPos;
+    vec3 fragPos;
 
+    //Camera position.
+    vec3 camPos;
+
+    //Vertex color modifier.
     #ifdef VA_COLOR_DEF
     vec3 color;
     #endif
@@ -81,13 +85,13 @@ void main()
 
     //NORMAL MATRIX
     #if defined(VA_ITMATRIX_DEF) && defined(INSTANCE_DATA_IM)
-        mat4 normalMatrix = aInstances.data[gl_InstanceID / numInstances].normalMatrix * aITMatrix;
+        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aITMatrix);
     #elif defined(VA_ITMATRIX_DEF)
-        mat4 normalMatrix = aInstances.data[gl_InstanceID / numInstances].modelMatrix * aITMatrix;
+        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].modelMatrix * aITMatrix);
     #elif defined(INSTANCE_DATA_IM)
-        mat4 normalMatrix = aInstances.data[gl_InstanceID / numInstances].normalMatrix * aMatrix;
+        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aMatrix);
     #else
-        mat4 normalMatrix = transform;
+        mat3 normalMatrix = mat3(transform);
     #endif
 
     //Only use the vertex attribute matrix.
@@ -96,9 +100,9 @@ void main()
 
     //NORMAL MATRIX
     #if defined(VA_ITMATRIX_DEF)
-        mat4 normalMatrix = aITMatrix;
+        mat3 normalMatrix = mat3(aITMatrix);
     #else
-        mat4 normalMatrix = transform;
+        mat3 normalMatrix = mat3(transform);
     #endif
 
     //Only use the uploaded matrix.
@@ -107,30 +111,30 @@ void main()
     
     //NORMAL MATRIX
     #if defined(INSTANCE_DATA_IM)
-        mat4 normalMatrix = aInstances.data[gl_InstanceID / numInstances].normalMatrix;
+        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix);
     #else
-        mat4 normalMatrix = transform;
+        mat3 normalMatrix = mat3(transform);
     #endif
 
     //No transforms are used, just use the identity.
 #else
     mat4 transform = mat4(1.0);
-    mat4 normalMatrix = transform;
+    mat3 normalMatrix = mat3(transform);
 #endif
 //END OF MATRIX. transform = model to world. normalMatrix is defined for normal to world space.
 
     //Normalmapping is active.
 #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-    vec3 norm = normalize(vec3(model * vec4(aNormal, 0.0)));
-    vec3 tang = normalize(vec3(normalMatrix * vec4(aTangent, 0.0)));
+    vec3 norm = normalize(normalMatrix * aNormal);
+    vec3 tang = normalize(normalMatrix * aTangent);
     
     //Calculate bitangent if not provided.
     #if defined(VA_BITANGENT_DEF)
-        vec3 biTang = normalize(vec3(normalMatrix * vec4(aBiTangent, 0.0)));
+        vec3 biTang = normalize(normalMatrix * aBiTangent);
     #else
         vec3 biTang = cross(norm, tang);
     #endif
-    outData.tbn = mat3x3(tang, biTang, norm)
+    outData.tbn = transpose(mat3x3(tang, biTang, norm));
 
     //Regular normals are active.
 #elif defined(VA_NORMAL_DEF)
@@ -146,9 +150,18 @@ void main()
 #endif  
 
 
-//WORLD SPACE POSITION FOR LIGHT CALCULATIONS
-    outData.fragPos = transform * vec4(aPos, 1.0);       //Vertex position in projected space.
+    //WORLD SPACE POSITION FOR LIGHT CALCULATIONS
+    outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
 
-//PROJECTED SPACE.
-    gl_Position = viewProjection * outData.fragPos;
+    //Pass the camera position in world space.
+    outData.camPos = cameraPosition.xyz;
+
+    //PROJECTED SPACE. Do this before converting to tangent space.
+    gl_Position = viewProjection * vec4(outData.fragPos, 1.0);
+
+    //Convert to tangent space if active.
+#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+    outData.camPos = outData.tbn * outData.camPos;
+    outData.fragPos = outData.tbn * outData.fragPos;
+#endif
 }

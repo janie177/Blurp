@@ -276,7 +276,7 @@ namespace blurp
             std::cout << "Error Could not compile shader: \n" << infoLog << std::endl;
             std::cout << "Source code: \n";
 
-            int line = 0;
+            int line = 1;
 
             if(a_Src != nullptr)
             {

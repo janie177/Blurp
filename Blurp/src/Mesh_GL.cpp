@@ -52,7 +52,7 @@ namespace blurp
         glGenBuffers(1, &m_Ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Ibo);
         m_IndexDataType = ToGL(m_Settings.indexDataType);
-        const auto iboDataSize = sizeof(m_IndexDataType);
+        const auto iboDataSize = Size_Of(m_Settings.indexDataType);
 
         //Upload the index buffer in the right format.
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Settings.numIndices * iboDataSize, m_Settings.indexData, memoryUsage);
@@ -83,12 +83,12 @@ namespace blurp
                 GLenum normalize = ToGL(data.normalize);
                 for(std::uint32_t i = 0; i < numIndicesRequired; ++i)
                 {
-                    glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * sizeof(glDataType)))));
+                    glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * Size_Of(info.dataType)))));
                     glEnableVertexAttribArray(index + i);
 
                     if(attrib == VertexAttribute::MATRIX)
                     {
-                        std::cout << "Enabling matrix at index: " << (index + i) << " with " << (elementsLeft <= 4 ? elementsLeft : 4) << " elements. Stride is " << data.byteStride << " bytes and offset is " << static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * sizeof(glDataType))) << std::endl;
+                        std::cout << "Enabling matrix at index: " << (index + i) << " with " << (elementsLeft <= 4 ? elementsLeft : 4) << " elements. Stride is " << data.byteStride << " bytes and offset is " << static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * Size_Of(info.dataType))) << std::endl;
                     }
 
                     elementsLeft -= 4;

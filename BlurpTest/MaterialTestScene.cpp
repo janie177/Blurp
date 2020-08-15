@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "MaterialLoader.h"
+#include "Sphere.h"
 
 
 using namespace blurp;
@@ -59,6 +60,9 @@ const static std::uint16_t CUBE_INDICES[]
 
 void MaterialTestScene::Init()
 {
+
+
+
     //Create the pipeline object.
     PipelineSettings pSettings;
     pSettings.waitForGpu = true;
@@ -79,24 +83,100 @@ void MaterialTestScene::Init()
     m_ForwardPass->SetCamera(m_Camera);
     m_ForwardPass->SetTarget(m_Window->GetRenderTarget());
 
+
+    glm::vec3 pos1(-1.0f, 1.0f, 0.0f);
+    glm::vec3 pos2(-1.0f, -1.0f, 0.0f);
+    glm::vec3 pos3(1.0f, -1.0f, 0.0f);
+    glm::vec3 pos4(1.0f, 1.0f, 0.0f);
+    // texture coordinates
+    glm::vec2 uv1(0.0f, 1.0f);
+    glm::vec2 uv2(0.0f, 0.0f);
+    glm::vec2 uv3(1.0f, 0.0f);
+    glm::vec2 uv4(1.0f, 1.0f);
+    // normal vector
+    glm::vec3 nm(0.0f, 0.0f, 1.0f);
+
+    // calculate tangent/bitangent vectors of both triangles
+    glm::vec3 tangent1, bitangent1;
+    glm::vec3 tangent2, bitangent2;
+    // triangle 1
+    // ----------
+    glm::vec3 edge1 = pos2 - pos1;
+    glm::vec3 edge2 = pos3 - pos1;
+    glm::vec2 deltaUV1 = uv2 - uv1;
+    glm::vec2 deltaUV2 = uv3 - uv1;
+
+    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+    tangent1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+    tangent1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+    tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+    tangent1 = glm::normalize(tangent1);
+
+    bitangent1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+    bitangent1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+    bitangent1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+    bitangent1 = glm::normalize(bitangent1);
+
+    // triangle 2
+    // ----------
+    edge1 = pos3 - pos1;
+    edge2 = pos4 - pos1;
+    deltaUV1 = uv3 - uv1;
+    deltaUV2 = uv4 - uv1;
+
+    f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+    tangent2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+    tangent2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+    tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+    tangent2 = glm::normalize(tangent2);
+
+
+    bitangent2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+    bitangent2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+    bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+    bitangent2 = glm::normalize(bitangent2);
+
+
+    float quadVertices[] = {
+        // positions            // normal         // texcoords  // tangent                          // bitangent
+        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
+        pos2.x, pos2.y, pos2.z, nm.x, nm.y, nm.z, uv2.x, uv2.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
+        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
+
+        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
+        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
+        pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z
+    };
+
+    std::uint16_t quadIndices[]
+    {
+        0,1,2,3,4,5
+    };
+
     //Create the mesh that the material is used with.
     MeshSettings meshSettings;
-    meshSettings.indexData = &CUBE_INDICES;
-    meshSettings.vertexData = &CUBE_DATA;
+    meshSettings.indexData = &quadIndices;
+    meshSettings.vertexData = &quadVertices;
     meshSettings.indexDataType = DataType::USHORT;
     meshSettings.usage = MemoryUsage::GPU;
     meshSettings.access = AccessMode::READ_ONLY;
-    meshSettings.vertexDataSizeBytes = sizeof(CUBE_DATA);
-    meshSettings.numIndices = sizeof(CUBE_INDICES) / sizeof(CUBE_INDICES[0]);
+    meshSettings.vertexDataSizeBytes = sizeof(quadVertices);
+    meshSettings.numIndices = 6;
 
     //Enabled attributes for the mesh.
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 44, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 12, 44, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 44, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 32, 44, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 56, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 12, 56, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 56, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::TANGENT, 32, 56, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::BI_TANGENT, 44, 56, 0);
+
+
+    m_Mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
 
     //Load the mesh.
-    m_Mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
+    //m_Mesh = Sphere::Load(m_Engine, 2.f, 64, 64);
 
     //Create the GPU buffer containing the transform for the mesh.
     GpuBufferSettings gpuBufferSettings;

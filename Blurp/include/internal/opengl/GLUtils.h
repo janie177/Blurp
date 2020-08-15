@@ -13,6 +13,8 @@ namespace blurp
     static constexpr GLenum DATA_FORMATS[]{ GL_FLOAT, GL_INT, GL_BYTE, GL_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT };
     static constexpr GLenum MEMORY_USAGE[]{ GL_DYNAMIC_READ, GL_DYNAMIC_DRAW, GL_STATIC_DRAW};
 
+    static constexpr size_t SIZES[]{sizeof(float), sizeof(int), sizeof(char), sizeof(short), sizeof(unsigned int), sizeof(unsigned char), sizeof(unsigned short)};
+
 
     /*
      * Get the OpenGL enum type for access modes.
@@ -67,6 +69,14 @@ namespace blurp
     inline constexpr GLenum ToGL(DataType a_Data)
     {
         return DATA_FORMATS[static_cast<int>(a_Data)];
+    }
+
+    /*
+     * Retrieve the size in bytes of a data type.
+     */
+    inline constexpr std::size_t Size_Of(DataType a_Data)
+    {
+        return SIZES[static_cast<int>(a_Data)];
     }
 
     /*
