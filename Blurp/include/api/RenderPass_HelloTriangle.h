@@ -44,7 +44,7 @@ namespace blurp
 
         bool IsStateValid() override;
 
-        std::vector<Lockable*> GetLockableResources() const override;
+        std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const override;
 
     protected:
         glm::vec4 m_Color;

@@ -85,6 +85,8 @@ namespace blurp
         const auto scissorRect = m_Output->GetScissorRect();
         glScissor(static_cast<int>(scissorRect.r), static_cast<int>(scissorRect.g), static_cast<int>(scissorRect.b), static_cast<int>(scissorRect.a));
         const auto clearColor = m_Output->GetClearColor();
+
+
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -112,9 +114,6 @@ namespace blurp
         camData.camPos = glm::vec4(m_Camera->GetTransform().GetTranslation(), 0.f);
         glBindBuffer(GL_UNIFORM_BUFFER, m_CameraUbo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), static_cast<void*>(&camData));
-
-        //Bind the SSBO to the instance data slot (0).
-        const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_TransformBuffer);
 
         for(auto& instanceData : m_DrawQueue)
         {
@@ -263,9 +262,17 @@ namespace blurp
                 }
             }
 
-            //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
-            //Shader is hard coded to use slot 0 for the buffer.
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.transformData.dataRange.start), instanceData.transformData.dataRange.size);
+            //If transforms are uploaded, bind the transform buffer.
+            if(m_TransformBuffer != nullptr && instanceData.transformData.transform || instanceData.transformData.inverseTransform)
+            {
+                //Bind the SSBO to the instance data slot (0).
+                const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_TransformBuffer);
+
+                //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
+                //Shader is hard coded to use slot 0 for the buffer.
+                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.transformData.dataRange.start), instanceData.transformData.dataRange.size);
+            }
+
 
             //Check if Uv modifiers are enabled. Bind to slot 3 if used.
             const bool hasUvModifiers = (m_UvModifierBuffer != nullptr && (mesh->GetVertexAttributeMask() & VertexAttribute::UV_MODIFIER_ID) == VertexAttribute::UV_MODIFIER_ID);

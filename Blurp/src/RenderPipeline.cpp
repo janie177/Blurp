@@ -4,7 +4,6 @@
 #include "RenderPass.h"
 #include "BlurpEngine.h"
 #include "RenderResourceManager.h"
-#include "ResourceLock.h"
 #include <unordered_set>
 #include "Settings.h"
 #include "Lockable.h"
@@ -28,7 +27,7 @@ namespace blurp
         }
 
         //Vector containing all the resource locks from all render passes.
-        std::unordered_set<Lockable*> lockedResources;
+        std::unordered_map<Lockable*, LockType> lockedResources;
 
         //Collect a pointer to all the resources that should be locked.
         //Store them in an unordered_set so that no duplicates are possible.
@@ -39,17 +38,32 @@ namespace blurp
                 auto resources = pass->GetLockableResources();
                 for(auto& ptr : resources)
                 {
-                    lockedResources.insert(ptr);
+                    /*
+                     * Insert the resource to be locked. Do not overwrite WRITE with READ.
+                     * Only insert if not present yet or when access is WRITE.
+                     */
+                    if(ptr.second == LockType::READ)
+                    {
+                        auto find = lockedResources.find(ptr.first);
+                        if (find == lockedResources.end())
+                        {
+                            lockedResources.insert(ptr);
+                        }
+                    }
+                    else
+                    {
+                        lockedResources.insert(ptr);
+                    }
 
                     //Add all recursive lockables recursively.
-                    std::vector<Lockable*> vec = ptr->GetRecursiveLockables();
+                    auto vec = ptr.first->GetRecursiveLockables();
 
                     auto size = static_cast<int>(vec.size());
 
                     for(int i = 0; i < size; ++i)
                     {
                         //First add the current lockable to the resource lock list.
-                        lockedResources.insert(vec[i]);
+                        lockedResources.insert({ vec[i], ptr.second});
 
                         //Get the recursive of the recursive.
                         auto nestedVec = vec[i]->GetRecursiveLockables();
@@ -68,7 +82,7 @@ namespace blurp
         //Lock every resource collected.
         for(auto& ptr : lockedResources)
         {
-            m_Locks.emplace_back(*ptr);
+            m_Locks.emplace_back(ResourceLock{ *ptr.first, ptr.second });
         }
 
         //Before executing, let the child class set up some stuff.

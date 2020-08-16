@@ -15,6 +15,29 @@ namespace blurp
         glm::vec4 camPos;
     };
 
+    struct SpotLightData
+    {
+        glm::vec3 color;
+        glm::vec3 position;
+        glm::vec3 direction;
+        float angle;
+        float intensity;
+    };
+
+    struct PointLightData
+    {
+        glm::vec3 color;
+        glm::vec3 position;
+        float intensity;
+    };
+
+    struct DirectionalLightData
+    {
+        glm::vec3 color;
+        glm::vec3 direction;
+        float intensity;
+    };
+
     class RenderPass_Forward_GL : public RenderPass_Forward
     {
     public:

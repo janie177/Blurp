@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include <vector>
+#include "LockType.h"
 
 namespace blurp
 {
@@ -16,7 +17,17 @@ namespace blurp
         virtual ~Lockable() = default;
 
         /*
-         * See if this lockable is currently locked.
+         * See if this lockable is currently locked for reading.
+         */
+        bool IsReadLocked(LockType a_LockType) const;
+
+        /*
+         * See if this lockable is currently locked for writing.
+         */
+        bool IsWriteLocked(LockType a_LockType) const;
+
+        /*
+         * See if this lockable is currently locked for either reading or writing.
          */
         bool IsLocked() const;
 
@@ -29,12 +40,12 @@ namespace blurp
         /*
          * Lock this resource.
          */
-        void Lock();
+        void Lock(LockType a_LockType);
 
         /*
          * Unlock this resource.
          */
-        void Unlock();
+        void Unlock(LockType a_LockType);
 
         /*
          * Called when this resource is locked.
@@ -48,7 +59,11 @@ namespace blurp
         virtual void OnUnlock() = 0;
 
     private:
-        bool m_Locked;
+        //Amount of reading threads.
+        int m_ReadLockCount;
+
+        //True when currently write locked.
+        bool m_WriteLock;
         std::mutex m_Mutex;
     };
 }

@@ -10,7 +10,6 @@
 #include <iostream>
 
 #include "BlurpEngine.h"
-#include "RenderResourceManager.h"
 #include "opengl/Texture_GL.h"
 #include "opengl/GLUtils.h"
 

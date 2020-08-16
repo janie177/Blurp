@@ -1,4 +1,5 @@
 #pragma once
+#include "LockType.h"
 
 namespace blurp
 {
@@ -12,7 +13,7 @@ namespace blurp
     {
     public:
         //Attain lock.
-        ResourceLock(Lockable& a_Lockable);
+        ResourceLock(Lockable& a_Lockable, LockType a_Type);
 
         //Release lock.
         ~ResourceLock();
@@ -33,5 +34,6 @@ namespace blurp
     private:
         Lockable* m_Lockable;
         bool m_Locked;
+        LockType m_Type;
     };
 }

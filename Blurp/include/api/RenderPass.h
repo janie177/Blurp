@@ -1,4 +1,5 @@
 #pragma once
+#include "LockType.h"
 #include "RenderResource.h"
 
 namespace blurp
@@ -46,7 +47,7 @@ namespace blurp
          * Get a vector containing every resource that should be locked while this pass is executing.
          * Resources marked as READ_ONLY don't have to be locked.
          */
-        virtual std::vector<Lockable*> GetLockableResources() const = 0;
+        virtual std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const = 0;
 
         /*
          * Checks if the state inside this render target is valid.

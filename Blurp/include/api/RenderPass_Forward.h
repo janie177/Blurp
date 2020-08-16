@@ -76,8 +76,7 @@ namespace blurp
         }
 
         UvModifier(glm::vec2 a_Multiply, glm::vec2 a_Add) : multiply(a_Multiply), add(a_Add)
-        {
-            
+        { 
         }
 
         //Multiply the UV coords with this.
@@ -94,37 +93,15 @@ namespace blurp
     {
         LightData()
         {
+            shadowMapIndex = -1;
             light = nullptr;
-            shadowMap = nullptr;
         }
 
-        LightData(Light* a_Light, Texture* a_ShadowMap) : light(a_Light), shadowMap(a_ShadowMap) {}
+        LightData(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix) : light(a_Light), shadowMapIndex(a_ShadowMapIndex), shadowMatrix(a_ShadowMatrix) {}
 
-        Light* light;
-        Texture* shadowMap;
-    };
-
-    struct SpotLightData
-    {
-        glm::vec3 color;
-        glm::vec3 position;
-        glm::vec3 direction;
-        float angle;
-        float intensity;
-    };
-
-    struct PointLightData
-    {
-        glm::vec3 color;
-        glm::vec3 position;
-        float intensity;
-    };
-
-    struct DirectionalLightData
-    {
-        glm::vec3 color;
-        glm::vec3 direction;
-        float intensity;
+        std::shared_ptr<Light> light;
+        std::int32_t shadowMapIndex;
+        glm::mat4 shadowMatrix;
     };
 
     class RenderPass_Forward : public RenderPass
@@ -166,36 +143,57 @@ namespace blurp
         void QueueForDraw(ForwardDrawData a_Data);
 
         /*
-         * Add a light to be taken into consideration when drawing.
+         * Add a light to the scene with a corresponding shadowmap and light perspective matrix.
          */
-        void AddLight(const std::shared_ptr<Light>& a_Light, const std::shared_ptr<Texture>& a_ShadowMap);
+        void AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix);
 
-        //TODO reset may need to have a virtual layer. In D3D12 it could be used to keep the command list to have efficient drawing.
-        //TODO example: all static lights and geometry are drawn without rebuilding anything. Then on top of that image the dynamic stuff happens.
-        //TODO but that may cause issues with shadows from dynamic objects. Idk. Blend? Deferred?
+        /*
+         * Add a light with shadowmapping.
+         */
+        void AddLight(const std::shared_ptr<Light>& a_Light);
+
+        /*
+         * Set the shadowmaps used for pointlights.
+         * This has to be a Cubemap Array texture.
+         */
+        void SetPointShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps);
+
+        /*
+         * Set the shadow maps used for all directional lights.
+         * This has to be a Texture2D array.
+         */
+        void SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps);
+
+        /*
+         * Reset all queued data. Call this to start a new fresh frame.
+         * Not calling Reset means all resources from the last frame will still be drawn.
+         */
         void Reset() override;
 
     protected:
         bool IsStateValid() override;
 
-        //Get all resources used in this pass that should not be modified while the GPU is busy rendering.
-        std::vector<Lockable*> GetLockableResources() const override;
+        std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const override;
 
     protected:
+
         std::shared_ptr<Camera> m_Camera;
         std::shared_ptr<RenderTarget> m_Output;
 
-        //Drawqueue sorted by meshes{materials{transforms}}
-        //std::unordered_map<Mesh*, std::unordered_map<Material*, std::vector<glm::mat4>>> m_DrawQueue;
+        //Drawqueue containing all drawable data. Order is kept while drawing.
         std::vector<ForwardDrawData> m_DrawQueue;
 
         std::shared_ptr<GpuBuffer> m_TransformBuffer;
         std::shared_ptr<GpuBuffer> m_UvModifierBuffer;
 
-        //Light data.
-        std::vector<PointLightData> m_PointLights;
-        std::vector<SpotLightData> m_SpotLights;
-        std::vector<DirectionalLightData> m_DirectionalLights;
+        //All queued up light data.
+        std::vector<LightData> m_LightData;
+
+        //Shadowmaps for directional lights. This has to be a texture 2d array.
+        std::shared_ptr<Texture> m_DirectionalShadowMaps;
+
+        //Shadowmap for pointlights and spotlights. This has to be a cubemat texture array.
+        std::shared_ptr<Texture> m_PointShadowMaps;
 
         //Ambient light.
         glm::vec3 m_AmbientColor;
