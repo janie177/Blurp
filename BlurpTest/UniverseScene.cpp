@@ -15,6 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "MaterialLoader.h"
+#include "Sphere.h"
 
 using namespace blurp;
 
@@ -252,6 +253,18 @@ void UniverseScene::Init()
     data.transformData.transform = true;
 
     iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager());
+
+
+
+
+    //THE SUN!
+    sunData.mesh = Sphere::Load(m_Engine, 50.f, 128, 128);
+    sunData.count = 1;
+    MaterialSettings sunSettings;
+    sunSettings.SetEmissiveConstant({ 1.f, 1.f, 0.05f });
+    sunSettings.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
+    sunData.materialData.material = m_Engine.GetResourceManager().CreateMaterial(sunSettings);
+    sunData.transformData.transform = true;
 }
 
 void UniverseScene::Update()
@@ -388,7 +401,6 @@ void UniverseScene::Update()
     iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
     m = iMTransform.GetTransformation();
 
-
     /*
      * Upload the updated matrix data to the GPU.
      */
@@ -399,12 +411,20 @@ void UniverseScene::Update()
     //Update the single transform for the 20 million cubes.
     m = iMTransform.GetTransformation();
 
+    //Update the sun
+    Transform sunTransform;
+    sunTransform.Translate({ -5, 10, -5 });
+    auto sunMat = sunTransform.GetTransformation();
+
+
     data.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transforms.size(), 16, &transforms[0]);
     iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(data.transformData.dataRange.end), 1, 16, &m);
+    sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(iData.transformData.dataRange.end), 1, 16, &sunMat);
 
     //Queue for draw.
     forwardPass->QueueForDraw(data);
     forwardPass->QueueForDraw(iData);
+    forwardPass->QueueForDraw(sunData);
 
     //Update the rendering pipeline.
     pipeline->Execute();

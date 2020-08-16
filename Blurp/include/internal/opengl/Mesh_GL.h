@@ -36,6 +36,11 @@ namespace blurp
          */
         GLenum GetIndexDataType() const;
 
+        /*
+         * Get the attribute location defines for the current mask.
+         */
+        const std::vector<std::string>& GetAttribLocations() const;
+
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
@@ -46,5 +51,7 @@ namespace blurp
         GLuint m_Ibo;
         std::uint32_t m_NumIndices;
         GLenum m_IndexDataType;
+
+        std::vector<std::string> m_VertexPosDefines;
     };
 }

@@ -1,10 +1,5 @@
 #include "opengl/Mesh_GL.h"
-
-
 #include <iostream>
-#include <ostream>
-
-
 #include "opengl/GLUtils.h"
 
 namespace blurp
@@ -34,6 +29,11 @@ namespace blurp
         return m_IndexDataType;
     }
 
+    const std::vector<std::string>& Mesh_GL::GetAttribLocations() const
+    {
+        return m_VertexPosDefines;
+    }
+
     bool Mesh_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
         assert((m_Settings.indexDataType == DataType::USHORT || m_Settings.indexDataType == DataType::UINT) && "Index buffer data type has to be either UINT or USHORT.");
@@ -61,6 +61,10 @@ namespace blurp
         //Upload the vertex data in the right format.
         glBufferData(GL_ARRAY_BUFFER, m_Settings.vertexDataSizeBytes, m_Settings.vertexData, memoryUsage);
 
+        //Ensure the maximum is never reached.
+        int maxAttribs = 0;
+        glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttribs);
+
         /*
          * Enable the vertex attributes that are set enabled.
          * The index is always the same for each attribute, no matter which ones are enabled.
@@ -77,10 +81,17 @@ namespace blurp
 
             if (m_Settings.vertexSettings.IsEnabled(attrib))
             {
+                assert(index < maxAttribs && "The maximum number of vertex attributes has been exceeded for this mesh!");
+
                 const auto data = m_Settings.vertexSettings.GetAttributeData(attrib);
                 const auto glDataType = ToGL(info.dataType);
                 int elementsLeft = info.numElements;
                 GLenum normalize = ToGL(data.normalize);
+
+                //Add the index position as a define to dynamically index the attributes in the shader.
+                auto defineString = info.locationDefine + " " + std::to_string(index);
+                m_VertexPosDefines.emplace_back(defineString);
+
                 for(std::uint32_t i = 0; i < numIndicesRequired; ++i)
                 {
                     glVertexAttribPointer(index + static_cast<int>(i), elementsLeft <= 4 ? elementsLeft : 4, glDataType, normalize, data.byteStride, reinterpret_cast<void*>(static_cast<std::uint64_t>(data.byteOffset + (static_cast<std::uint64_t>(i) * 4L * Size_Of(info.dataType)))));
@@ -94,10 +105,10 @@ namespace blurp
                         glVertexAttribDivisor(index + i, data.instanceDivisor);
                     }
                 }
-            }
 
-            //Increment index.
-            index += numIndicesRequired;
+                //Increment index only when attribute is enabled.
+                index += numIndicesRequired;
+            }
         }
 
         //Unbind.

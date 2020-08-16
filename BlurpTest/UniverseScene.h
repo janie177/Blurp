@@ -26,5 +26,7 @@ private:
     std::shared_ptr<blurp::RenderPipeline> pipeline;
     blurp::ForwardDrawData iData;
     blurp::ForwardDrawData data;
+    blurp::ForwardDrawData sunData;
+
     std::shared_ptr<blurp::GpuBuffer> gpuBuffer;
 };

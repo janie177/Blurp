@@ -1,17 +1,52 @@
 #version 460 core
 
-layout(location = 0) in vec3 aPos;
-layout(location = 1) in vec2 aUv;
-layout(location = 2) in vec3 aNormal;
-layout(location = 3) in vec3 aColor;
-layout(location = 4) in vec3 aTangent;
-layout(location = 5) in vec3 aBiTangent;
-layout(location = 6) in vec3 aBoneIndices;
-layout(location = 7) in vec3 aBoneWeights;
-layout(location = 8) in float aMaterialID;
-layout(location = 9) in float aUvModifierID;
-layout(location = 10) in mat4 aMatrix;
-layout(location = 14) in mat4 aITMatrix;
+#ifdef VA_POS3D_DEF
+layout(location = VA_POS3D_LOCATION_DEF) in vec3 aPos;
+#endif
+
+#ifdef VA_UVCOORD_DEF
+layout(location = VA_UVCOORD_LOCATION_DEF) in vec2 aUv;
+#endif
+
+#ifdef VA_NORMAL_DEF
+layout(location = VA_NORMAL_LOCATION_DEF) in vec3 aNormal;
+#endif
+
+#ifdef VA_COLOR_DEF
+layout(location = VA_COLOR_LOCATION_DEF) in vec3 aColor;
+#endif
+
+#ifdef VA_TANGENT_DEF
+layout(location = VA_TANGENT_LOCATION_DEF) in vec3 aTangent;
+#endif
+
+#ifdef VA_BITANGENT_DEF
+layout(location = VA_BITANGENT_LOCATION_DEF) in vec3 aBiTangent;
+#endif
+
+#ifdef VA_BONEINDEX_DEF
+layout(location = VA_BONEINDEX_LOCATION_DEF) in vec3 aBoneIndices;
+#endif
+
+#ifdef VA_BONEWEIGHT_DEF
+layout(location = VA_BONEWEIGHT_LOCATION_DEF) in vec3 aBoneWeights;
+#endif
+
+#ifdef VA_MATERIALID_DEF
+layout(location = VA_MATERIALID_LOCATION_DEF) in float aMaterialID;
+#endif
+
+#ifdef VA_UVMODIFIERID_DEF
+layout(location = VA_UVMODIFIERID_LOCATION_DEF) in float aUvModifierID;
+#endif
+
+#ifdef VA_MATRIX_DEF
+layout(location = VA_MATRIX_LOCATION_DEF) in mat4 aMatrix;
+#endif
+
+#ifdef VA_ITMATRIX_DEF
+layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
+#endif
 
 
 //INSTANCE DATA

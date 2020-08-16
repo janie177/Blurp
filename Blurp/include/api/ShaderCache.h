@@ -41,7 +41,13 @@ namespace blurp
          * Get the shader with the given bit mask.
          * Returns the shader found, or loads and compiles a new one if not yet existing.
          */
-        std::shared_ptr<Shader> GetShader(T a_Mask);
+        std::shared_ptr<Shader> GetOrLoad(T a_Mask);
+
+        /*
+         * Get the shader with the given mask.
+         * If no shader could be found, returns an empty shared pointer.
+         */
+        std::shared_ptr<Shader> GetOrNull(T a_Mask) const;
 
         /*
          * Load the shader for each mask in the provided array.
@@ -49,8 +55,11 @@ namespace blurp
          */
         void PreLoad(const std::vector<T>& a_Masks);
 
-    private:
-        std::shared_ptr<Shader> LoadShader(INTERNAL_FORMAT a_Mask);
+        /*
+         * Load the shader with the given mask and the additional provided defines.
+         * This will overwrite any shader that is already present.
+         */
+        std::shared_ptr<Shader> LoadShader(T a_Mask, const std::vector<std::string>& a_AdditionalDefines = std::vector<std::string>());
 
     private:
         RenderResourceManager* m_ResourceManager;
@@ -133,14 +142,27 @@ namespace blurp
     }
 
     template <typename T, typename INTERNAL_FORMAT>
-    std::shared_ptr<Shader> ShaderCache<T, INTERNAL_FORMAT>::GetShader(T a_Mask)
+    std::shared_ptr<Shader> ShaderCache<T, INTERNAL_FORMAT>::GetOrLoad(T a_Mask)
     {
         assert(m_Init);
         INTERNAL_FORMAT asInternalFormat = static_cast<INTERNAL_FORMAT>(a_Mask);
         const auto found = m_ShaderRegistry.find(asInternalFormat);
         if (found == m_ShaderRegistry.end())
         {
-            return LoadShader(asInternalFormat);
+            return LoadShader(a_Mask);
+        }
+        return found->second;
+    }
+
+    template <typename T, typename INTERNAL_FORMAT>
+    std::shared_ptr<Shader> ShaderCache<T, INTERNAL_FORMAT>::GetOrNull(T a_Mask) const
+    {
+        assert(m_Init);
+        INTERNAL_FORMAT asInternalFormat = static_cast<INTERNAL_FORMAT>(a_Mask);
+        const auto found = m_ShaderRegistry.find(asInternalFormat);
+        if (found == m_ShaderRegistry.end())
+        {
+            return nullptr;
         }
         return found->second;
     }
@@ -155,18 +177,20 @@ namespace blurp
             const auto found = m_ShaderRegistry.find(asInternalFormat);
             if (found == m_ShaderRegistry.end())
             {
-                LoadShader(asInternalFormat);
+                LoadShader(mask);
             }
         }
     }
 
     template <typename T, typename INTERNAL_FORMAT>
-    std::shared_ptr<Shader> ShaderCache<T, INTERNAL_FORMAT>::LoadShader(INTERNAL_FORMAT a_Mask)
+    std::shared_ptr<Shader> ShaderCache<T, INTERNAL_FORMAT>::LoadShader(T a_Mask,
+        const std::vector<std::string>& a_AdditionalDefines)
     {
         assert(m_Init);
+        auto internalFormatMask = static_cast<INTERNAL_FORMAT>(a_Mask);
 
         //Only keep the basic preprocessor definitions that are always present.
-        if(m_Settings.preprocessorDefinitions.size() != m_BasePreprocessorCount)
+        if (m_Settings.preprocessorDefinitions.size() != m_BasePreprocessorCount)
         {
             m_Settings.preprocessorDefinitions.resize(m_BasePreprocessorCount);
         }
@@ -174,10 +198,16 @@ namespace blurp
         for (int i = 0; i < static_cast<int>(m_PreProcessorDefinitions.size()); ++i)
         {
             //If the mask has the bit at index i set, enable that preprocessor definition in the shader.
-            if(a_Mask & (1 << i))
+            if (internalFormatMask & (1 << i))
             {
                 m_Settings.preprocessorDefinitions.emplace_back(m_PreProcessorDefinitions[i]);
             }
+        }
+
+        //Add the additional defines.
+        if(!a_AdditionalDefines.empty())
+        {
+            m_Settings.preprocessorDefinitions.insert(m_Settings.preprocessorDefinitions.end(), a_AdditionalDefines.begin(), a_AdditionalDefines.end());
         }
 
         //Load the shader and add to the registry.

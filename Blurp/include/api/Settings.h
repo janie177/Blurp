@@ -697,6 +697,9 @@ namespace blurp
 
         //The define name used in preprocessor definitions in shaders.
         std::string defineName;
+
+        //The define used to determine the position of this vertex attribute.
+        std::string locationDefine;
     };
 
     struct VertexAttributeData
@@ -802,18 +805,18 @@ namespace blurp
         VertexAttributeData m_Data[NUM_VERTEX_ATRRIBS];
 
         inline static const std::unordered_map<VertexAttribute, VertexAttributeInfo> VERTEX_ATTRIBUTE_INFO = {
-            {VertexAttribute::POSITION_3D, {3, DataType::FLOAT, "va_Position3D", "VA_POS3D_DEF"}},
-            {VertexAttribute::UV_COORDS, {2, DataType::FLOAT, "va_UVCoords", "VA_UVCOORD_DEF"}},
-            {VertexAttribute::NORMAL, {3, DataType::FLOAT, "va_Normal", "VA_NORMAL_DEF"}},
-            {VertexAttribute::COLOR, {3, DataType::FLOAT, "va_Color", "VA_COLOR_DEF"}},
-            {VertexAttribute::TANGENT, {3, DataType::FLOAT, "va_Tangent", "VA_TANGENT_DEF"}},
-            {VertexAttribute::BI_TANGENT, {3, DataType::FLOAT, "va_BiTangent", "VA_BITANGENT_DEF"}},
-            {VertexAttribute::BONE_INDEX, {3, DataType::UINT, "va_BoneIndex", "VA_BONEINDEX_DEF"}},
-            {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF"}},
-            {VertexAttribute::MATERIAL_ID, {1, DataType::FLOAT, "va_MaterialID", "VA_MATERIALID_DEF"}},
-            {VertexAttribute::UV_MODIFIER_ID, {1, DataType::FLOAT, "va_UvModifierID", "VA_UVMODIFIERID_DEF"}},
-            {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF"}},
-            {VertexAttribute::ITMATRIX, {16, DataType::FLOAT, "va_ITMatrix", "VA_ITMATRIX_DEF"}},
+            {VertexAttribute::POSITION_3D, {3, DataType::FLOAT, "va_Position3D", "VA_POS3D_DEF", "VA_POS3D_LOCATION_DEF"}},
+            {VertexAttribute::UV_COORDS, {2, DataType::FLOAT, "va_UVCoords", "VA_UVCOORD_DEF", "VA_UVCOORD_LOCATION_DEF"}},
+            {VertexAttribute::NORMAL, {3, DataType::FLOAT, "va_Normal", "VA_NORMAL_DEF", "VA_NORMAL_LOCATION_DEF"}},
+            {VertexAttribute::COLOR, {3, DataType::FLOAT, "va_Color", "VA_COLOR_DEF", "VA_COLOR_LOCATION_DEF"}},
+            {VertexAttribute::TANGENT, {3, DataType::FLOAT, "va_Tangent", "VA_TANGENT_DEF", "VA_TANGENT_LOCATION_DEF"}},
+            {VertexAttribute::BI_TANGENT, {3, DataType::FLOAT, "va_BiTangent", "VA_BITANGENT_DEF", "VA_BITANGENT_LOCATION_DEF"}},
+            {VertexAttribute::BONE_INDEX, {3, DataType::UINT, "va_BoneIndex", "VA_BONEINDEX_DEF", "VA_BONEINDEX_LOCATION_DEF"}},
+            {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF", "VA_BONEWEIGHT_LOCATION_DEF"}},
+            {VertexAttribute::MATERIAL_ID, {1, DataType::FLOAT, "va_MaterialID", "VA_MATERIALID_DEF", "VA_MATERIALID_LOCATION_DEF"}},
+            {VertexAttribute::UV_MODIFIER_ID, {1, DataType::FLOAT, "va_UvModifierID", "VA_UVMODIFIERID_DEF", "VA_UVMODIFIERID_LOCATION_DEF"}},
+            {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF", "VA_MATRIX_LOCATION_DEF"}},
+            {VertexAttribute::ITMATRIX, {16, DataType::FLOAT, "va_ITMatrix", "VA_ITMATRIX_DEF", "VA_ITMATRIX_LOCATION_DEF"}},
         };
     };
 

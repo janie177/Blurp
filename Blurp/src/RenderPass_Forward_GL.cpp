@@ -165,7 +165,14 @@ namespace blurp
             {
                 //Bind the new shader.
                 prevMask = shaderMask;
-                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(m_ShaderCache.GetShader(shaderMask));
+
+                //Get the new shader. If not present, load a new one.
+                auto newShader = m_ShaderCache.GetOrNull(shaderMask);
+                if(newShader == nullptr)
+                {
+                    newShader = m_ShaderCache.LoadShader(shaderMask, mesh->GetAttribLocations());
+                }
+                const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(newShader);
                 currentProgramId = currentShader->GetProgramId();
                 glUseProgram(currentProgramId);
             }
