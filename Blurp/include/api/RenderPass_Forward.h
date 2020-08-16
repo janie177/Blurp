@@ -22,8 +22,8 @@ namespace blurp
     {
         ForwardDrawData()
         {
-            data.transform = false;
-            data.inverseTransform = false;
+            transformData.transform = false;
+            transformData.inverseTransform = false;
             count = 0;
         }
 
@@ -46,7 +46,7 @@ namespace blurp
 
         struct
         {
-            //GpuBufferView object containing pointers to the offsets in the GPU buffer where the data is stored.
+            //GpuBufferView object containing pointers to the offsets in the GPU buffer where the data is stored (bound as transformBuffer).
             GpuBufferView dataRange;
 
             //Set to true if the data range contains the transform. ORDER MATTERS: TRANSFORM > INVERSE_TRANSFORM.
@@ -54,7 +54,37 @@ namespace blurp
 
             //Set to true if the data range contains the inverse transform. ORDER MATTERS: TRANSFORM > INVERSE_TRANSFORM.
             bool inverseTransform;
-        } data;
+        } transformData;
+
+        struct
+        {
+            //The Gpubufferview into the bound GpuBuffer for uv coordinate modifications.
+            GpuBufferView dataRange;
+        } uvModifierData;
+    };
+
+    /*
+     * A modifier vor uv coordinates.
+     * This multiplies the UV coordinates with "multiply" and adds "add" on top.
+     */
+    struct UvModifier
+    {
+        UvModifier()
+        {
+            multiply = { 1.f, 1.f };
+            add = { 0.f, 0.f };
+        }
+
+        UvModifier(glm::vec2 a_Multiply, glm::vec2 a_Add) : multiply(a_Multiply), add(a_Add)
+        {
+            
+        }
+
+        //Multiply the UV coords with this.
+        glm::vec2 multiply;
+
+        //Add this onto the UV coordinates.
+        glm::vec2 add;
     };
 
     /*
@@ -118,9 +148,14 @@ namespace blurp
         void SetTarget(const std::shared_ptr<RenderTarget>& a_RenderTarget);
 
         /*
-         * Set the GPU buffer to read from in the shaders.
+         * Set the GPU buffer to read the transform data from.
          */
-        void SetGpuBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
+        void SetTransformBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
+
+        /*
+         * Set the GPU buffer to read uv modifications from.
+         */
+        void SetUvModifierBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
 
         /*
          * Add one or more meshes to the drawing queue.
@@ -154,7 +189,8 @@ namespace blurp
         //std::unordered_map<Mesh*, std::unordered_map<Material*, std::vector<glm::mat4>>> m_DrawQueue;
         std::vector<ForwardDrawData> m_DrawQueue;
 
-        std::shared_ptr<GpuBuffer> m_GpuBuffer;
+        std::shared_ptr<GpuBuffer> m_TransformBuffer;
+        std::shared_ptr<GpuBuffer> m_UvModifierBuffer;
 
         //Light data.
         std::vector<PointLightData> m_PointLights;

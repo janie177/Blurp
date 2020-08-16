@@ -263,6 +263,7 @@ std::shared_ptr<blurp::MaterialBatch> LoadMaterialBatch(blurp::RenderResourceMan
 	batchSettings.textureSettings.dataType = DataType::UBYTE;
 	batchSettings.textureSettings.dimensions = {w, h};
 	batchSettings.materialCount = 3;
+	batchSettings.textureSettings.wrapMode = WrapMode::REPEAT;
 
 	return a_Manager.CreateMaterialBatch(batchSettings);
 }

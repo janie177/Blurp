@@ -114,7 +114,7 @@ namespace blurp
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), static_cast<void*>(&camData));
 
         //Bind the SSBO to the instance data slot (0).
-        const auto glGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_GpuBuffer);
+        const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_TransformBuffer);
 
         for(auto& instanceData : m_DrawQueue)
         {
@@ -148,11 +148,11 @@ namespace blurp
             }
 
             //Uploaded data for this shader masking
-            if(instanceData.data.transform)
+            if(instanceData.transformData.transform)
             {
                 shaderMask |= uploadMBit;
             }
-            if(instanceData.data.inverseTransform)
+            if(instanceData.transformData.inverseTransform)
             {
                 shaderMask |= uploadIMBit;
             }
@@ -258,7 +258,15 @@ namespace blurp
 
             //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
             //Shader is hard coded to use slot 0 for the buffer.
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.data.dataRange.start), instanceData.data.dataRange.size);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.transformData.dataRange.start), instanceData.transformData.dataRange.size);
+
+            //Check if Uv modifiers are enabled. Bind to slot 3 if used.
+            const bool hasUvModifiers = (m_UvModifierBuffer != nullptr && (mesh->GetVertexAttributeMask() & VertexAttribute::UV_MODIFIER_ID) == VertexAttribute::UV_MODIFIER_ID);
+            if(hasUvModifiers)
+            {
+                auto glUvModifierBuffer = static_cast<GpuBuffer_GL*>(m_UvModifierBuffer.get());
+                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.size);
+            }
 
             //Set the number of instances from the mesh itself in the uniform.
             glUniform1i(0, mesh->GetInstanceCount());

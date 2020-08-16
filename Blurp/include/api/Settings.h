@@ -192,39 +192,39 @@ namespace blurp
 
     enum class VertexAttribute : std::uint16_t
     {
-        //X and Y position.
-        POSITION_2D = 1 << 0,
-
         //X, Y and Z position.
-        POSITION_3D = 1 << 1,
+        POSITION_3D = 1 << 0,
 
         //UV coordinates for a texture.
         //Multiple UV coords can be enabled for different material
-        UV_COORDS = 1 << 2,
+        UV_COORDS = 1 << 1,
 
         //X, Y and Z direction of the surface.
-        NORMAL = 1 << 3,
+        NORMAL = 1 << 2,
 
         //R, G and B color channels.
-        COLOR = 1 << 4,
+        COLOR = 1 << 3,
 
         //X, Y and Z indicating a curved direction.
-        TANGENT = 1 << 5,
+        TANGENT = 1 << 4,
 
         //X, Y and Z indicating a curved surface. Used in combination with Tangent.
-        BI_TANGENT = 1 << 6,
+        BI_TANGENT = 1 << 5,
 
         //Vec3 of the bone indices affecting vertex.
-        BONE_INDEX = 1 << 7,
+        BONE_INDEX = 1 << 6,
 
         //Vec3 of the weights of each bone (to be used with BONE_INDEX).
-        BONE_WEIGHT = 1 << 8,
-
-        //Matrices for instancing.
-        MATRIX = 1 << 9,
+        BONE_WEIGHT = 1 << 7,
 
         //The Integer material ID to use. Used in combination with Material Batches.
-        MATERIAL_ID = 1 << 10,
+        MATERIAL_ID = 1 << 8,
+
+        //Float representing the index of the UV modifier in the UVModifierBuffer.
+        UV_MODIFIER_ID = 1 << 9,
+
+        //Matrices for instancing.
+        MATRIX = 1 << 10,
 
         //Transpose of the inverse instance matrix. Used with MATRIX to allow for uneven scaling with correct lighting normals.
         ITMATRIX = 1 << 11,
@@ -232,7 +232,6 @@ namespace blurp
 
     //All vertex attributes in an iterable format.
     const static VertexAttribute VERTEX_ATTRIBUTES[NUM_VERTEX_ATRRIBS]{
-        VertexAttribute::POSITION_2D,
         VertexAttribute::POSITION_3D,
         VertexAttribute::UV_COORDS,
         VertexAttribute::NORMAL,
@@ -241,8 +240,9 @@ namespace blurp
         VertexAttribute::BI_TANGENT,
         VertexAttribute::BONE_INDEX,
         VertexAttribute::BONE_WEIGHT,
-        VertexAttribute::MATRIX,
         VertexAttribute::MATERIAL_ID,
+        VertexAttribute::UV_MODIFIER_ID,
+        VertexAttribute::MATRIX,
         VertexAttribute::ITMATRIX,
     };
 
@@ -802,7 +802,6 @@ namespace blurp
         VertexAttributeData m_Data[NUM_VERTEX_ATRRIBS];
 
         inline static const std::unordered_map<VertexAttribute, VertexAttributeInfo> VERTEX_ATTRIBUTE_INFO = {
-            {VertexAttribute::POSITION_2D, {2, DataType::FLOAT, "va_Position2D", "VA_POS2D_DEF"}},
             {VertexAttribute::POSITION_3D, {3, DataType::FLOAT, "va_Position3D", "VA_POS3D_DEF"}},
             {VertexAttribute::UV_COORDS, {2, DataType::FLOAT, "va_UVCoords", "VA_UVCOORD_DEF"}},
             {VertexAttribute::NORMAL, {3, DataType::FLOAT, "va_Normal", "VA_NORMAL_DEF"}},
@@ -811,8 +810,9 @@ namespace blurp
             {VertexAttribute::BI_TANGENT, {3, DataType::FLOAT, "va_BiTangent", "VA_BITANGENT_DEF"}},
             {VertexAttribute::BONE_INDEX, {3, DataType::UINT, "va_BoneIndex", "VA_BONEINDEX_DEF"}},
             {VertexAttribute::BONE_WEIGHT, {3, DataType::FLOAT, "va_BoneWeight", "VA_BONEWEIGHT_DEF"}},
-            {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF"}},
             {VertexAttribute::MATERIAL_ID, {1, DataType::FLOAT, "va_MaterialID", "VA_MATERIALID_DEF"}},
+            {VertexAttribute::UV_MODIFIER_ID, {1, DataType::FLOAT, "va_UvModifierID", "VA_UVMODIFIERID_DEF"}},
+            {VertexAttribute::MATRIX, {16, DataType::FLOAT, "va_Matrix", "VA_MATRIX_DEF"}},
             {VertexAttribute::ITMATRIX, {16, DataType::FLOAT, "va_ITMatrix", "VA_ITMATRIX_DEF"}},
         };
     };

@@ -17,9 +17,14 @@ namespace blurp
         m_Output = a_RenderTarget;
     }
 
-    void RenderPass_Forward::SetGpuBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer)
+    void RenderPass_Forward::SetTransformBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer)
     {
-        m_GpuBuffer = a_Buffer;
+        m_TransformBuffer = a_Buffer;
+    }
+
+    void RenderPass_Forward::SetUvModifierBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer)
+    {
+        m_UvModifierBuffer = a_Buffer;
     }
 
     void RenderPass_Forward::QueueForDraw(ForwardDrawData a_Data)
@@ -41,7 +46,7 @@ namespace blurp
     bool RenderPass_Forward::IsStateValid()
     {
         //TODO
-        return m_Output != nullptr && m_Camera != nullptr && m_GpuBuffer != nullptr;
+        return m_Output != nullptr && m_Camera != nullptr && m_TransformBuffer != nullptr;
     }
 
     std::vector<Lockable*> RenderPass_Forward::GetLockableResources() const
@@ -55,9 +60,9 @@ namespace blurp
             lockables.emplace_back(m_Output.get());
         }
 
-        if(m_GpuBuffer != nullptr)
+        if(m_TransformBuffer != nullptr)
         {
-            lockables.push_back(m_GpuBuffer.get());
+            lockables.push_back(m_TransformBuffer.get());
         }
 
         return lockables;

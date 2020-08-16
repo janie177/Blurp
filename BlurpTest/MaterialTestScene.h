@@ -26,7 +26,8 @@ private:
     std::shared_ptr<blurp::Mesh> m_Mesh;
     std::shared_ptr<blurp::Camera> m_Camera;
     std::shared_ptr<blurp::Material> m_Material;
-    std::shared_ptr<blurp::GpuBuffer> m_GpuBuffer;
+    std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
+    std::shared_ptr<blurp::GpuBuffer> m_UvModifierBuffer;
 
     //Data directly related to drawing the mesh.
     blurp::Transform m_MeshTransform;

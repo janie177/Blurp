@@ -60,9 +60,6 @@ const static std::uint16_t CUBE_INDICES[]
 
 void MaterialTestScene::Init()
 {
-
-
-
     //Create the pipeline object.
     PipelineSettings pSettings;
     pSettings.waitForGpu = true;
@@ -140,14 +137,14 @@ void MaterialTestScene::Init()
 
 
     float quadVertices[] = {
-        // positions            // normal         // texcoords  // tangent                          // bitangent
-        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-        pos2.x, pos2.y, pos2.z, nm.x, nm.y, nm.z, uv2.x, uv2.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
+        // positions            // normal         // texcoords  // tangent                          // bitangent                                //UVMOD
+        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,   0,
+        pos2.x, pos2.y, pos2.z, nm.x, nm.y, nm.z, uv2.x, uv2.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,   0,
+        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,   0,
 
-        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
-        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
-        pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z
+        pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,   0,
+        pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,   0,
+        pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,   0,
     };
 
     std::uint16_t quadIndices[]
@@ -166,11 +163,12 @@ void MaterialTestScene::Init()
     meshSettings.numIndices = 6;
 
     //Enabled attributes for the mesh.
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 56, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 12, 56, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 56, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::TANGENT, 32, 56, 0);
-    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::BI_TANGENT, 44, 56, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::POSITION_3D, 0, 60, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::NORMAL, 12, 60, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 60, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::TANGENT, 32, 60, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::BI_TANGENT, 44, 60, 0);
+    meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_MODIFIER_ID, 56, 60, 0);
 
 
     m_Mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
@@ -183,10 +181,10 @@ void MaterialTestScene::Init()
     gpuBufferSettings.size = std::pow(2, 15);
     gpuBufferSettings.resizeWhenFull = true;
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
-    m_GpuBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
+    m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Let the forward pass read data from this GPU buffer.
-    m_ForwardPass->SetGpuBuffer(m_GpuBuffer);
+    m_ForwardPass->SetTransformBuffer(m_TransformBuffer);
 
 
     /*
@@ -209,11 +207,12 @@ void MaterialTestScene::Init()
     m_QueueData.materialData.material = m_Material;
 
     //Enable transform uploading. Now a single matrix is expected in the GpuBufferView.
-    m_QueueData.data.transform = true;
+    m_QueueData.transformData.transform = true;
 
 
     m_MeshTransform.Scale({ 3.0, 3.0, 1.0 });
     m_MeshTransform.Translate({0, 10, 0});
+    m_MeshTransform.Rotate(m_MeshTransform.GetUp(), 3.8415f);
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
@@ -225,18 +224,29 @@ void MaterialTestScene::Init()
     lightMat.SetEmissiveConstant({ 1, 1, 1 });
     auto lightMaterial = m_Engine.GetResourceManager().CreateMaterial(lightMat);
 
-
     m_LightQueueData.mesh = lightMesh;
     m_LightQueueData.count = 1;
     m_LightQueueData.materialData.material = lightMaterial;
-    m_LightQueueData.data.transform = true;
+    m_LightQueueData.transformData.transform = true;
+
+    //Texture scrolling.
+    m_UvModifierBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
+    m_ForwardPass->SetUvModifierBuffer(m_UvModifierBuffer);
 }
 
 void MaterialTestScene::Update()
 {
-    //Rotate the mesh a bit each frame.
-    const static float ROTATION_SPEED = 0.005;
-    m_MeshTransform.Rotate(m_MeshTransform.GetUp(), ROTATION_SPEED);
+    //TEXTURE SCROLLING
+    constexpr float addX = 0.00005f;
+    constexpr float addY = 0.0005f;
+    static UvModifier uvMod;
+    uvMod.add.x += addX;
+    uvMod.add.y += addY;
+    if (uvMod.add.x > 1.0f) uvMod.add.x -= 1.f;
+    if (uvMod.add.y > 1.0f) uvMod.add.y -= 1.f;
+
+    //Upload the UV modifier coords.
+    m_QueueData.uvModifierData.dataRange = m_UvModifierBuffer->WriteData<UvModifier>(static_cast<void*>(0), 1, sizeof(glm::vec2), &uvMod);
 
     //Read the input from the window.
     auto input = m_Window->PollInput();
@@ -307,6 +317,18 @@ void MaterialTestScene::Update()
     if (input.getKeyState(KEY_E) == ButtonState::FIRST_PRESSED)
     {
         attribute = MaterialAttribute::ALPHA_CONSTANT_VALUE;
+    }
+
+    //Rotate the mesh around the up axis.
+    if(input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
+    {
+        static float rotSpeed = 0.005f;
+        m_MeshTransform.Rotate(m_MeshTransform.GetUp(), rotSpeed);
+    }
+    if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
+    {
+        static float rotSpeed = -0.005f;
+        m_MeshTransform.Rotate(m_MeshTransform.GetUp(), rotSpeed);
     }
 
     //If a switch was made, toggle it.
@@ -400,13 +422,13 @@ void MaterialTestScene::Update()
 
     //Calculate the mesh's MVP and upload it to the GPU buffer.
     auto matrix = m_MeshTransform.GetTransformation();;
-    m_QueueData.data.dataRange = m_GpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
+    m_QueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
 
     //Upload light transform.
     Transform lightTransform;
     lightTransform.Translate({ -5, 10, -5 });
     auto lightMat = lightTransform.GetTransformation();
-    m_LightQueueData.data.dataRange = m_GpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.data.dataRange.end), 1, 16, &lightMat);
+    m_LightQueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.transformData.dataRange.end), 1, 16, &lightMat);
 
     //Queue for draw.
     m_ForwardPass->QueueForDraw(m_QueueData);

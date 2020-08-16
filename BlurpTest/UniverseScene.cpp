@@ -238,18 +238,18 @@ void UniverseScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     gpuBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    forwardPass->SetGpuBuffer(gpuBuffer);
+    forwardPass->SetTransformBuffer(gpuBuffer);
 
 
     //Draw one instance of the massively instanced mesh.
     iData.mesh = instanced;
     iData.count = 1;
-    iData.data.transform = true;
+    iData.transformData.transform = true;
 
     //Draw many instances of the single cubes that spasm around.
     data.mesh = mesh;
     data.count = transforms.size();
-    data.data.transform = true;
+    data.transformData.transform = true;
 
     iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager());
 }
@@ -399,8 +399,8 @@ void UniverseScene::Update()
     //Update the single transform for the 20 million cubes.
     m = iMTransform.GetTransformation();
 
-    data.data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transforms.size(), 16, &transforms[0]);
-    iData.data.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &m);
+    data.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transforms.size(), 16, &transforms[0]);
+    iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(data.transformData.dataRange.end), 1, 16, &m);
 
     //Queue for draw.
     forwardPass->QueueForDraw(data);
