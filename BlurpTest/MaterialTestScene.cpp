@@ -213,15 +213,29 @@ void MaterialTestScene::Init()
 
 
     m_MeshTransform.Scale({ 3.0, 3.0, 1.0 });
+    m_MeshTransform.Translate({0, 10, 0});
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
+
+    //Visualize the light as a white ball.
+    auto lightMesh = Sphere::Load(m_Engine, 1.f, 64, 64);
+    MaterialSettings lightMat;
+    lightMat.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
+    lightMat.SetEmissiveConstant({ 1, 1, 1 });
+    auto lightMaterial = m_Engine.GetResourceManager().CreateMaterial(lightMat);
+
+
+    m_LightQueueData.mesh = lightMesh;
+    m_LightQueueData.count = 1;
+    m_LightQueueData.materialData.material = lightMaterial;
+    m_LightQueueData.data.transform = true;
 }
 
 void MaterialTestScene::Update()
 {
     //Rotate the mesh a bit each frame.
-    const static float ROTATION_SPEED = 0.00005;
+    const static float ROTATION_SPEED = 0.005;
     m_MeshTransform.Rotate(m_MeshTransform.GetUp(), ROTATION_SPEED);
 
     //Read the input from the window.
@@ -242,7 +256,7 @@ void MaterialTestScene::Update()
     MaterialAttribute attribute = static_cast<MaterialAttribute>(0);
 
     //Buttons pressed:
-    if(input.getKeyState(KEY_0) == ButtonState::FIRST_PRESSED)
+    if (input.getKeyState(KEY_0) == ButtonState::FIRST_PRESSED)
     {
         attribute = MaterialAttribute::DIFFUSE_TEXTURE;
     }
@@ -296,7 +310,7 @@ void MaterialTestScene::Update()
     }
 
     //If a switch was made, toggle it.
-    if(static_cast<std::uint32_t>(attribute) != 0)
+    if (static_cast<std::uint32_t>(attribute) != 0)
     {
         if (m_Material->GetSettings().IsAttributeEnabled(attribute))
         {
@@ -318,7 +332,7 @@ void MaterialTestScene::Update()
     //Read mouse input to control the camera.
     while (input.getNextEvent(mEvent))
     {
-        if(mEvent.action == MouseAction::SCROLL)
+        if (mEvent.action == MouseAction::SCROLL)
         {
             mouseScroll += -mEvent.value;
         }
@@ -333,22 +347,22 @@ void MaterialTestScene::Update()
     }
 
     //Update the camera position based on the mouse input.
-    if(mouseMoveX != 0)
+    if (mouseMoveX != 0)
     {
         m_Camera->GetTransform().RotateAround(m_MeshTransform.GetTranslation(), m_Camera->GetTransform().GetUp(), MOVE_SENSITIVITY * mouseMoveX);
     }
-    if(mouseMoveY != 0)
+    if (mouseMoveY != 0)
     {
         m_Camera->GetTransform().RotateAround(m_MeshTransform.GetTranslation(), m_Camera->GetTransform().GetRight(), MOVE_SENSITIVITY * mouseMoveY);
     }
     //Handle zooming in and out.
-    if(mouseScroll != 0)
+    if (mouseScroll != 0)
     {
         const static float MIN_DISTANCE = 1.0f;
         auto moved = m_Camera->GetTransform().GetForward() * SCROLL_SENSITIVITY * mouseScroll;
 
         //Zooming out is always possible.
-        if(mouseScroll > 0)
+        if (mouseScroll > 0)
         {
             m_Camera->GetTransform().Translate(moved);
         }
@@ -359,7 +373,7 @@ void MaterialTestScene::Update()
             const auto moveLength = glm::length(moved);
 
             //Zoomed in too close. Set to correct distance.
-            if(oldDistance - moveLength < MIN_DISTANCE)
+            if (oldDistance - moveLength < MIN_DISTANCE)
             {
                 m_Camera->GetTransform().LookAt(m_MeshTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE), m_MeshTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE * 2.f), m_Camera->GetTransform().GetUp());
             }
@@ -388,8 +402,15 @@ void MaterialTestScene::Update()
     auto matrix = m_MeshTransform.GetTransformation();;
     m_QueueData.data.dataRange = m_GpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
 
+    //Upload light transform.
+    Transform lightTransform;
+    lightTransform.Translate({ -5, 10, -5 });
+    auto lightMat = lightTransform.GetTransformation();
+    m_LightQueueData.data.dataRange = m_GpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.data.dataRange.end), 1, 16, &lightMat);
+
     //Queue for draw.
     m_ForwardPass->QueueForDraw(m_QueueData);
+    m_ForwardPass->QueueForDraw(m_LightQueueData);
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

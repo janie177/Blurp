@@ -36,6 +36,16 @@ TODO list:
 	
 	[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
 	
+	[ ]	Implement material UV offset.
+		- vec2 multiply;
+		- vec2 origin;
+		- Use GpuBuffer and GpuBufferView to upload this data and then bind it.
+		- VertexAttribute: UvModifier. Index of the GpuBufferView bound above.
+		
+	[ ] Voxel rendering:
+		- Create atlas with all materials on it that is power of 2 (the entire atlas).
+		- Create separate atlas for the normal maps of the materials. Do the same for parallax/ao/mra etc.
+		- Offset UV 
 
 	Passes:
 		ComputeMatrices:

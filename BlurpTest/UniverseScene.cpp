@@ -144,7 +144,7 @@ void UniverseScene::Init()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 1000000;
+    const int numinstances = 10000;
     const float maxDistance = 10000.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;
@@ -416,4 +416,6 @@ void UniverseScene::Update()
             break;
         }
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(6));
 }
