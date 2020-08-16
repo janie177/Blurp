@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <functional>
 
 #include "InputQueue.h"
 #include "RenderResource.h"
@@ -28,6 +29,13 @@ namespace blurp
          * Get the RenderTarget from the swapchain directly.
          */
         std::shared_ptr<RenderTarget> GetRenderTarget() const;
+
+        /*
+         * Set a callback that is called when the window resizes.
+         *
+         * Example format: SetResizeCallback([](int w, int h){ //CODE });
+         */
+        void SetResizeCallback(std::function<void(int, int)> a_Function);
 
         /*
          * Close the window.
@@ -106,6 +114,9 @@ namespace blurp
     protected:
         //Initial window settings.
         WindowSettings m_Settings;
+
+        //Callback function when resizing happens.
+        std::function<void(int, int)> m_ResizeCallback;
 
     private:
         std::shared_ptr<SwapChain> m_SwapChain;

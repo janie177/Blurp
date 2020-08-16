@@ -1,5 +1,4 @@
 #include <BlurpEngine.h>
-#include <iostream>
 #include <Settings.h>
 #include <glm/glm.hpp>
 #include <Window.h>
@@ -37,8 +36,8 @@ int main()
     //RENDERING
 
     //Load one of the scenes.
-    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     scene->Init();
 
     /*

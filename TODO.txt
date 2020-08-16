@@ -34,9 +34,11 @@ TODO list:
 	
 	[ ] Add functionality to meshes to overwrite data partially. Ensure not locked and not read only.
 	
+	[x]	Dynamically index vertex attributes to get around the maximum index limit.
+	
 	[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
 	
-	[ ]	Implement material UV offset.
+	[x]	Implement material UV offset.
 		- vec2 multiply;
 		- vec2 origin;
 		- Use GpuBuffer and GpuBufferView to upload this data and then bind it.

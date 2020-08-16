@@ -10,6 +10,7 @@ namespace blurp
     {
         //Set the render target dimensions to match the window.
         m_Settings.swapChainSettings.renderTargetSettings.viewPort = { 0.f, 0.f, m_Settings.dimensions };
+        m_ResizeCallback = [](int, int) {};
     }
 
     std::shared_ptr<SwapChain> Window::GetSwapChain() const
@@ -20,6 +21,11 @@ namespace blurp
     std::shared_ptr<RenderTarget> Window::GetRenderTarget() const
     {
         return m_SwapChain->GetRenderTarget();
+    }
+
+    void Window::SetResizeCallback(std::function<void(int, int)> a_Function)
+    {
+        m_ResizeCallback = std::move(a_Function);
     }
 
     WindowType Window::GetWindowType() const

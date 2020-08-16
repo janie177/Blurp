@@ -472,6 +472,9 @@ namespace blurp
             {
                 swapChain->Resize(newDims, m_FullScreen);
             }
+
+            //Notify the callback.
+            m_ResizeCallback(static_cast<int>(m_Dimensions.x), static_cast<int>(m_Dimensions.y));
         }
 
         //Clip the cursor to the window if focus is still active.

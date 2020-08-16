@@ -73,12 +73,29 @@ void MaterialTestScene::Init()
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
     camSettings.farPlane = 100000000000000.f;
+    camSettings.fov = 120.f;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
 
     //Create a forward renderpass that draws directly to the screen.
     m_ForwardPass = m_Pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     m_ForwardPass->SetCamera(m_Camera);
     m_ForwardPass->SetTarget(m_Window->GetRenderTarget());
+
+    //Resize callback.
+    m_Window->SetResizeCallback([&](int w, int h)
+    {
+        //Update camera.
+        std::cout << "Resize callback called. W: " << w << " H: " << h << std::endl;
+        CameraSettings camS;
+        camS.width = w;
+        camS.height = h;
+        camS.fov = 120.f;
+        camS.farPlane = 100000000000000.f;
+        m_Camera->SetProjection(camS);
+
+        //Update viewport
+
+    });
 
 
     glm::vec3 pos1(-1.0f, 1.0f, 0.0f);
