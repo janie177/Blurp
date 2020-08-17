@@ -15,12 +15,12 @@ namespace blurp
         //Attain lock.
         ResourceLock(Lockable& a_Lockable, LockType a_Type);
 
+        //Move operations.
+        ResourceLock(ResourceLock&& a_Other) noexcept;
+        ResourceLock& operator=(ResourceLock&& a_Other) noexcept;
+
         //Release lock.
         ~ResourceLock();
-
-        //Default move
-        ResourceLock(ResourceLock&&) noexcept = default;
-        ResourceLock& operator=(ResourceLock&&) noexcept = default;
 
         //Deleted functionality.
         ResourceLock(const ResourceLock&) = delete;

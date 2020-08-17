@@ -53,6 +53,18 @@ namespace blurp
         template<typename T>
         GpuBufferView WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, const T* a_Data);
 
+        /*
+         * Get the size in bytes of this GPU Buffer.
+         */
+        std::uint32_t GetSize() const;
+
+        /*
+         * Resize this GPU Buffer to fit the new size in bytes.
+         * Optionally specify whether data should be copied over or not. True by default.
+         * Returns true if the buffer was successfully resized.
+         */
+        virtual bool Resize(std::uint32_t a_Size, bool a_CopyData = true) = 0;
+
     protected:
         /*
          * Called when data has to be written to the GPU buffer.
@@ -70,6 +82,11 @@ namespace blurp
     protected:
         GpuBufferSettings m_Settings;
     };
+
+    inline std::uint32_t GpuBuffer::GetSize() const
+    {
+        return m_Settings.size;
+    }
 
     template <typename T>
     GpuBufferView GpuBuffer::WriteData(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, const T* a_Data)

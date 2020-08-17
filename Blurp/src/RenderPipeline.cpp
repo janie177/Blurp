@@ -1,6 +1,9 @@
 #pragma once
 
 #include "RenderPipeline.h"
+
+#include <iostream>
+
 #include "RenderPass.h"
 #include "BlurpEngine.h"
 #include "RenderResourceManager.h"
@@ -80,9 +83,12 @@ namespace blurp
         }
 
         //Lock every resource collected.
+        m_Locks.reserve(lockedResources.size());
         for(auto& ptr : lockedResources)
         {
-            m_Locks.emplace_back(ResourceLock{ *ptr.first, ptr.second });
+            auto lock = ResourceLock(*ptr.first, ptr.second);
+            m_Locks.emplace_back(std::move(lock));
+            
         }
 
         //Before executing, let the child class set up some stuff.

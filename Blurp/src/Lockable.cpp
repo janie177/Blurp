@@ -1,5 +1,6 @@
 #include "Lockable.h"
 #include <cassert>
+#include <iostream>
 
 namespace blurp
 {

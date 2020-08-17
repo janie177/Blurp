@@ -23,6 +23,7 @@ namespace blurp
     public:
         std::vector<Lockable*> GetRecursiveLockables() override;
 
+        bool Resize(std::uint32_t a_Size, bool a_CopyData = true) override;
     private:
         GLuint m_Ssbo;
     };

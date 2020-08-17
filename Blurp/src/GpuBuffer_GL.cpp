@@ -66,34 +66,20 @@ namespace blurp
             //Resize to double the size. Create a new buffer and move data into it.
             if (m_Settings.resizeWhenFull)
             {
-                const auto oldSize = m_Settings.size;
-
-                //Keep doubling the size until it fits.
-                while (m_Settings.size < totalSize)
+                //Keep doubling till it fits.
+                std::uint32_t newSize = m_Settings.size;
+                while(newSize < totalSize)
                 {
-                    m_Settings.size *= 2;
+                    newSize *= 2;
                 }
 
-                //Create a new bigger buffer.
-                GLuint tempBuffer;
-                glGenBuffers(1, &tempBuffer);
-                glBindBuffer(GL_SHADER_STORAGE_BUFFER, tempBuffer);
-                glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
-
-                //Copy over the contents from the old buffer to the new buffer.
-                glCopyNamedBufferSubData(m_Ssbo, tempBuffer, 0, 0, oldSize);
-
-                //Delete the old buffer.
-                glDeleteBuffers(1, &m_Ssbo);
-
-                //Store the new buffer handle and set it to the correct binding point.
-                m_Ssbo = tempBuffer;
-                glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+                //Resize and copy the data.
+                Resize(newSize, true);
             }
-            //Assert and warn.
+            //No auto resizing allowed so crash the program.
             else
             {
-                throw std::exception("Gpu Buffer size limit reached. Assign more space to the buffer by increasing setting.size.");
+                throw std::exception("Gpu Buffer size limit reached. Assign more space to the buffer by increasing setting.size or enable auto resizing.");
             }
         }
 
@@ -124,5 +110,42 @@ namespace blurp
     {
         //Return an empty vector because there's no internal lockables.
         return std::vector<Lockable*>();
+    }
+
+    bool GpuBuffer_GL::Resize(std::uint32_t a_Size, bool a_CopyData)
+    {
+        assert(!IsLocked() && "Cannot resize a Gpu Buffer that is currently locked!");
+
+        //Update settings size.
+        const auto oldSize = m_Settings.size;
+        m_Settings.size = a_Size;
+
+        //Copy old data to the new buffer if specified.
+        if(a_CopyData)
+        {
+            //Create a new bigger buffer.
+            GLuint tempBuffer;
+            glGenBuffers(1, &tempBuffer);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, tempBuffer);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
+
+            //Copy over the contents from the old buffer to the new buffer.
+            glCopyNamedBufferSubData(m_Ssbo, tempBuffer, 0, 0, oldSize);
+
+            //Delete the old buffer.
+            glDeleteBuffers(1, &m_Ssbo);
+
+            //Store the new buffer handle and set it to the correct binding point.
+            m_Ssbo = tempBuffer;
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        }
+        //No copying needed, so just resize and no need to generate a new buffer.
+        else
+        {
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_Ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, m_Settings.size, nullptr, ToGL(m_Settings.memoryUsage));
+        }
+
+        return true;
     }
 }
