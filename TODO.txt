@@ -14,9 +14,11 @@ TODO list:
 	
 	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
 	
+	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
+	
 	[ ]	Implement metallic roughness in the forward shader.
 	
-	[ ] Set up locking correctly for forward pass.
+	[x] Set up locking correctly for forward pass.
 	
 	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
 	

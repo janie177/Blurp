@@ -105,7 +105,7 @@ void UniverseScene::Init()
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
-    camSettings.farPlane = 100000000000000.f;
+    camSettings.farPlane = 9000.f;
     camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
     forwardPass = pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     forwardPass->SetCamera(camera);

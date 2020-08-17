@@ -72,8 +72,9 @@ void MaterialTestScene::Init()
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
-    camSettings.farPlane = 100000000000000.f;
-    camSettings.fov = 120.f;
+    camSettings.fov = 95.f;
+    camSettings.nearPlane = 0.1f;
+    camSettings.farPlane = 1000.f;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
 
     //Create a forward renderpass that draws directly to the screen.
@@ -89,11 +90,10 @@ void MaterialTestScene::Init()
         CameraSettings camS;
         camS.width = w;
         camS.height = h;
-        camS.fov = 120.f;
-        camS.farPlane = 100000000000000.f;
+        camS.fov = 95.f;
+        camS.nearPlane = 0.1f;
+        camS.farPlane = 1000.f;
         m_Camera->SetProjection(camS);
-
-        //Update viewport
 
     });
 
@@ -227,7 +227,7 @@ void MaterialTestScene::Init()
     m_QueueData.transformData.transform = true;
 
 
-    m_MeshTransform.Scale({ 3.0, 3.0, 1.0 });
+    m_MeshTransform.Scale({ 5.0, 5.0, 1.0 });
     m_MeshTransform.Translate({0, 10, 0});
     m_MeshTransform.Rotate(m_MeshTransform.GetUp(), 3.8415f);
 
@@ -254,7 +254,7 @@ void MaterialTestScene::Init()
 void MaterialTestScene::Update()
 {
     //TEXTURE SCROLLING
-    constexpr float addX = 0.00005f;
+    constexpr float addX = 0.00025f;
     constexpr float addY = 0.0005f;
     static UvModifier uvMod;
     uvMod.add.x += addX;
@@ -364,6 +364,7 @@ void MaterialTestScene::Update()
 
     const static float MOVE_SENSITIVITY = 0.001f;
     const static float SCROLL_SENSITIVITY = 1.5f;
+    const static float MIN_DISTANCE = 1.0f;
     float mouseMoveX = 0;
     float mouseMoveY = 0;
     float mouseScroll = 0;
@@ -394,6 +395,7 @@ void MaterialTestScene::Update()
     {
         m_Camera->GetTransform().RotateAround(m_MeshTransform.GetTranslation(), m_Camera->GetTransform().GetRight(), MOVE_SENSITIVITY * mouseMoveY);
     }
+    
     //Handle zooming in and out.
     if (mouseScroll != 0)
     {
@@ -450,6 +452,9 @@ void MaterialTestScene::Update()
     //Queue for draw.
     m_ForwardPass->QueueForDraw(m_QueueData);
     m_ForwardPass->QueueForDraw(m_LightQueueData);
+
+    //Print the camera position
+    std::cout << "Camera position: " << glm::length(m_Camera->GetTransform().GetTranslation()) << "." << std::endl;
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

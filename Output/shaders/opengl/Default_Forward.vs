@@ -215,17 +215,19 @@ void main()
 
 
     //WORLD SPACE POSITION FOR LIGHT CALCULATIONS
-    outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
+    vec4 fragPos = transform * vec4(aPos, 1.0);
 
     //Pass the camera position in world space.
     outData.camPos = cameraPosition.xyz;
 
     //PROJECTED SPACE. Do this before converting to tangent space.
-    gl_Position = viewProjection * vec4(outData.fragPos, 1.0);
+    gl_Position = viewProjection * fragPos;
 
     //Convert to tangent space if active.
 #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
     outData.camPos = outData.tbn * outData.camPos;
-    outData.fragPos = outData.tbn * outData.fragPos;
+    fragPos = vec4(outData.tbn * fragPos.xyz, fragPos.w);
 #endif
+
+    outData.fragPos = fragPos.xyz;
 }

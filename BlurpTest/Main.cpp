@@ -29,6 +29,9 @@ int main()
     windowSettings.swapChainSettings.vsync = false ;
     windowSettings.swapChainSettings.renderTargetSettings.viewPort = { 0, 0, windowSettings.dimensions };
 
+    windowSettings.swapChainSettings.renderTargetSettings.depthBits = 32;
+    windowSettings.swapChainSettings.renderTargetSettings.stencilBits = 0;
+
     blurpSettings.windowSettings = windowSettings;
     engine.Init(blurpSettings);
     auto window = engine.GetWindow();

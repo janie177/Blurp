@@ -145,7 +145,7 @@ void main()
 				const float numLayers = 10;
 				float layerDepth = 1.0 / numLayers;
 				float currentLayerDepth = 0.0;
-				vec2 P = viewDirection.xy * 0.6; 
+				vec2 P = viewDirection.xy * 0.6;	//SCALE 
 				vec2 deltaTexCoords = P / numLayers;
 				vec2  currentTexCoords     = texCoords;
 				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;
