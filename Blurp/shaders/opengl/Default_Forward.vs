@@ -1,5 +1,7 @@
 #version 460 core
 
+#define MAX_LIGHTS 580
+
 #ifdef VA_POS3D_DEF
 layout(location = VA_POS3D_LOCATION_DEF) in vec3 aPos;
 #endif
@@ -70,14 +72,22 @@ layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
 //END INSTANCE DATA
 #endif
 
+
+
 //Uniforms that are always required.
 layout(location = 0) uniform int numInstances;
 
-//CAMERA DATA
-layout(std140, binding = 1) uniform CameraMatrices
+
+
+
+//STATIC DATAT: Always the same for all draw calls in this shader for a single frame.
+layout(std140, binding = 1) uniform StaticData
 {
-    mat4 viewProjection;
-    vec4 cameraPosition;
+    mat4 viewProjection;    //PV matrix.
+    vec4 cameraPosition;    //Camera position in world space.
+    vec4 numLights;         //Number of lights. X = point, Y = spot, Z = directional.
+    vec4 numShadows;        //Number of shadow lights. X = point, Y = spot, Z = directional.
+    vec4 ambientLight;      //Total ambient light count.
 };
 
 //Uv modifiers
@@ -102,6 +112,15 @@ out VERTEX_OUT
 
     //Camera position.
     vec3 camPos;
+
+    //Point, spot and directional lights.
+    flat vec3 numLights;
+
+    //Point spot and directional lights with shadows.
+    flat vec3 numShadows;
+
+    //The ambient light of the scene.
+    flat vec3 ambientLight;
 
     //Material ID in the material batch.
 	#ifdef VA_MATERIALID_DEF
@@ -213,7 +232,6 @@ void main()
     outData.materialID = int(aMaterialID);
 #endif
 
-
     //WORLD SPACE POSITION FOR LIGHT CALCULATIONS
     outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
 
@@ -228,4 +246,9 @@ void main()
     outData.camPos = outData.tbn * outData.camPos;
     outData.fragPos = outData.tbn * outData.fragPos;
 #endif
+
+    //Pass on light information.
+    outData.numLights = numLights.xyz;
+    outData.numShadows = numShadows.xyz;
+    outData.ambientLight = ambientLight.xyz;
 }

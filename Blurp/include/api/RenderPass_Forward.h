@@ -108,7 +108,7 @@ namespace blurp
     {
     public:
         RenderPass_Forward(RenderPipeline& a_Pipeline)
-            : RenderPass(a_Pipeline)
+            : RenderPass(a_Pipeline), m_LightCounts(0), m_ShadowCounts(0), m_AmbientLight(0), m_ReuploadLights(true)
         {
         }
 
@@ -156,7 +156,7 @@ namespace blurp
          * Set the shadowmaps used for pointlights.
          * This has to be a Cubemap Array texture.
          */
-        void SetPointShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps);
+        void SetPointSpotShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps);
 
         /*
          * Set the shadow maps used for all directional lights.
@@ -169,6 +169,16 @@ namespace blurp
          * Not calling Reset means all resources from the last frame will still be drawn.
          */
         void Reset() override;
+
+        /*
+         * Reset the lights in this scene.
+         */
+        void ResetLights();
+
+        /*
+         * Reset all queued up draw data in this scene.
+         */
+        void ResetDrawData();
 
     protected:
         bool IsStateValid() override;
@@ -193,10 +203,12 @@ namespace blurp
         std::shared_ptr<Texture> m_DirectionalShadowMaps;
 
         //Shadowmap for pointlights and spotlights. This has to be a cubemat texture array.
-        std::shared_ptr<Texture> m_PointShadowMaps;
+        std::shared_ptr<Texture> m_PointSpotShadowMaps;
 
-        //Ambient light.
-        glm::vec3 m_AmbientColor;
-        float m_AmbientIntensity;
+        //Counters for the lights that have been added.
+        glm::vec3 m_LightCounts;     //The amount of each light type in order of POINT, SPOT, DIR
+        glm::vec3 m_ShadowCounts;    //The amount of shadowmaps per light in order of POINT, SPOT, DIR
+        glm::vec3 m_AmbientLight;    //The sum of ambient lights.
+        bool m_ReuploadLights;       //Flag to keep track of whether the uploaded light data is still valid or not to save bandwidth.
     };
 }

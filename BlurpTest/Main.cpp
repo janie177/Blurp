@@ -7,6 +7,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
+
+#include "LightTestScene.h"
 #include "MaterialTestScene.h"
 #include "Scene.h"
 #include "UniverseScene.h"
@@ -40,7 +42,8 @@ int main()
 
     //Load one of the scenes.
     //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     scene->Init();
 
     /*

@@ -72,7 +72,7 @@ void MaterialTestScene::Init()
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
-    camSettings.fov = 95.f;
+    camSettings.fov = 120.f;
     camSettings.nearPlane = 0.1f;
     camSettings.farPlane = 1000.f;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
@@ -86,11 +86,10 @@ void MaterialTestScene::Init()
     m_Window->SetResizeCallback([&](int w, int h)
     {
         //Update camera.
-        std::cout << "Resize callback called. W: " << w << " H: " << h << std::endl;
         CameraSettings camS;
         camS.width = w;
         camS.height = h;
-        camS.fov = 95.f;
+        camS.fov = 120.f;
         camS.nearPlane = 0.1f;
         camS.farPlane = 1000.f;
         m_Camera->SetProjection(camS);
@@ -234,6 +233,16 @@ void MaterialTestScene::Init()
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
 
+
+    //Add a pointlight to the scene.
+    LightSettings lSettings;
+    lSettings.type = LightType::LIGHT_POINT;
+    lSettings.intensity = 50.f;
+    lSettings.color = { 1.f, 1.f, 1.f };
+    lSettings.pointLight.position = {-5, 10, -7};
+    m_Light = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
+
+
     //Visualize the light as a white ball.
     auto lightMesh = Sphere::Load(m_Engine, 1.f, 64, 64);
     MaterialSettings lightMat;
@@ -336,16 +345,23 @@ void MaterialTestScene::Update()
         attribute = MaterialAttribute::ALPHA_CONSTANT_VALUE;
     }
 
-    //Rotate the mesh around the up axis.
+    //Move the light.
+    const static float MOVE_SPEED = 0.05f;
     if(input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
     {
-        static float rotSpeed = 0.005f;
-        m_MeshTransform.Rotate(m_MeshTransform.GetUp(), rotSpeed);
+        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{MOVE_SPEED, 0.f, 0.f});
     }
     if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
     {
-        static float rotSpeed = -0.005f;
-        m_MeshTransform.Rotate(m_MeshTransform.GetUp(), rotSpeed);
+        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ -MOVE_SPEED, 0.f, 0.f });
+    }
+    if (input.getKeyState(KEY_UP) != ButtonState::NOT_PRESSED)
+    {
+        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, MOVE_SPEED, 0.f });
+    }
+    if (input.getKeyState(KEY_DOWN) != ButtonState::NOT_PRESSED)
+    {
+        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, -MOVE_SPEED, 0.f });
     }
 
     //If a switch was made, toggle it.
@@ -443,9 +459,9 @@ void MaterialTestScene::Update()
     auto matrix = m_MeshTransform.GetTransformation();;
     m_QueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
 
-    //Upload light transform.
+    //Upload the mesh representing the light transform.
     Transform lightTransform;
-    lightTransform.Translate({ -5, 10, -5 });
+    lightTransform.Translate(m_Light->GetPosition());
     auto lightMat = lightTransform.GetTransformation();
     m_LightQueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.transformData.dataRange.end), 1, 16, &lightMat);
 
@@ -453,8 +469,8 @@ void MaterialTestScene::Update()
     m_ForwardPass->QueueForDraw(m_QueueData);
     m_ForwardPass->QueueForDraw(m_LightQueueData);
 
-    //Print the camera position
-    std::cout << "Camera position: " << glm::length(m_Camera->GetTransform().GetTranslation()) << "." << std::endl;
+    //Add the light to the scene.
+    m_ForwardPass->AddLight(m_Light);
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

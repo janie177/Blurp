@@ -1,13 +1,7 @@
 #version 460 core
 
 #define MAX_MATERIAL_BATCH_SIZE 512
-
-//LIGHT TEST REMOVE THIS LATER
-
-	vec3 light_pos_world = vec3(-5, 10, -5);
-	vec3 light_color = vec3(1, 1, 1);
-	vec3 ambient_light = vec3(0.02, 0.02, 0.02);
-//END OF LIGHT TEST
+#define MAX_LIGHTS 580
 
 in VERTEX_OUT
 {
@@ -17,12 +11,21 @@ in VERTEX_OUT
     //Camera position.
     vec3 camPos;
 
-	//Material ID in the material batch.
+    //Point, spot and directional lights.
+    flat vec3 numLights;
+
+    //Point spot and directional lights with shadows.
+    flat vec3 numShadows;
+
+    //The ambient light of the scene.
+    flat vec3 ambientLight;
+
+    //Material ID in the material batch.
 	#ifdef VA_MATERIALID_DEF
 	flat int materialID;
 	#endif
 
-	//Vertex color modifier.
+    //Vertex color modifier.
     #ifdef VA_COLOR_DEF
     vec3 color;
     #endif
@@ -93,7 +96,28 @@ layout(location = 5) uniform float alphaConstant;
 	};
 
 //MAT_BATCH_DEFINE
-#endif 
+#endif
+
+
+//LIGHT DATA
+	
+	//Shadow sampler arrays.
+	layout(binding = 6) uniform sampler2DArrayShadow shadowSampler2D;
+	layout(binding = 7) uniform samplerCubeArrayShadow shadowSamplerCube;
+
+    struct LightData
+    {
+        vec4 v1;
+        vec4 v2;
+        vec4 v3;
+        mat4 m1;
+    };
+
+    layout(std140, binding = 4) uniform LightDataBuffer
+    {
+        LightData lightData[MAX_LIGHTS];
+    };
+//END LIGHT DATA
 
 
 void main()
@@ -117,8 +141,6 @@ void main()
 	#if defined(MAT_ALPHA_TEXTURE_DEFINE) || defined(MAT_ALPHA_CONSTANT_DEFINE)
 	float alphaModifier = 1.0;
 	#endif
-
-	vec3 lPos = light_pos_world;
 
 	//Normals are used, but no normalmapping is enabled.
 	#if defined(VA_NORMAL_DEF) && !(defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF))
@@ -188,10 +210,6 @@ void main()
 			vec3 surfaceNormal = texture2D(normalTexture, texCoords).rgb;
 			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
 			surfaceNormal = normalize(surfaceNormal);
-
-			//TODO remove this whith actual lighting
-			lPos = inData.tbn * light_pos_world;
-			//END TODO
 
 		#endif
 
@@ -299,10 +317,6 @@ void main()
 			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
 			surfaceNormal = normalize(surfaceNormal);
 
-			//TODO remove this whith actual lighting
-			lPos = inData.tbn * light_pos_world;
-			//END TODO
-
 			++texLayerOffset;
 		#endif
 
@@ -355,14 +369,216 @@ void main()
 		outColor *= vec4(inData.color, 1.0);
 	#endif
 
-	//Calculate light if a normal is present.
-	#if defined(VA_NORMAL_DEF)
-		vec3 lightDir = normalize(inData.fragPos.xyz - lPos);
 
-		float intensity = max(dot(surfaceNormal, -lightDir), 0.0);
-		outColor = vec4((intensity * outColor.rgb) + (outColor.rgb * ambient_light), 1.0);
-	#endif
 
+//Light calculations
+	//Diffuse can always be applied.
+	vec3 totalDiffuseLight = inData.ambientLight;
+
+#if defined(VA_NORMAL_DEF)
+    int offset = 0;
+
+    //Point lights.
+    for(int i = 0; i < inData.numLights.x; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Calculate the light position either in tangent or world space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightPos = inData.tbn * data.v2.xyz;
+        #else
+			vec3 lightPos = data.v2.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+		//Get the light direction, distance and normalize.
+		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		float length2 = dot(lightDir, lightDir);
+		lightDir /= sqrt(length2);
+		//Intensity is equal to the incoming angle multiplied by the inverse square law.
+		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+
+	//Point lights with shadowmaps.
+	for(int i = 0; i < inData.numShadows.x; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Calculate the light position either in tangent or world space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightPos = inData.tbn * data.v2.xyz;
+        #else
+			vec3 lightPos = data.v2.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+		//Get the light direction, distance and normalize.
+		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		float length2 = dot(lightDir, lightDir);
+		lightDir /= sqrt(length2);
+		//Intensity is equal to the incoming angle multiplied by the inverse square law.
+		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+
+		//TODO index into shadow map and check for shadow with the light matrix.
+
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+
+
+	//Spot lights.
+    for(int i = 0; i < inData.numLights.y; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Calculate the light position either in tangent or world space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightPos = inData.tbn * data.v2.xyz;
+			vec3 spotLightDirection = inData.tbn * data.v3.xyz;
+        #else
+			vec3 lightPos = data.v2.xyz;
+			vec3 spotLightDirection = data.v3.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+		//Get the light direction, distance and normalize.
+		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		float length2 = dot(lightDir, lightDir);
+		lightDir /= sqrt(length2);
+
+		//Ensure that the position is within the angle.
+		float angle = acos(-dot(lightDir, spotLightDirection));
+		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
+		{
+			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
+			++offset;
+			continue;
+		}
+
+		//Intensity is equal to the incoming angle multiplied by the inverse square law.
+		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+
+	//Spot lights with shadows.
+	for(int i = 0; i < inData.numShadows.y; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Calculate the light position either in tangent or world space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightPos = inData.tbn * data.v2.xyz;
+			vec3 spotLightDirection = inData.tbn * data.v3.xyz;
+        #else
+			vec3 lightPos = data.v2.xyz;
+			vec3 spotLightDirection = data.v3.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+		//Get the light direction, distance and normalize.
+		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		float length2 = dot(lightDir, lightDir);
+		lightDir /= sqrt(length2);
+
+		//Ensure that the position is within the angle.
+		float angle = acos(-dot(lightDir, spotLightDirection));
+		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
+		{
+			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
+			++offset;
+			continue;
+		}
+
+		//Intensity is equal to the incoming angle multiplied by the inverse square law.
+		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+
+
+		//TODO check shadowmap with index and then use the matrix to transform to shadow space.
+
+
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+
+    //Directional lights.
+    for(int i = 0; i < inData.numLights.z; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Retrieve the light direction and transform it if we're in tangent space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightDir = inData.tbn * data.v2.xyz;
+        #else
+			vec3 lightDir = data.v2.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+
+		//Intensity for dir lights has no dropoff because there's no position.
+		intensity = max(-dot(surfaceNormal, lightDir), 0.0);
+
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+
+    //Directional lights with shadows.
+    for(int i = 0; i < inData.numShadows.z; ++i)
+    {
+		LightData data = lightData[offset];
+
+		//Retrieve the light direction and transform it if we're in tangent space.
+        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
+			vec3 lightDir = inData.tbn * data.v2.xyz;
+        #else
+			vec3 lightDir = data.v2.xyz;
+        #endif
+
+		vec3 lightColor = data.v1.xyz;
+		float intensity = data.v1.w;
+
+		//Intensity for dir lights has no dropoff because there's no position.
+		intensity = max(-dot(surfaceNormal, lightDir), 0.0);
+
+
+		//TODO compare shadows with shadow matrix and index into shadow texture.
+
+
+		//Append to total light.
+        totalDiffuseLight += (intensity * lightColor);
+
+		//Increment offset into light buffer.
+        ++offset;
+    }
+#endif
+
+	//Set the output color RGB channels to be within 0 and 1, with all light taken into account.
+	//If normals are not active, this will only contain ambient lights.
+	outColor = vec4(clamp(totalDiffuseLight * outColor.rgb, 0.0, 1.0), 1.0);
 
 	//Apply AO, alpha and emissive.
 

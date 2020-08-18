@@ -14,6 +14,10 @@ namespace blurp
 
     void Light::SetColor(const glm::vec3& a_Color)
     {
+        //Ensure clamped between 0 and 1.
+        assert(a_Color.x >= 0.f && a_Color.x <= 1.f);
+        assert(a_Color.y >= 0.f && a_Color.y <= 1.f);
+        assert(a_Color.z >= 0.f && a_Color.z <= 1.f);
         m_Color = a_Color;
     }
 
@@ -24,6 +28,8 @@ namespace blurp
 
     void Light::SetIntensity(float a_Intensity)
     {
+        //Ensure intensity is positive.
+        assert(a_Intensity >= 0);
         m_Intensity = a_Intensity;
     }
 
@@ -46,15 +52,19 @@ namespace blurp
 
     void DirectionalLight::SetDirection(const glm::vec3& a_Direction)
     {
+        //Ensure normalized.
+        assert(fabs(glm::length(a_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
         m_Direction = a_Direction;
     }
 
     void SpotLight::SetAngle(float a_Angle)
     {
+        //Ensure the angle makes sense.
+        assert(a_Angle > 0 && a_Angle <= 360);
         m_Angle = a_Angle;
     }
 
-    float SpotLight::GetAngle(float a_Angle) const
+    float SpotLight::GetAngle() const
     {
         return m_Angle;
     }
@@ -71,6 +81,8 @@ namespace blurp
 
     void SpotLight::SetDirection(const glm::vec3& a_Direction)
     {
+        //Ensure normalized.
+        assert(fabs(glm::length(a_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
         m_Direction = a_Direction;
     }
 

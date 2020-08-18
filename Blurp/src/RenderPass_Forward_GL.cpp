@@ -57,11 +57,18 @@ namespace blurp
 
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
-        //Create the camera buffer. Also bind the buffer to slot 1. The shader is hard coded to read camera data from slot 1.
-        glGenBuffers(1, &m_CameraUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, m_CameraUbo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_CameraUbo);
+        //Create the static data buffer. Also bind the buffer to slot 1. The shader is hard coded to read camera data from slot 1.
+        glGenBuffers(1, &m_StaticDataUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(StaticData), nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_StaticDataUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        //Create the UBO used to upload light data to the GPU. Hard coded to slot 4.
+        glGenBuffers(1, &m_LightUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(LightDataPacked) * MAX_LIGHTS, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 4, m_LightUbo);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         return true;
@@ -69,12 +76,16 @@ namespace blurp
 
     bool RenderPass_Forward_GL::OnDestroy(BlurpEngine& a_BlurpEngine)
     {
-        glDeleteBuffers(1, &m_CameraUbo);
+        glDeleteBuffers(1, &m_StaticDataUbo);
         return true;
     }
 
     void RenderPass_Forward_GL::Execute()
     {
+        /*
+         * Render state and target preparing.
+         */
+
         //Clear the target buffer.
         const auto fboId = reinterpret_cast<RenderTarget_GL*>(m_Output.get())->GetFrameBufferId();
 
@@ -96,28 +107,189 @@ namespace blurp
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+
+        /*
+         * Global data setup that is used for all draw calls.
+         */
+
         //Shader attribute mask.
         std::uint32_t prevMask = 0;
         std::shared_ptr<Material> prevMaterial;
         std::shared_ptr<MaterialBatch> prevMaterialBatch;
         std::shared_ptr<Mesh> prevMesh;
 
+        //To set uniforms.
         GLuint currentProgramId = 0;
 
+        //Bits used for materials and uploaded data.
         constexpr std::uint32_t matSingleBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS);
         constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
         constexpr std::uint32_t uploadMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 2);
         constexpr std::uint32_t uploadIMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 3);
 
-        //Upload the camera matrix to the buffer.
-        CameraData camData;
-        camData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
-        camData.camPos = glm::vec4(m_Camera->GetTransform().GetTranslation(), 0.f);
-        glBindBuffer(GL_UNIFORM_BUFFER, m_CameraUbo);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), static_cast<void*>(&camData));
+        //Prepare the lights for uploading to the GPU in a packed format.
+        if(m_ReuploadLights)
+        {
+            //Add the total number of point, spot and directional lights together.
+            glm::vec3 combined = m_LightCounts + m_ShadowCounts;
+            std::size_t totalLightCount = static_cast<std::size_t>(combined.x) + static_cast<std::size_t>(combined.y) + static_cast<std::size_t>(combined.z);
+
+            assert(totalLightCount <= MAX_LIGHTS && "Maximum light count exceeded!");
+
+            //Only upload light data if there is actually lights present.
+            if (totalLightCount > 0)
+            {
+                std::vector<LightDataPacked> lightBuffer;
+                lightBuffer.resize(totalLightCount);
+
+                //Indices for each light data type. Shadow after non-shadow. Start index calculated by adding the last index + its size.
+                int pIndex = 0;
+                int pSIndex = pIndex + static_cast<int>(m_LightCounts.x);
+                int sIndex = pSIndex + static_cast<int>(m_ShadowCounts.x);
+                int sSIndex = sIndex + static_cast<int>(m_LightCounts.y);
+                int dIndex = sSIndex + static_cast<int>(m_ShadowCounts.y);
+                int dSIndex = dIndex + static_cast<int>(m_LightCounts.z);
+
+                for (auto& lData : m_LightData)
+                {
+                    switch (lData.light->GetType())
+                    {
+                    case LightType::LIGHT_POINT:
+                    {
+                        PointLight* light = static_cast<PointLight*>(lData.light.get());
+
+                        //No shadow.
+                        if (lData.shadowMapIndex < 0)
+                        {
+                            LightDataPacked& data = lightBuffer[pIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+
+                            ++pIndex;
+                        }
+                        //Shadow.
+                        else
+                        {
+                            LightDataPacked& data = lightBuffer[pSIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+
+                            data.shadowMatrix = lData.shadowMatrix;
+
+                            ++pSIndex;
+                        }
+                    }
+                    break;
+                    case LightType::LIGHT_SPOT:
+                    {
+                        SpotLight* light = static_cast<SpotLight*>(lData.light.get());
+
+                        //No shadow.
+                        if (lData.shadowMapIndex < 0)
+                        {
+                            LightDataPacked& data = lightBuffer[sIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
+
+                            ++sIndex;
+                        }
+                        //Shadow.
+                        else
+                        {
+                            LightDataPacked& data = lightBuffer[sSIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
+
+                            data.shadowMatrix = lData.shadowMatrix;
+
+                            ++sSIndex;
+                        }
+                    }
+                    break;
+                    case LightType::LIGHT_DIRECTIONAL:
+                    {
+                        DirectionalLight* light = static_cast<DirectionalLight*>(lData.light.get());
+
+                        //No shadow.
+                        if (lData.shadowMapIndex < 0)
+                        {
+                            LightDataPacked& data = lightBuffer[dIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetDirection(), lData.shadowMapIndex);
+
+                            data.shadowMatrix = lData.shadowMatrix;
+
+                            ++dIndex;
+                        }
+                        //Shadow.
+                        else
+                        {
+                            LightDataPacked& data = lightBuffer[dSIndex];
+
+                            data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
+                            data.vec2 = glm::vec4(light->GetDirection(), lData.shadowMapIndex);
+
+                            data.shadowMatrix = lData.shadowMatrix;
+
+                            ++dSIndex;
+                        }
+                    }
+                    break;
+                    default:
+                        break;
+                    }
+                }
+
+                //Upload the data to the GPU.
+                glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+                glBufferSubData(GL_UNIFORM_BUFFER, 0, lightBuffer.size() * sizeof(LightDataPacked), static_cast<void*>(&lightBuffer[0]));
+            }
+
+            //Lights uploaded so no need to do it again if they are not changed.
+            m_ReuploadLights = false;
+        }
+
+        //Bind the shadow samplers if they are specified and there is lights that use shadows.
+        if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z)
+        {
+            glActiveTexture(GL_TEXTURE6);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, reinterpret_cast<Texture_GL*>(m_DirectionalShadowMaps.get())->GetTextureId());
+        }
+        if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x || m_ShadowCounts.y))
+        {
+            glActiveTexture(GL_TEXTURE7);
+            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, reinterpret_cast<Texture_GL*>(m_PointSpotShadowMaps.get())->GetTextureId());
+        }
+        
+
+        //Upload the static data to the GPU such as the camera and light counts.
+        StaticData staticData;
+        staticData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
+        staticData.camPos = glm::vec4(m_Camera->GetTransform().GetTranslation(), 0.f);
+        staticData.numLights = glm::vec4(m_LightCounts, 0.f);
+        staticData.numShadows = glm::vec4(m_ShadowCounts, 0.f);
+        staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(staticData), static_cast<void*>(&staticData));
+
+
+        /*
+         * Actual drawing.
+         */
+
 
         for(auto& instanceData : m_DrawQueue)
         {
+            assert(instanceData.mesh != nullptr && "Mesh cannot be nullptr!");
+            assert(instanceData.count > 0 && "Cannot draw 0 instances of mesh!");
             Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
 
             //Calculate the new mask.
@@ -297,6 +469,7 @@ namespace blurp
             glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.count * mesh->GetInstanceCount());
         }
 
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         glBindVertexArray(0);
     }

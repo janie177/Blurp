@@ -53,7 +53,7 @@ namespace blurp
     {
     public:
         DirectionalLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Direction({-1.f, -1.f, -1.f}) {}
+            : Light(a_Settings), m_Direction(a_Settings.directionalLight.direction) {}
 
         /*
          * Get the direction of this directional light.
@@ -77,19 +77,19 @@ namespace blurp
     {
     public:
         SpotLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Position(0.f, 0.f, 0.f), m_Direction({ 0.f, -1.f, 0.f }), m_Angle(45.f) {}
+            : Light(a_Settings), m_Position(a_Settings.spotLight.position), m_Direction(a_Settings.spotLight.direction), m_Angle(a_Settings.spotLight.angle) {}
 
         /*
          * Set the angle of this spotlight.
-         * This is in degrees and determines the light cone width.
+         * This is in radians and determines the light cone width.
          */
         void SetAngle(float a_Angle);
 
         /*
          * Get the angle of this spotlight.
-         * This is in degrees.
+         * This is in radians.
          */
-        float GetAngle(float a_Angle) const;
+        float GetAngle() const;
 
         /*
          * Get the light position.
@@ -125,7 +125,7 @@ namespace blurp
     {
     public:
         PointLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Position(0.f, 0.f, 0.f) {}
+            : Light(a_Settings), m_Position(a_Settings.pointLight.position) {}
 
         /*
          * Get the light position.

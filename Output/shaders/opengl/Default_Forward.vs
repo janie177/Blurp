@@ -1,5 +1,7 @@
 #version 460 core
 
+#define MAX_LIGHTS 580
+
 #ifdef VA_POS3D_DEF
 layout(location = VA_POS3D_LOCATION_DEF) in vec3 aPos;
 #endif
@@ -70,14 +72,22 @@ layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
 //END INSTANCE DATA
 #endif
 
+
+
 //Uniforms that are always required.
 layout(location = 0) uniform int numInstances;
 
-//CAMERA DATA
-layout(std140, binding = 1) uniform CameraMatrices
+
+
+
+//STATIC DATAT: Always the same for all draw calls in this shader for a single frame.
+layout(std140, binding = 1) uniform StaticData
 {
-    mat4 viewProjection;
-    vec4 cameraPosition;
+    mat4 viewProjection;    //PV matrix.
+    vec4 cameraPosition;    //Camera position in world space.
+    vec4 numLights;         //Number of lights. X = point, Y = spot, Z = directional.
+    vec4 numShadows;        //Number of shadow lights. X = point, Y = spot, Z = directional.
+    vec4 ambientLight;      //Total ambient light count.
 };
 
 //Uv modifiers
@@ -102,6 +112,15 @@ out VERTEX_OUT
 
     //Camera position.
     vec3 camPos;
+
+    //Point, spot and directional lights.
+    flat vec3 numLights;
+
+    //Point spot and directional lights with shadows.
+    flat vec3 numShadows;
+
+    //The ambient light of the scene.
+    flat vec3 ambientLight;
 
     //Material ID in the material batch.
 	#ifdef VA_MATERIALID_DEF
@@ -213,21 +232,23 @@ void main()
     outData.materialID = int(aMaterialID);
 #endif
 
-
     //WORLD SPACE POSITION FOR LIGHT CALCULATIONS
-    vec4 fragPos = transform * vec4(aPos, 1.0);
+    outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
 
     //Pass the camera position in world space.
     outData.camPos = cameraPosition.xyz;
 
     //PROJECTED SPACE. Do this before converting to tangent space.
-    gl_Position = viewProjection * fragPos;
+    gl_Position = viewProjection * vec4(outData.fragPos, 1.0);
 
     //Convert to tangent space if active.
 #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
     outData.camPos = outData.tbn * outData.camPos;
-    fragPos = vec4(outData.tbn * fragPos.xyz, fragPos.w);
+    outData.fragPos = outData.tbn * outData.fragPos;
 #endif
 
-    outData.fragPos = fragPos.xyz;
+    //Pass on light information.
+    outData.numLights = numLights.xyz;
+    outData.numShadows = numShadows.xyz;
+    outData.ambientLight = ambientLight.xyz;
 }

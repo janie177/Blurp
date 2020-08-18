@@ -29,6 +29,8 @@ private:
     std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
     std::shared_ptr<blurp::GpuBuffer> m_UvModifierBuffer;
 
+    std::shared_ptr<blurp::PointLight> m_Light;
+
     //Data directly related to drawing the mesh.
     blurp::Transform m_MeshTransform;
     blurp::ForwardDrawData m_QueueData;

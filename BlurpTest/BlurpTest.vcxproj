@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="LightTestScene.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MaterialLoader.cpp" />
     <ClCompile Include="MaterialTestScene.cpp" />
@@ -155,6 +156,7 @@
     <ClCompile Include="UniverseScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="LightTestScene.h" />
     <ClInclude Include="MaterialLoader.h" />
     <ClInclude Include="MaterialTestScene.h" />
     <ClInclude Include="Scene.h" />

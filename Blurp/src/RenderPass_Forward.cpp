@@ -35,18 +35,72 @@ namespace blurp
 
     void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix)
     {
+        assert(a_Light != nullptr && "Cannot add nullptr light to forward renderer!");
+
+        switch (a_Light->GetType())
+        {
+        case LightType::LIGHT_POINT:
+        {
+            if (a_ShadowMapIndex > -1)
+            {
+                m_ShadowCounts.x += 1;
+            }
+            else
+            {
+                m_LightCounts.x += 1;
+            }
+        }
+        break;
+        case LightType::LIGHT_SPOT:
+        {
+            if (a_ShadowMapIndex > -1)
+            {
+                m_ShadowCounts.y += 1;
+            }
+            else
+            {
+                m_LightCounts.y += 1;
+            }
+        }
+        break;
+        case LightType::LIGHT_DIRECTIONAL:
+        {
+            if (a_ShadowMapIndex > -1)
+            {
+                m_ShadowCounts.z += 1;
+            }
+            else
+            {
+                m_LightCounts.z += 1;
+            }
+        }
+        break;
+        //Append ambient light.
+        case LightType::LIGHT_AMBIENT:
+        {
+            m_AmbientLight += (a_Light->GetColor() * a_Light->GetIntensity());
+        }
+        break;
+        default:
+        {
+            throw std::exception("Light type not implemented!");
+        }
+        break;
+        }
+
         m_LightData.emplace_back(LightData{ a_Light, a_ShadowMapIndex, a_ShadowMatrix });
+        m_ReuploadLights = true;
     }
 
     void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light)
     {
-        m_LightData.emplace_back(LightData{a_Light, -1, glm::mat4()});
+       AddLight(a_Light, -1, glm::mat4());
     }
 
-    void RenderPass_Forward::SetPointShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps)
+    void RenderPass_Forward::SetPointSpotShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps)
     {
         assert(a_ShadowMaps->GetTextureType() == TextureType::TEXTURE_CUBEMAP_ARRAY && "Shadowmaps for pointlights need to be cubemap arrays!");
-        m_PointShadowMaps = a_ShadowMaps;
+        m_PointSpotShadowMaps = a_ShadowMaps;
     }
 
     void RenderPass_Forward::SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps)
@@ -57,8 +111,22 @@ namespace blurp
 
     void RenderPass_Forward::Reset()
     {
-        m_DrawQueue.clear();
+        ResetDrawData();
+        ResetLights();
+    }
+
+    void RenderPass_Forward::ResetLights()
+    {
+        m_LightCounts = glm::vec3(0.f);
+        m_ShadowCounts = glm::vec3(0.f);
+        m_AmbientLight = glm::vec3(0.f);
         m_LightData.clear();
+        m_ReuploadLights = true;
+    }
+
+    void RenderPass_Forward::ResetDrawData()
+    {
+        m_DrawQueue.clear();
     }
 
     bool RenderPass_Forward::IsStateValid()
@@ -85,9 +153,9 @@ namespace blurp
             lockables.emplace_back(std::make_pair(m_UvModifierBuffer.get(), LockType::READ));
         }
 
-        if(m_PointShadowMaps != nullptr)
+        if(m_PointSpotShadowMaps != nullptr)
         {
-            lockables.emplace_back(std::make_pair(m_PointShadowMaps.get(), LockType::READ));
+            lockables.emplace_back(std::make_pair(m_PointSpotShadowMaps.get(), LockType::READ));
         }
 
         if(m_DirectionalShadowMaps != nullptr)
