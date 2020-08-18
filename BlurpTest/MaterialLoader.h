@@ -16,6 +16,18 @@ struct MaterialData
     std::string alphaTextureName;
 };
 
+struct CubeMapSettings
+{
+    std::string path;
+
+    std::string up;
+    std::string down;
+    std::string left;
+    std::string right;
+    std::string front;
+    std::string back;
+};
+
 /*
  * Load a material from the given texture paths.
  * This automatically compresses them in the right format.
@@ -26,6 +38,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
  * Load a material batch containing three materials for testing.
  */
 std::shared_ptr<blurp::MaterialBatch> LoadMaterialBatch(blurp::RenderResourceManager& a_Manager);
+
+std::shared_ptr<blurp::Texture> LoadCubeMap(blurp::RenderResourceManager& a_Manager, const CubeMapSettings& a_Settings);
 
 /*
  * Load the raw texture data of the given material.

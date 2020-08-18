@@ -66,7 +66,7 @@ void MaterialTestScene::Init()
     m_Pipeline = m_Engine.GetResourceManager().CreatePipeline(pSettings);
 
     //Set the clear color.
-    m_Window->GetRenderTarget()->SetClearColor({ 0.1f, 0.1f, 0.45f, 1.f });
+    m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.f, 0.f, 1.f });
 
     //Create a camera to use.
     CameraSettings camSettings;
@@ -210,11 +210,11 @@ void MaterialTestScene::Init()
     materialData.path = "materials/broken_ice/";
     materialData.diffuseTextureName = "diffuse.jpg";
     materialData.normalTextureName = "normal.jpg";
-    //materialData.metallicTextureName = "metallic.jpg";
-    //materialData.roughnessTextureName = "roughness.jpg";
-    //materialData.aoTextureName = "ao.jpg";
-    //materialData.emissiveTextureName = "emissive.jpg";
-    //materialData.heightTextureName = "height.jpg";
+    materialData.metallicTextureName = "metallic.jpg";
+    materialData.roughnessTextureName = "roughness.jpg";
+    materialData.aoTextureName = "ao.jpg";
+    materialData.emissiveTextureName = "emissive.jpg";
+    materialData.heightTextureName = "height.jpg";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
 
     //Set up the object containing info about how to draw the mesh.

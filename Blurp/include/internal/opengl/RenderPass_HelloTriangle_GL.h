@@ -57,7 +57,7 @@ namespace blurp
     class RenderPass_HelloTriangle_GL : public RenderPass_HelloTriangle
     {
     public:
-        RenderPass_HelloTriangle_GL(RenderPipeline& a_Pipeline) : RenderPass_HelloTriangle(a_Pipeline), m_Vbo(0), m_Vao(0), m_ColorUniformId(0), m_SamplerId(0) {}
+        RenderPass_HelloTriangle_GL(RenderPipeline& a_Pipeline) : RenderPass_HelloTriangle(a_Pipeline), m_Vbo(0), m_Vao(0), m_ColorUniformId(0) {}
 
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
@@ -65,7 +65,7 @@ namespace blurp
         void Execute() override;
 
     private:
-        GLuint m_Vbo, m_Vao, m_ColorUniformId, m_SamplerId;
+        GLuint m_Vbo, m_Vao, m_ColorUniformId;
         std::shared_ptr<Shader> m_Shader;
         
     };

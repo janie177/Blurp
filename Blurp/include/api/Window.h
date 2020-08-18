@@ -20,6 +20,8 @@ namespace blurp
     public:
         Window(const WindowSettings& a_Settings);
 
+        virtual ~Window() = default;
+
         /*
          * Get the SwapChain belonging to this window.
          */
@@ -105,11 +107,6 @@ namespace blurp
          * Load this window and initialize it.
          */
         virtual void Load() = 0;
-
-        /*
-         * Destroy this window. Clean up what needs cleaning up.
-         */
-        virtual void Destroy() = 0;
 
     protected:
         //Initial window settings.

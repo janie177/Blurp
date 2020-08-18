@@ -11,11 +11,6 @@ namespace blurp
         m_Color = a_Color;
     }
 
-    void RenderPass_HelloTriangle::SetTexture(std::shared_ptr<Texture> a_Texture)
-    {
-        m_Texture = std::move(a_Texture);
-    }
-
     RenderPassType RenderPass_HelloTriangle::GetType()
     {
         return RenderPassType::RP_HELLOTRIANGLE;

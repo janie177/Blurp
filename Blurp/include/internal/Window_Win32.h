@@ -17,8 +17,6 @@ namespace blurp
     protected:
         void Load() override;
 
-        void Destroy() override;
-
         static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     public:

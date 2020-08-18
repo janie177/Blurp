@@ -41,6 +41,8 @@ TODO list:
 	
 	[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
 	
+	[x] Fix up Triangle pass to be clean. Just a triangle.
+	
 	[x]	Implement material UV offset.
 		- vec2 multiply;
 		- vec2 origin;

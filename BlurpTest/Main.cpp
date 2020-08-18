@@ -42,8 +42,8 @@ int main()
 
     //Load one of the scenes.
     //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     scene->Init();
 
     /*
@@ -56,6 +56,9 @@ int main()
 
         //Finally display on the screen.
         window->Present();
+
+        //Clear all resources that have gone out of scope.
+        engine.GetResourceManager().CleanUpUnused();
     }
 
     return 0;

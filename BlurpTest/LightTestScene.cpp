@@ -74,10 +74,27 @@ void LightTestScene::Init()
     camSettings.farPlane = 1000.f;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
 
+    //Load a skybox;
+    m_SkyBoxTexture = LoadCubeMap(m_Engine.GetResourceManager(), CubeMapSettings{
+        "materials/skybox1/",
+        "up.png",
+        "down.png",
+        "left.png",
+        "right.png",
+        "front.png",
+        "back.png"
+    });
+
+    //Add a skybox pass to the render pipeline.
+    m_SkyboxPass = m_Pipeline->AppendRenderPass<RenderPass_Skybox>(RenderPassType::RP_SKYBOX);
+    m_SkyboxPass->SetCamera(m_Camera);
+    m_SkyboxPass->SetTarget(m_Window->GetRenderTarget());
+    m_SkyboxPass->SetTexture(m_SkyBoxTexture);
+
     //Create a forward renderpass that draws directly to the screen.
     m_ForwardPass = m_Pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     m_ForwardPass->SetCamera(m_Camera);
-    m_ForwardPass->SetTarget(m_Window->GetRenderTarget());
+    m_ForwardPass->SetTarget(m_Window->GetRenderTarget());    
 
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)

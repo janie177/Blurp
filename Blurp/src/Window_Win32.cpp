@@ -79,11 +79,6 @@ namespace blurp
         ObtainFocus();
     }
 
-    void Window_Win32::Destroy()
-    {
-        //TODO destroy everything?
-    }
-
     LRESULT CALLBACK Window_Win32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         Window_Win32* windowPtr = reinterpret_cast<Window_Win32*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));

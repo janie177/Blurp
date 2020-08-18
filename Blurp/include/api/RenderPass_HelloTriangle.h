@@ -21,11 +21,6 @@ namespace blurp
         void SetColor(const glm::vec4& a_Color);
 
         /*
-         * Set the texture for the triangle.
-         */
-        void SetTexture(std::shared_ptr<Texture> a_Texture);
-
-        /*
          * Get the type of this RenderPass.
          */
         RenderPassType GetType() override;
@@ -49,6 +44,5 @@ namespace blurp
     protected:
         glm::vec4 m_Color;
         std::shared_ptr<RenderTarget> m_Target;
-        std::shared_ptr<Texture> m_Texture;
     };
 }

@@ -7,6 +7,8 @@
 #include <Camera.h>
 #include <Material.h>
 
+#include <RenderPass_Skybox.h>
+
 class LightTestScene : public Scene
 {
 public:
@@ -22,6 +24,7 @@ private:
     //Pipeline settings and other resources.
     std::shared_ptr<blurp::RenderPipeline> m_Pipeline;
     std::shared_ptr<blurp::RenderPass_Forward> m_ForwardPass;
+    std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
     std::shared_ptr<blurp::Camera> m_Camera;
     std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
 
@@ -42,6 +45,9 @@ private:
     std::shared_ptr<blurp::Material> m_LightMaterial;
     blurp::Transform m_LightMeshTransform;
     blurp::ForwardDrawData m_LightMeshDrawData;
+
+    //Skybox
+    std::shared_ptr<blurp::Texture> m_SkyBoxTexture;
 
     //Light movement
     std::vector<glm::vec3> m_LDirs;

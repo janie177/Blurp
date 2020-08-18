@@ -60,18 +60,6 @@ namespace blurp
         //Get the uniform id
         m_ColorUniformId = glGetUniformLocation(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId(), "ucolor");
 
-        m_SamplerId = glGetUniformLocation(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId(), "texSlot");
-
-        //Load the dummy texture.
-        TextureSettings texSettings;
-        texSettings.pixelFormat = PixelFormat::RGBA;
-        texSettings.dataType = DataType::UBYTE;
-        texSettings.textureType = TextureType::TEXTURE_2D;
-        texSettings.texture2D.data = &textureData;
-        texSettings.dimensions = { 4, 4, 1 };
-
-        m_Texture = a_BlurpEngine.GetResourceManager().CreateTexture(texSettings);
-
         return true;
     }
 
@@ -103,13 +91,6 @@ namespace blurp
         glBindVertexArray(m_Vao);
 
         glUniform4f(m_ColorUniformId, m_Color.r, m_Color.g, m_Color.b, m_Color.a);
-
-        //Set the texture
-        glUniform1i(m_SamplerId, 0);
-        glActiveTexture(GL_TEXTURE0);
-
-        const auto textureId = std::reinterpret_pointer_cast<Texture_GL>(m_Texture)->GetTextureId();
-        glBindTexture(GL_TEXTURE_2D, textureId);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }

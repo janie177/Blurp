@@ -100,8 +100,9 @@ namespace blurp
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //Dont clear to not kill the skybox. Move this to a clear pass. TODO
+        //glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);

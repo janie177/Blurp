@@ -14,6 +14,7 @@
 #include "opengl/MaterialBatch_GL.h"
 #include "opengl/RenderPass_Forward_GL.h"
 #include "Material.h"
+#include "opengl/RenderPass_Skybox_GL.h"
 
 namespace blurp
 {
@@ -115,6 +116,8 @@ namespace blurp
                 return std::make_shared<RenderPass_HelloTriangle_GL>(a_Pipeline);
             case RenderPassType::RP_FORWARD:
                 return std::make_shared<RenderPass_Forward_GL>(a_Pipeline);
+            case RenderPassType::RP_SKYBOX:
+                return std::make_shared<RenderPass_Skybox_GL>(a_Pipeline);
         default:
             throw std::exception("RenderPassType not implemented for OpenGL!");
             break;

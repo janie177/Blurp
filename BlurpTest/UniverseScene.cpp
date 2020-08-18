@@ -96,7 +96,6 @@ void UniverseScene::Init()
     m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.1f, 0.1f,1.f });
     triangleRenderPass2->SetTarget(m_Window->GetRenderTarget());
     triangleRenderPass2->SetColor({ 1.f, 0.6f, 0.2f, 1.f });
-    triangleRenderPass2->SetTexture(renderTarget->GetColorAttachment(0));
 
 
     triangleRenderPass->SetEnabled(false);
