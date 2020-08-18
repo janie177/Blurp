@@ -207,14 +207,14 @@ void MaterialTestScene::Init()
      * Set up the material from the given paths.
      */
     MaterialData materialData;
-    materialData.path = "materials/eggs/";
+    materialData.path = "materials/broken_ice/";
     materialData.diffuseTextureName = "diffuse.jpg";
     materialData.normalTextureName = "normal.jpg";
-    materialData.metallicTextureName = "metallic.jpg";
-    materialData.roughnessTextureName = "roughness.jpg";
-    materialData.aoTextureName = "ao.jpg";
+    //materialData.metallicTextureName = "metallic.jpg";
+    //materialData.roughnessTextureName = "roughness.jpg";
+    //materialData.aoTextureName = "ao.jpg";
     //materialData.emissiveTextureName = "emissive.jpg";
-    materialData.heightTextureName = "height.jpg";
+    //materialData.heightTextureName = "height.jpg";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
 
     //Set up the object containing info about how to draw the mesh.
@@ -225,11 +225,6 @@ void MaterialTestScene::Init()
     //Enable transform uploading. Now a single matrix is expected in the GpuBufferView.
     m_QueueData.transformData.transform = true;
 
-
-    m_MeshTransform.Scale({ 5.0, 5.0, 1.0 });
-    m_MeshTransform.Translate({0, 10, 0});
-    m_MeshTransform.Rotate(m_MeshTransform.GetUp(), 3.8415f);
-
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
 
@@ -237,9 +232,9 @@ void MaterialTestScene::Init()
     //Add a pointlight to the scene.
     LightSettings lSettings;
     lSettings.type = LightType::LIGHT_POINT;
-    lSettings.intensity = 50.f;
+    lSettings.intensity = 200.f;
     lSettings.color = { 1.f, 1.f, 1.f };
-    lSettings.pointLight.position = {-5, 10, -7};
+    lSettings.pointLight.position = {0.f, 0.f, 10.f};
     m_Light = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
 
 

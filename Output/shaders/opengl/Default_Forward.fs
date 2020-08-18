@@ -208,9 +208,10 @@ void main()
 		//Normal texture
 		#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
 			vec3 surfaceNormal = texture2D(normalTexture, texCoords).rgb;
-			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
+			//Invert the G channel in OpenGL.
+			surfaceNormal = surfaceNormal * 2.0 - 1.0;
+			surfaceNormal.g *= -1.0;
 			surfaceNormal = normalize(surfaceNormal);
-
 		#endif
 
 		//Emissive constant
@@ -315,6 +316,7 @@ void main()
 		#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
 			vec3 surfaceNormal = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).rgb;
 			surfaceNormal = surfaceNormal * 2.0 - 1.0;   
+			surfaceNormal.g *= -1.0;	//OpenGL inverts the g channel. G = +y and textures are -y format.
 			surfaceNormal = normalize(surfaceNormal);
 
 			++texLayerOffset;

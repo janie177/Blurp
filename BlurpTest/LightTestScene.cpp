@@ -63,7 +63,7 @@ void LightTestScene::Init()
     m_Pipeline = m_Engine.GetResourceManager().CreatePipeline(pSettings);
 
     //Set the clear color.
-    m_Window->GetRenderTarget()->SetClearColor({ 0.4f, 0.8f, 1.f, 1.f });
+    m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.1f, 0.1f, 1.f });
 
     //Create a camera to use.
     CameraSettings camSettings;
@@ -112,6 +112,10 @@ void LightTestScene::Init()
     materialData.aoTextureName = "ao.jpg";
     //materialData.heightTextureName = "height.jpg";
     m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), materialData);
+    auto s = m_PlaneMaterial->GetSettings();
+    s.EnableAttribute(MaterialAttribute::DIFFUSE_CONSTANT_VALUE);
+    s.SetDiffuseConstant(glm::vec3(0.5f, 0.5f, 0.5f));
+    m_PlaneMaterial->UpdateSettings(s);
 
     //Transform the plane and set up the drawing for it.
     m_PlaneTransform.Scale({ MESH_SCALE / 2.f, 1.f, MESH_SCALE / 2.f });
@@ -219,12 +223,25 @@ void LightTestScene::Update()
     //Update light  positions and directions.
     for(int i = 0; i < COUNT; ++i)
     {
-        float modX = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) / 15.f;
-        float modZ = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) / 15.f;
+        auto pos = m_PointLights[i]->GetPosition();
+        //Make sure not to leave the plane. Return to center if far away.
+        if (glm::length(pos) > MESH_SCALE / 4.f)
+        {
+            glm::vec3 toCenter = glm::normalize(glm::vec3(-pos.x, 0, -pos.z));
+            m_LDirMods[i] = toCenter;
+            m_LDirs[i] = toCenter;
+        }
+        //In range so possibly change randomly.
+        else if(rand() % 50 == 1)
+        {
+            float modX = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) * 2.f;
+            float modZ = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) * 2.f;
+            m_LDirMods[i] = glm::normalize(glm::vec3(modX, 0.f, modZ));
+        }
 
-        m_LDirMods[i] = glm::normalize(m_LDirMods[i] + glm::vec3(modX, 0.f, modZ));
-
-        m_LDirs[i] = glm::normalize(m_LDirs[i] + m_LDirMods[i]);
+        //Slowly move towards new target direction.
+        constexpr float percentageLerp = 0.005f;
+        m_LDirs[i] = glm::normalize(m_LDirMods[i] * percentageLerp + (1.f - percentageLerp) * m_LDirs[i]);
         m_PointLights[i]->SetPosition(m_PointLights[i]->GetPosition() + (m_LDirs[i] * m_LSpeeds[i]));
     }
 

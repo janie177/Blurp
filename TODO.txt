@@ -4,8 +4,7 @@ TODO list:
 
 	[x] Implement material batch in the forward shader.
 		
-	[ ] Implement light uploading.
-		- Uniform buffer 2x size of lights. In vertex shader transform to tangent space and put in the 2nd half of the buffer. 
+	[x] Implement light uploading.
 		- Each light has a shadowmap index (into array texture).
 		- Uniforms uploaded: numPointLight, numPointLightShadows, numDirLights... etc.
 		- Upload lights in world space.
@@ -16,7 +15,9 @@ TODO list:
 	
 	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
 	
-	[ ]	Implement metallic roughness in the forward shader.
+	[ ]	Implement metallic roughness in the forward shader. Correctly calculate diffuse and specular light this way.
+	
+	[ ] Implement skybox rendering.
 	
 	[x] Set up locking correctly for forward pass.
 	

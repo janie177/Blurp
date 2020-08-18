@@ -28,7 +28,7 @@ int main()
     windowSettings.type = WindowType::WINDOW_WIN32;
     windowSettings.name = "My lovely little window";
     windowSettings.flags = WindowFlags::CAPTURE_CURSOR | WindowFlags::HIDE_CURSOR;
-    windowSettings.swapChainSettings.vsync = false ;
+    windowSettings.swapChainSettings.vsync = true ;
     windowSettings.swapChainSettings.renderTargetSettings.viewPort = { 0, 0, windowSettings.dimensions };
 
     windowSettings.swapChainSettings.renderTargetSettings.depthBits = 32;
@@ -42,8 +42,8 @@ int main()
 
     //Load one of the scenes.
     //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     scene->Init();
 
     /*
