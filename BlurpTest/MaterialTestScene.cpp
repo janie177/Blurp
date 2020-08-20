@@ -70,6 +70,9 @@ void MaterialTestScene::Init()
     //Set the clear color.
     m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.f, 0.f, 1.f });
 
+    m_ClearPass = m_Pipeline->AppendRenderPass<RenderPass_Clear>(RenderPassType::RP_CLEAR);
+    m_ClearPass->AddRenderTarget(m_Window->GetRenderTarget());
+
     //Create a camera to use.
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;

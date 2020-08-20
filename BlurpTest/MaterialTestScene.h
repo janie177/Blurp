@@ -8,6 +8,8 @@
 #include <Material.h>
 #include <RenderPass_Skybox.h>
 
+#include <RenderPass_Clear.h>
+
 
 class MaterialTestScene : public Scene
 {
@@ -24,6 +26,7 @@ private:
     //Pipeline settings and other resources.
     std::shared_ptr<blurp::RenderPipeline> m_Pipeline;
     std::shared_ptr<blurp::RenderPass_Forward> m_ForwardPass;
+    std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
 
     std::shared_ptr<blurp::Mesh> m_Mesh;
     std::shared_ptr<blurp::Camera> m_Camera;
