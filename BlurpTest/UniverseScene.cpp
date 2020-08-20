@@ -4,14 +4,14 @@
 #include <Settings.h>
 #include <glm/glm.hpp>
 #include <Window.h>
+#include <GpuBuffer.h>
 
-
-#include "RenderPass_Forward.h"
-#include "KeyCodes.h"
-#include "RenderResourceManager.h"
-#include "RenderPipeline.h"
-#include "RenderPass_HelloTriangle.h"
-#include "RenderTarget.h"
+#include <RenderPass_Forward.h>
+#include <KeyCodes.h>
+#include <RenderResourceManager.h>
+#include <RenderPipeline.h>
+#include <RenderPass_HelloTriangle.h>
+#include <RenderTarget.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "MaterialLoader.h"
@@ -238,32 +238,32 @@ void UniverseScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     gpuBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    forwardPass->SetTransformBuffer(gpuBuffer);
-
-
     //Draw one instance of the massively instanced mesh.
     iData.mesh = instanced;
-    iData.count = 1;
-    iData.transformData.transform = true;
-
-    //Draw many instances of the single cubes that spasm around.
-    data.mesh = mesh;
-    data.count = transforms.size();
-    data.transformData.transform = true;
-
+    iData.instanceCount = 1;
+    iData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_BATCH);
+    iData.transformData.dataBuffer = gpuBuffer;
     iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager());
 
 
+    //Draw many instances of the single cubes that spasm around.
+    data.mesh = mesh;
+    data.instanceCount = transforms.size();
+    data.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX);
+    data.transformData.dataBuffer = gpuBuffer;
 
 
     //THE SUN!
     sunData.mesh = Sphere::Load(m_Engine, 50.f, 128, 128);
-    sunData.count = 1;
+    sunData.instanceCount = 1;
+
+
     MaterialSettings sunSettings;
     sunSettings.SetEmissiveConstant({ 1.f, 1.f, 0.05f });
     sunSettings.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
     sunData.materialData.material = m_Engine.GetResourceManager().CreateMaterial(sunSettings);
-    sunData.transformData.transform = true;
+    sunData.transformData.dataBuffer = gpuBuffer;
+    sunData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
 }
 
 void UniverseScene::Update()

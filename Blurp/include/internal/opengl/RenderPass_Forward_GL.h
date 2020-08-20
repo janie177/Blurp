@@ -49,7 +49,7 @@ namespace blurp
 
     private:
         //Shader cache that compiles shaders dynamically based on required attributes.
-        ShaderCache<std::uint32_t, std::uint32_t> m_ShaderCache;
+        ShaderCache<std::uint64_t, std::uint64_t> m_ShaderCache;
 
         //UBO used to upload data that is persistent for the entire frame. For example: camera matrices and light amount.
         GLuint m_StaticDataUbo;

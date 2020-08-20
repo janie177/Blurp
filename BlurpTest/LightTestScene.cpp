@@ -2,7 +2,7 @@
 #include <BlurpEngine.h>
 #include <KeyCodes.h>
 #include <RenderResourceManager.h>
-
+#include "GpuBuffer.h"
 #include "MaterialLoader.h"
 #include "Sphere.h"
 
@@ -123,9 +123,6 @@ void LightTestScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    //Let the forward pass read data from this GPU buffer.
-    m_ForwardPass->SetTransformBuffer(m_TransformBuffer);
-
     //Load the material for the plane.
     MaterialData materialData;
     materialData.path = "materials/stone/";
@@ -159,10 +156,11 @@ void LightTestScene::Init()
     m_Plane = m_Engine.GetResourceManager().CreateMesh(meshSettings);
 
     //Set static plane draw data.
-    m_PlaneDrawData.count = 1;
+    m_PlaneDrawData.instanceCount = 1;
     m_PlaneDrawData.materialData.material = m_PlaneMaterial;
-    m_PlaneDrawData.transformData.transform = true;
     m_PlaneDrawData.mesh = m_Plane;
+    m_PlaneDrawData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
+    m_PlaneDrawData.transformData.dataBuffer = m_TransformBuffer;
 
     //Load the light visualizer.
     m_LightMesh = Sphere::Load(m_Engine, 0.2f, 16, 16);
@@ -172,11 +170,11 @@ void LightTestScene::Init()
     m_LightMaterial = m_Engine.GetResourceManager().CreateMaterial(lightMat);
 
     //Set static light draw data.
-    m_LightMeshDrawData.count = 1;
-    m_LightMeshDrawData.transformData.transform = true;
+    m_LightMeshDrawData.instanceCount = 1;
+    m_LightMeshDrawData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
+    m_LightMeshDrawData.transformData.dataBuffer = m_TransformBuffer;
     m_LightMeshDrawData.materialData.material = m_LightMaterial;
     m_LightMeshDrawData.mesh = m_LightMesh;
-
 
 
 
@@ -393,7 +391,8 @@ void LightTestScene::Update()
         m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_PlaneDrawData.transformData.dataRange.end), lightTransforms.size(), 16, &lightTransforms[0]);
     }
 
-    m_LightMeshDrawData.count = lightTransforms.size();
+    //Update the instance count for the lights.
+    m_LightMeshDrawData.instanceCount = lightTransforms.size();
 
     //Queue for draw.
     m_ForwardPass->QueueForDraw(m_LightMeshDrawData);

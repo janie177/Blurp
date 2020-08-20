@@ -39,6 +39,6 @@ private:
 
     //Data directly related to drawing the mesh.
     blurp::Transform m_MeshTransform;
-    blurp::ForwardDrawData m_QueueData;
-    blurp::ForwardDrawData m_LightQueueData;
+    blurp::DrawData m_QueueData;
+    blurp::DrawData m_LightQueueData;
 };

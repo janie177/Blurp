@@ -170,6 +170,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\BlurpEngine.h" />
     <ClInclude Include="include\api\Camera.h" />
     <ClInclude Include="include\api\GpuBuffer.h" />
+    <ClInclude Include="include\api\GpuBufferView.h" />
     <ClInclude Include="include\api\InputQueue.h" />
     <ClInclude Include="include\api\KeyCodes.h" />
     <ClInclude Include="include\api\Light.h" />

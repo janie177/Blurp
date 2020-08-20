@@ -6,7 +6,7 @@
 #include <Window.h>
 #include <RenderPass_Forward.h>
 #include <RenderResourceManager.h>
-#include <iostream>
+#include <GpuBuffer.h>
 #include <RenderPass_Skybox.h>
 
 
@@ -219,9 +219,6 @@ void MaterialTestScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    //Let the forward pass read data from this GPU buffer.
-    m_ForwardPass->SetTransformBuffer(m_TransformBuffer);
-
 
     /*
      * Set up the material from the given paths.
@@ -237,13 +234,6 @@ void MaterialTestScene::Init()
     materialData.heightTextureName = "height.jpg";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
 
-    //Set up the object containing info about how to draw the mesh.
-    m_QueueData.mesh = m_Mesh;
-    m_QueueData.count = 1;
-    m_QueueData.materialData.material = m_Material;
-
-    //Enable transform uploading. Now a single matrix is expected in the GpuBufferView.
-    m_QueueData.transformData.transform = true;
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));
@@ -265,14 +255,24 @@ void MaterialTestScene::Init()
     lightMat.SetEmissiveConstant({ 1, 1, 1 });
     auto lightMaterial = m_Engine.GetResourceManager().CreateMaterial(lightMat);
 
+    //Set up the uv modifier buffer.
     m_LightQueueData.mesh = lightMesh;
-    m_LightQueueData.count = 1;
+    m_LightQueueData.instanceCount = 1;
     m_LightQueueData.materialData.material = lightMaterial;
-    m_LightQueueData.transformData.transform = true;
+    m_LightQueueData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
+    m_LightQueueData.transformData.dataBuffer = m_TransformBuffer;
+
+    //Set up the object containing info about how to draw the mesh.
+    m_QueueData.mesh = m_Mesh;
+    m_QueueData.instanceCount = 1;
+    m_QueueData.materialData.material = m_Material;
+    m_QueueData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE).EnableAttribute(DrawAttribute::UV_MODIFIER);
+    m_QueueData.transformData.dataBuffer = m_TransformBuffer;
 
     //Texture scrolling.
     m_UvModifierBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
-    m_ForwardPass->SetUvModifierBuffer(m_UvModifierBuffer);
+    m_QueueData.uvModifierData.dataBuffer = m_UvModifierBuffer;
+
 }
 
 void MaterialTestScene::Update()
@@ -280,14 +280,14 @@ void MaterialTestScene::Update()
     //TEXTURE SCROLLING
     constexpr float addX = 0.00025f;
     constexpr float addY = 0.0005f;
-    static UvModifier uvMod;
-    uvMod.add.x += addX;
-    uvMod.add.y += addY;
-    if (uvMod.add.x > 1.0f) uvMod.add.x -= 1.f;
-    if (uvMod.add.y > 1.0f) uvMod.add.y -= 1.f;
+    static glm::vec4 uvMod(1.f, 1.f, 0.f, 0.f);
+    uvMod.z += addX;
+    uvMod.w += addY;
+    if (uvMod.z > 1.0f) uvMod.z -= 1.f;
+    if (uvMod.w > 1.0f) uvMod.w -= 1.f;
 
     //Upload the UV modifier coords.
-    m_QueueData.uvModifierData.dataRange = m_UvModifierBuffer->WriteData<UvModifier>(static_cast<void*>(0), 1, sizeof(glm::vec2), &uvMod);
+    m_QueueData.uvModifierData.dataRange = m_UvModifierBuffer->WriteData<glm::vec4>(static_cast<void*>(0), 1, sizeof(glm::vec4), &uvMod);
 
     //Read the input from the window.
     auto input = m_Window->PollInput();

@@ -1,91 +1,13 @@
 #pragma once
 #include "RenderTarget.h"
 #include "Camera.h"
-#include "GpuBuffer.h"
 #include "Light.h"
-#include "Material.h"
-#include "MaterialBatch.h"
-#include "Mesh.h"
 #include "RenderPass.h"
+
+#include <unordered_set>
 
 namespace blurp
 {
-    /*
-     * Object containing information about a draw call.
-     * The mesh specified will be drawn count times.
-     * The data related to this instance will be fetched from the GPU buffer bound using the GpuBufferView offsets.
-     * The pointers to the start and size of the data in the gpu buffer are found in dataRange.
-     *
-     * Enable transform and inverse transform to indicate which data is inside the GpuBuffer.
-     */
-    struct ForwardDrawData
-    {
-        ForwardDrawData()
-        {
-            transformData.transform = false;
-            transformData.inverseTransform = false;
-            count = 0;
-        }
-
-
-        //Pointer to the mesh to draw.
-        std::shared_ptr<Mesh> mesh;
-
-        //The amount of instances.
-        std::uint32_t count;
-
-
-        struct
-        {
-            //Pointer to the material to use for drawing.
-            std::shared_ptr<Material> material;
-
-            //Pointer to the material batch to use for drawing.
-            std::shared_ptr<MaterialBatch> materialBatch;
-        } materialData;
-
-        struct
-        {
-            //GpuBufferView object containing pointers to the offsets in the GPU buffer where the data is stored (bound as transformBuffer).
-            GpuBufferView dataRange;
-
-            //Set to true if the data range contains the transform. ORDER MATTERS: TRANSFORM > INVERSE_TRANSFORM.
-            bool transform;
-
-            //Set to true if the data range contains the inverse transform. ORDER MATTERS: TRANSFORM > INVERSE_TRANSFORM.
-            bool inverseTransform;
-        } transformData;
-
-        struct
-        {
-            //The Gpubufferview into the bound GpuBuffer for uv coordinate modifications.
-            GpuBufferView dataRange;
-        } uvModifierData;
-    };
-
-    /*
-     * A modifier vor uv coordinates.
-     * This multiplies the UV coordinates with "multiply" and adds "add" on top.
-     */
-    struct UvModifier
-    {
-        UvModifier()
-        {
-            multiply = { 1.f, 1.f };
-            add = { 0.f, 0.f };
-        }
-
-        UvModifier(glm::vec2 a_Multiply, glm::vec2 a_Add) : multiply(a_Multiply), add(a_Add)
-        { 
-        }
-
-        //Multiply the UV coords with this.
-        glm::vec2 multiply;
-
-        //Add this onto the UV coordinates.
-        glm::vec2 add;
-    };
-
     /*
      * Struct containing information for drawing.
      */
@@ -125,22 +47,12 @@ namespace blurp
         void SetTarget(const std::shared_ptr<RenderTarget>& a_RenderTarget);
 
         /*
-         * Set the GPU buffer to read the transform data from.
-         */
-        void SetTransformBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
-
-        /*
-         * Set the GPU buffer to read uv modifications from.
-         */
-        void SetUvModifierBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer);
-
-        /*
          * Add one or more meshes to the drawing queue.
          * The InstanceData object contains a pointer to the mesh to use.
          * It also contains the number of instances, and a pointer to the start of the instance data.
          * Data is rendered in the order provided.
          */
-        void QueueForDraw(ForwardDrawData a_Data);
+        void QueueForDraw(DrawData a_Data);
 
         /*
          * Add a light to the scene with a corresponding shadowmap and light perspective matrix.
@@ -191,10 +103,7 @@ namespace blurp
         std::shared_ptr<RenderTarget> m_Output;
 
         //Drawqueue containing all drawable data. Order is kept while drawing.
-        std::vector<ForwardDrawData> m_DrawQueue;
-
-        std::shared_ptr<GpuBuffer> m_TransformBuffer;
-        std::shared_ptr<GpuBuffer> m_UvModifierBuffer;
+        std::vector<DrawData> m_DrawQueue;
 
         //All queued up light data.
         std::vector<LightData> m_LightData;

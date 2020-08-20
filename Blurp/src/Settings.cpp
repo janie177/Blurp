@@ -9,6 +9,28 @@ namespace blurp
         return a_Type < DataType::UINT;
     }
 
+    DrawAttributeMask& DrawAttributeMask::EnableAttribute(DrawAttribute a_Attribute)
+    {
+        m_Mask = static_cast<DrawAttribute>(static_cast<std::uint32_t>(m_Mask) | static_cast<std::uint32_t>(a_Attribute));
+        return *this;
+    }
+
+    DrawAttributeMask& DrawAttributeMask::DisableAttribute(DrawAttribute a_Attribute)
+    {
+        m_Mask = static_cast<DrawAttribute>(~static_cast<std::uint32_t>(m_Mask) & static_cast<std::uint32_t>(a_Attribute));
+        return *this;
+    }
+
+    bool DrawAttributeMask::IsAttributeEnabled(DrawAttribute a_Attribute)
+    {
+        return static_cast<DrawAttribute>(static_cast<std::uint32_t>(m_Mask) & static_cast<std::uint32_t>(a_Attribute)) == a_Attribute;
+    }
+
+    std::uint32_t DrawAttributeMask::GetMask() const
+    {
+        return static_cast<std::uint32_t>(m_Mask);
+    }
+
     void MaterialSettings::EnableAttribute(MaterialAttribute a_Attribute)
     {
         //Ensure that no bitmasking was performed.

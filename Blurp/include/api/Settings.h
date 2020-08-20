@@ -5,8 +5,11 @@
 #include <vector>
 #include <unordered_map>
 
+#include "GpuBufferView.h"
+
 #define NUM_VERTEX_ATRRIBS 12
 #define NUM_MATERIAL_ATRRIBS 13
+#define NUM_DRAW_ATTRIBS 5
 
 /*
  * This file contains all structs used to describe a resource before creation.
@@ -15,6 +18,10 @@
 namespace blurp
 {
     class Texture;
+    class Mesh;
+    class Material;
+    class MaterialBatch;
+    class GpuBuffer;
 
     /*
      * Enumerations used in the settings structs.
@@ -415,9 +422,170 @@ namespace blurp
         {MaterialAttribute::ALPHA_CONSTANT_VALUE, {"MAT_ALPHA_CONSTANT_DEFINE", 1}},
     };
 
+
+    enum class DrawAttribute
+    {
+        /*
+         * Transformation matrix to move the mesh to world space.
+         */
+        TRANSFORMATION_MATRIX = 1 << 0,
+
+        /*
+         * Inverse transpose of the above transformation matrix to transform the mesh normals to world space when uneven scaling is used.
+         */
+        NORMAL_MATRIX = 1 << 1,
+
+        /*
+         * One or more vec4's representing UV multiplier and offset.
+         */
+        UV_MODIFIER = 1 << 2,
+
+        /*
+         * A single material is used.
+         */
+        MATERIAL_SINGLE = 1 << 3,
+
+        /*
+         * A material batch is used.
+         */
+        MATERIAL_BATCH = 1 << 4,
+    };
+
+    const static DrawAttribute DRAW_ATTRIBUTES[NUM_DRAW_ATTRIBS]
+    {
+        DrawAttribute::TRANSFORMATION_MATRIX,
+        DrawAttribute::NORMAL_MATRIX,
+        DrawAttribute::UV_MODIFIER,
+        DrawAttribute::MATERIAL_SINGLE,
+        DrawAttribute::MATERIAL_BATCH
+    };
+
+    struct DrawAttributeInfo
+    {
+        //Preprocessor definition name of this attribute.
+        std::string defineName;
+    };
+
+    static const std::unordered_map<DrawAttribute, DrawAttributeInfo> DRAW_ATTRIBUTE_INFO =
+    {
+        {DrawAttribute::TRANSFORMATION_MATRIX, {"DYNAMIC_TRANSFORMMATRIX_DEFINE"}},
+        {DrawAttribute::NORMAL_MATRIX, {"DYNAMIC_NORMALMATRIX_DEFINE"}},
+        {DrawAttribute::UV_MODIFIER, {"DYNAMIC_UVMODIFIER_DEFINE"}},
+        {DrawAttribute::MATERIAL_SINGLE, {"MAT_SINGLE_DEFINE"}},
+        {DrawAttribute::MATERIAL_BATCH, {"MAT_BATCH_DEFINE"}},
+    };
+
+
     /*
      * The settings structs.
      */
+
+
+    struct DrawAttributeMask
+    {
+    public:
+        DrawAttributeMask()
+        {
+            m_Mask = static_cast<DrawAttribute>(0u);
+        }
+
+    public:
+        /*
+         * Enable the given attribute.
+         */
+        DrawAttributeMask& EnableAttribute(DrawAttribute a_Attribute);
+
+        /*
+         * Disable the given attribute.
+         */
+        DrawAttributeMask& DisableAttribute(DrawAttribute a_Attribute);
+
+        /*
+         * Returns true if the given attribute is enabled.
+         */
+        bool IsAttributeEnabled(DrawAttribute a_Attribute);
+
+        /*
+         * Get the current dynamic attribute mask.
+         */
+        std::uint32_t GetMask() const;
+
+    private:
+        DrawAttribute m_Mask;
+    };
+
+
+    struct DrawData
+    {
+        DrawData()
+        {
+            instanceCount = 1;
+        }
+
+        /*
+         * Shared pointer to the mesh resource to draw.
+         */
+        std::shared_ptr<Mesh> mesh;
+
+        /*
+         * The amount of instances to draw of this mesh.
+         * This has to be at least 1, and correspond to the amount of transforms in the dynamic data. 
+         */
+        std::uint32_t instanceCount;
+
+        /*
+         * The dynamic attribute object used to enable and disable certain data.
+         * This is used as a mask in the shader to determine which data can be expected in the below buffers.
+         */
+        DrawAttributeMask attributes;
+
+        //Materials.
+        struct
+        {
+            /*
+             * The material to use for drawing.
+             * Either enable this, batch or none.
+             */
+            std::shared_ptr<Material> material;
+
+            /*
+             * The material batch to use for drawing.
+             * Either enable this, single material or none.
+             */
+            std::shared_ptr<MaterialBatch> materialBatch;
+
+        } materialData;
+
+        //Transforms.
+        struct
+        {
+            /*
+             * GpuBuffer that contains the transform information.
+             */
+            std::shared_ptr<GpuBuffer> dataBuffer;
+
+            /*
+             * Pointer into the GpuBuffer provided where the transformation matrices are stored.
+             */
+            GpuBufferView dataRange;
+
+        } transformData;
+
+        //Uv modifiers.
+        struct
+        {
+            /*
+             * GpuBuffer that contains the uv modifier information.
+             */
+            std::shared_ptr<GpuBuffer> dataBuffer;
+
+            /*
+             * Pointer into the GpuBuffer provided where the uv modifiers are stored.
+             */
+            GpuBufferView dataRange;
+
+        } uvModifierData;
+    };
 
     /*
      * TextureSettings describes a texture resource.

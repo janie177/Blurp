@@ -198,7 +198,7 @@ namespace blurp
         for (int i = 0; i < static_cast<int>(m_PreProcessorDefinitions.size()); ++i)
         {
             //If the mask has the bit at index i set, enable that preprocessor definition in the shader.
-            if (internalFormatMask & (1 << i))
+            if (internalFormatMask & (static_cast<INTERNAL_FORMAT>(1) << i))
             {
                 m_Settings.preprocessorDefinitions.emplace_back(m_PreProcessorDefinitions[i]);
             }

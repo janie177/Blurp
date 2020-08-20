@@ -14,8 +14,12 @@ TODO list:
 	[ ]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
 		Use this for all shaders everywhere for all meshes.
 		Cleaner and can scale up with instance colors and other data.
-		
-	[ ] Implement clear render pass.
+		Add UV mods to this as well!
+		OpenGL allows a single GPU Buffer to be bound to different slots and different ranges. I can put ALL DATA in a single buffer and then read it from different slots at different ranges.
+		In the shader has multiple SSBO binding points that expect different data.
+		Maybe allow each attribute to have its own buffer specified? Some attributes will be coupled in a single buffer.
+
+	[x] Implement clear render pass.
 	
 	[ ]	Implement shadowmap render pass.
 		Add input data to the shader, with a shader cache etc.
@@ -26,13 +30,13 @@ TODO list:
 	
 	[ ]	Implement metallic roughness in the forward shader. Correctly calculate diffuse and specular light this way.
 	
-	[ ] Implement skybox rendering.
+	[x] Implement skybox rendering.
 	
 	[x] Set up locking correctly for forward pass.
 	
 	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
 	
-	[ ] Set up shadowmapping.
+	[x] Set up shadowmapping.
 	
 	[ ]	Look into multisampling / anti aliasing. See where I can add these (RenderState maybe?).
 	

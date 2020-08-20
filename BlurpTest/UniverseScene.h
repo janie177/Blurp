@@ -24,9 +24,9 @@ private:
     std::vector<glm::mat4> transforms;
     std::shared_ptr<blurp::Camera> camera;
     std::shared_ptr<blurp::RenderPipeline> pipeline;
-    blurp::ForwardDrawData iData;
-    blurp::ForwardDrawData data;
-    blurp::ForwardDrawData sunData;
+    blurp::DrawData iData;
+    blurp::DrawData data;
+    blurp::DrawData sunData;
 
     std::shared_ptr<blurp::GpuBuffer> gpuBuffer;
 };

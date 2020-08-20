@@ -165,6 +165,9 @@
     <ClInclude Include="include\internal\opengl\RenderPass_Clear_GL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\api\GpuBufferView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">

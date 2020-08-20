@@ -52,14 +52,14 @@ layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
 
 
 //INSTANCE DATA
-#if defined(INSTANCE_DATA_M) || defined(INSTANCE_DATA_IM)
+#if defined(DYNAMIC_NORMALMATRIX_DEFINE) || defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
     struct InstanceData
     {
-    #ifdef INSTANCE_DATA_M
+    #ifdef DYNAMIC_TRANSFORMMATRIX_DEFINE
         mat4 modelMatrix;           //ModelMatrix to transform to screen space.
     #endif
 
-    #ifdef INSTANCE_DATA_IM
+    #ifdef DYNAMIC_NORMALMATRIX_DEFINE
         mat4 normalMatrix;          //Normal to camera space.
     #endif
     };
@@ -91,7 +91,7 @@ layout(std140, binding = 1) uniform StaticData
 };
 
 //Uv modifiers
-#if defined(VA_UVMODIFIERID_DEF) && defined(VA_UVCOORD_DEF)
+#if defined(VA_UVMODIFIERID_DEF) && defined(VA_UVCOORD_DEF) && defined(DYNAMIC_UVMODIFIER_DEFINE)
     struct UvModifier
     {
         vec2 multiply;
@@ -152,15 +152,15 @@ out VERTEX_OUT
 void main()
 {    
 //TRANSFORM MATRIX
-#if defined(VA_MATRIX_DEF) && defined(INSTANCE_DATA_M)
+#if defined(VA_MATRIX_DEF) && defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
     mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix * aMatrix;
 
     //NORMAL MATRIX
-    #if defined(VA_ITMATRIX_DEF) && defined(INSTANCE_DATA_IM)
+    #if defined(VA_ITMATRIX_DEF) && defined(DYNAMIC_NORMALMATRIX_DEFINE)
         mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aITMatrix);
     #elif defined(VA_ITMATRIX_DEF)
         mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].modelMatrix * aITMatrix);
-    #elif defined(INSTANCE_DATA_IM)
+    #elif defined(DYNAMIC_NORMALMATRIX_DEFINE)
         mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aMatrix);
     #else
         mat3 normalMatrix = mat3(transform);
@@ -178,11 +178,11 @@ void main()
     #endif
 
     //Only use the uploaded matrix.
-#elif defined(INSTANCE_DATA_M)
+#elif defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
     mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix;
     
     //NORMAL MATRIX
-    #if defined(INSTANCE_DATA_IM)
+    #if defined(DYNAMIC_NORMALMATRIX_DEFINE)
         mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix);
     #else
         mat3 normalMatrix = mat3(transform);
@@ -218,7 +218,7 @@ void main()
 #endif
 
 #ifdef VA_UVCOORD_DEF
-    #if defined(VA_UVMODIFIERID_DEF)
+    #if defined(VA_UVMODIFIERID_DEF) && defined(DYNAMIC_UVMODIFIER_DEFINE)
         //Transform the UV coordinate with the data provided.
         UvModifier modifier = uvModifiers.data[int(aUvModifierID)];
         outData.uv = (aUv * modifier.multiply) + modifier.add;

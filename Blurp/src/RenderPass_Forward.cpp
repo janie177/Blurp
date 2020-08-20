@@ -1,5 +1,6 @@
 #include "RenderPass_Forward.h"
 #include "Texture.h"
+#include "GpuBuffer.h"
 
 namespace blurp
 {
@@ -18,17 +19,7 @@ namespace blurp
         m_Output = a_RenderTarget;
     }
 
-    void RenderPass_Forward::SetTransformBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer)
-    {
-        m_TransformBuffer = a_Buffer;
-    }
-
-    void RenderPass_Forward::SetUvModifierBuffer(const std::shared_ptr<GpuBuffer>& a_Buffer)
-    {
-        m_UvModifierBuffer = a_Buffer;
-    }
-
-    void RenderPass_Forward::QueueForDraw(ForwardDrawData a_Data)
+    void RenderPass_Forward::QueueForDraw(DrawData a_Data)
     {
         m_DrawQueue.emplace_back(std::move(a_Data));
     }
@@ -140,27 +131,35 @@ namespace blurp
 
         if (m_Output != nullptr)
         {
-            lockables.emplace_back(std::make_pair(m_Output.get(), LockType::WRITE));
-        }
-
-        if (m_TransformBuffer != nullptr)
-        {
-            lockables.emplace_back(std::make_pair(m_TransformBuffer.get(), LockType::READ));
-        }
-
-        if(m_UvModifierBuffer != nullptr)
-        {
-            lockables.emplace_back(std::make_pair(m_UvModifierBuffer.get(), LockType::READ));
+            Lockable* l = m_Output.get();
+            lockables.emplace_back(std::make_pair(l, LockType::WRITE));
         }
 
         if(m_PointSpotShadowMaps != nullptr)
         {
-            lockables.emplace_back(std::make_pair(m_PointSpotShadowMaps.get(), LockType::READ));
+            Lockable* l = m_PointSpotShadowMaps.get();
+            lockables.emplace_back(std::make_pair(l, LockType::READ));
         }
 
         if(m_DirectionalShadowMaps != nullptr)
         {
-            lockables.emplace_back(std::make_pair(m_DirectionalShadowMaps.get(), LockType::READ));
+            Lockable* l = m_DirectionalShadowMaps.get();
+            lockables.emplace_back(std::make_pair(l, LockType::READ));
+        }
+
+        //Add all the buffers related to the draw data.
+        for(auto& drawData : m_DrawQueue)
+        {
+            if(drawData.transformData.dataBuffer != nullptr)
+            {
+                Lockable* l = drawData.transformData.dataBuffer.get();
+                lockables.emplace_back(std::make_pair(l, LockType::READ));
+            }
+            if (drawData.uvModifierData.dataBuffer != nullptr)
+            {
+                Lockable* l = drawData.uvModifierData.dataBuffer.get();
+                lockables.emplace_back(std::make_pair(l, LockType::READ));
+            }
         }
 
         return lockables;

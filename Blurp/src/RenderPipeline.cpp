@@ -88,7 +88,6 @@ namespace blurp
         {
             auto lock = ResourceLock(*ptr.first, ptr.second);
             m_Locks.emplace_back(std::move(lock));
-            
         }
 
         //Before executing, let the child class set up some stuff.

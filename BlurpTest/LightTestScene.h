@@ -35,7 +35,7 @@ private:
     std::shared_ptr<blurp::Mesh> m_Plane;
     std::shared_ptr<blurp::Material> m_PlaneMaterial;
     blurp::Transform m_PlaneTransform;
-    blurp::ForwardDrawData m_PlaneDrawData;
+    blurp::DrawData m_PlaneDrawData;
 
     //Vectors containing all the lights.
     std::vector<std::shared_ptr<blurp::PointLight>> m_PointLights;
@@ -47,7 +47,7 @@ private:
     std::shared_ptr<blurp::Mesh> m_LightMesh;
     std::shared_ptr<blurp::Material> m_LightMaterial;
     blurp::Transform m_LightMeshTransform;
-    blurp::ForwardDrawData m_LightMeshDrawData;
+    blurp::DrawData m_LightMeshDrawData;
 
     //Skybox
     std::shared_ptr<blurp::Texture> m_SkyBoxTexture;

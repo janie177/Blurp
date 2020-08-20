@@ -7,6 +7,10 @@
 #include "opengl/RenderTarget_GL.h"
 #include "opengl/Shader_GL.h"
 #include "opengl/Texture_GL.h"
+#include "Material.h"
+#include "GpuBuffer.h"
+#include "MaterialBatch.h"
+
 
 namespace blurp
 {
@@ -41,6 +45,14 @@ namespace blurp
             definitions.emplace_back(VertexSettings::GetVertexAttributeInfo(attrib).defineName);
         }
 
+        //Add all the draw attribute defines  to the shader cache.
+        for (auto& attrib : DRAW_ATTRIBUTES)
+        {
+            auto found = DRAW_ATTRIBUTE_INFO.find(attrib);
+            assert(found != DRAW_ATTRIBUTE_INFO.end());
+            definitions.emplace_back(found->second.defineName);
+        }
+
         //Add all the bitmask defines for the material settings.
         for (auto& attrib : MATERIAL_ATTRIBUTES)
         {
@@ -49,11 +61,7 @@ namespace blurp
             definitions.emplace_back(found->second.defineName);
         }
 
-        //Add a define to determine whether to use a single or batch material.
-        definitions.emplace_back("MAT_SINGLE_DEFINE");
-        definitions.emplace_back("MAT_BATCH_DEFINE");
-        definitions.emplace_back("INSTANCE_DATA_M");
-        definitions.emplace_back("INSTANCE_DATA_IM");
+        //Add a define for shadows enabled or not.
         definitions.emplace_back("USE_SHADOWS_DEFINE");
 
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
@@ -115,11 +123,7 @@ namespace blurp
         GLuint currentProgramId = 0;
 
         //Bits used for materials and uploaded data.
-        constexpr std::uint32_t matSingleBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS);
-        constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
-        constexpr std::uint32_t uploadMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 2);
-        constexpr std::uint32_t uploadIMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 3);
-        constexpr std::uint32_t useShadowsBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 4);
+        constexpr std::uint64_t useShadowsBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS + 1);
 
         //Prepare the lights for uploading to the GPU in a packed format.
         if(m_ReuploadLights)
@@ -279,12 +283,8 @@ namespace blurp
         for(auto& instanceData : m_DrawQueue)
         {
             assert(instanceData.mesh != nullptr && "Mesh cannot be nullptr!");
-            assert(instanceData.count > 0 && "Cannot draw 0 instances of mesh!");
+            assert(instanceData.instanceCount > 0 && "Cannot draw 0 instances of mesh!");
             Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
-
-            //Calculate the new mask.
-            const bool useMaterial = instanceData.materialData.material != nullptr;
-            const bool useMaterialBatch = instanceData.materialData.materialBatch != nullptr;
 
             //Shadows active?
             const bool useShadows = m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0 || m_ShadowCounts.z != 0;
@@ -293,39 +293,29 @@ namespace blurp
             const bool changedMaterial = prevMaterial != instanceData.materialData.material;
             const bool changedBatch = prevMaterialBatch != instanceData.materialData.materialBatch;
 
+            //See if materials or batches are enabled.
+            const bool material = instanceData.attributes.IsAttributeEnabled(DrawAttribute::MATERIAL_SINGLE);
+            const bool materialBatch = instanceData.attributes.IsAttributeEnabled(DrawAttribute::MATERIAL_BATCH);
+
             //Ensure that either only one is enabled, or both are disabled. Never both enabled.
-            assert((useMaterial != useMaterialBatch) || (!useMaterial && !useMaterialBatch));
+            assert((material != materialBatch) || (!material && !materialBatch));
 
             //Shader mask matching the vertex layout.
-            std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask());
+            std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask()) | (instanceData.attributes.GetMask() << NUM_VERTEX_ATRRIBS);
 
-            //If materials or batches are enabled, append those to the mask.
-            if(useMaterialBatch)
+            if(material && instanceData.materialData.material != nullptr)
             {
-                //Ensure that material ID is enabled when using a batch (to fetch the material at the right index). 
-                assert((instanceData.mesh->GetVertexAttributeMask() & VertexAttribute::MATERIAL_ID) == VertexAttribute::MATERIAL_ID && "To use a material batch, the provided mesh needs to have material IDs defined in its attributes!");
-
-                shaderMask = shaderMask | matBatchBit | (static_cast<std::uint32_t>(instanceData.materialData.materialBatch->GetMask()) << NUM_VERTEX_ATRRIBS);
+                shaderMask = shaderMask | (static_cast<std::uint32_t>(instanceData.materialData.material->GetSettings().GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
             }
-            else if(useMaterial)
+            else if(materialBatch && instanceData.materialData.materialBatch != nullptr)
             {
-                shaderMask = shaderMask | matSingleBit | (static_cast<std::uint32_t>(instanceData.materialData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS);
+                shaderMask = shaderMask | (static_cast<std::uint32_t>(instanceData.materialData.materialBatch->GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
             }
 
             //Mask for shadow usage.
             if(useShadows)
             {
                 shaderMask |= useShadowsBit;
-            }
-
-            //Uploaded data for this shader masking
-            if(instanceData.transformData.transform)
-            {
-                shaderMask |= uploadMBit;
-            }
-            if(instanceData.transformData.inverseTransform)
-            {
-                shaderMask |= uploadIMBit;
             }
 
             //Has the shader changed?
@@ -349,7 +339,7 @@ namespace blurp
             }
 
             //If the current material is new or the shader changed, re-upload the material data.
-            if (useMaterial && (changedMaterial || changedShader))
+            if (material && (changedMaterial || changedShader))
             {
                 auto& matSettings = instanceData.materialData.material->GetSettings();
 
@@ -412,7 +402,7 @@ namespace blurp
             }
 
             //If the material batch data needs to be bound, bind it.
-            if (useMaterialBatch && (changedBatch || changedShader))
+            if (materialBatch && (changedBatch || changedShader))
             {
                 auto batchGl = static_cast<MaterialBatch_GL*>(instanceData.materialData.materialBatch.get());
 
@@ -434,11 +424,16 @@ namespace blurp
                 }
             }
 
+            //Which DrawData is active?
+            const bool matrixEnabled = instanceData.attributes.IsAttributeEnabled(DrawAttribute::TRANSFORMATION_MATRIX);
+            const bool normalMatrixEnabled = instanceData.attributes.IsAttributeEnabled(DrawAttribute::NORMAL_MATRIX);
+            const bool uvModEnabled = instanceData.attributes.IsAttributeEnabled(DrawAttribute::UV_MODIFIER);
+
             //If transforms are uploaded, bind the transform buffer.
-            if(m_TransformBuffer != nullptr && instanceData.transformData.transform || instanceData.transformData.inverseTransform)
+            if(instanceData.transformData.dataBuffer != nullptr && (matrixEnabled || normalMatrixEnabled))
             {
                 //Bind the SSBO to the instance data slot (0).
-                const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(m_TransformBuffer);
+                const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(instanceData.transformData.dataBuffer);
 
                 //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
                 //Shader is hard coded to use slot 0 for the buffer.
@@ -447,10 +442,10 @@ namespace blurp
 
 
             //Check if Uv modifiers are enabled. Bind to slot 3 if used.
-            const bool hasUvModifiers = (m_UvModifierBuffer != nullptr && (mesh->GetVertexAttributeMask() & VertexAttribute::UV_MODIFIER_ID) == VertexAttribute::UV_MODIFIER_ID);
+            const bool hasUvModifiers = (uvModEnabled && (mesh->GetVertexAttributeMask() & VertexAttribute::UV_MODIFIER_ID) == VertexAttribute::UV_MODIFIER_ID) && instanceData.uvModifierData.dataBuffer != nullptr;
             if(hasUvModifiers)
             {
-                auto glUvModifierBuffer = static_cast<GpuBuffer_GL*>(m_UvModifierBuffer.get());
+                auto glUvModifierBuffer = static_cast<GpuBuffer_GL*>(instanceData.uvModifierData.dataBuffer.get());
                 glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.size);
             }
 
@@ -465,7 +460,7 @@ namespace blurp
             }
 
             //Finally draw instanced.
-            glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.count * mesh->GetInstanceCount());
+            glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.instanceCount * mesh->GetInstanceCount());
         }
 
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
