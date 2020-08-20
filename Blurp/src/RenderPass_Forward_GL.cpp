@@ -54,6 +54,7 @@ namespace blurp
         definitions.emplace_back("MAT_BATCH_DEFINE");
         definitions.emplace_back("INSTANCE_DATA_M");
         definitions.emplace_back("INSTANCE_DATA_IM");
+        definitions.emplace_back("USE_SHADOWS_DEFINE");
 
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
@@ -87,23 +88,14 @@ namespace blurp
          */
 
         //Clear the target buffer.
-        const auto fboId = reinterpret_cast<RenderTarget_GL*>(m_Output.get())->GetFrameBufferId();
+        const auto rtGL = reinterpret_cast<RenderTarget_GL*>(m_Output.get());
 
-        //Set output data targets and reset the framebuffer color and depth.
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        const auto viewPort = m_Output->GetViewPort();
-        glViewport(static_cast<int>(viewPort.r), static_cast<int>(viewPort.g), static_cast<int>(viewPort.b), static_cast<int>(viewPort.a));
-        const auto scissorRect = m_Output->GetScissorRect();
-        glScissor(static_cast<int>(scissorRect.r), static_cast<int>(scissorRect.g), static_cast<int>(scissorRect.b), static_cast<int>(scissorRect.a));
-        const auto clearColor = m_Output->GetClearColor();
+        //Bind the render target.
+        rtGL->Bind();
 
+        //TODO move this into a RenderState object or something.
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-
-        //Dont clear to not kill the skybox. Move this to a clear pass. TODO
-        //glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
@@ -127,6 +119,7 @@ namespace blurp
         constexpr std::uint32_t matBatchBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 1);
         constexpr std::uint32_t uploadMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 2);
         constexpr std::uint32_t uploadIMBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 3);
+        constexpr std::uint32_t useShadowsBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + 4);
 
         //Prepare the lights for uploading to the GPU in a packed format.
         if(m_ReuploadLights)
@@ -177,8 +170,6 @@ namespace blurp
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
                             data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
 
-                            data.shadowMatrix = lData.shadowMatrix;
-
                             ++pSIndex;
                         }
                     }
@@ -206,8 +197,6 @@ namespace blurp
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
                             data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
                             data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
-
-                            data.shadowMatrix = lData.shadowMatrix;
 
                             ++sSIndex;
                         }
@@ -297,6 +286,9 @@ namespace blurp
             const bool useMaterial = instanceData.materialData.material != nullptr;
             const bool useMaterialBatch = instanceData.materialData.materialBatch != nullptr;
 
+            //Shadows active?
+            const bool useShadows = m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0 || m_ShadowCounts.z != 0;
+
             //Has the material and materialbatch changed?
             const bool changedMaterial = prevMaterial != instanceData.materialData.material;
             const bool changedBatch = prevMaterialBatch != instanceData.materialData.materialBatch;
@@ -318,6 +310,12 @@ namespace blurp
             else if(useMaterial)
             {
                 shaderMask = shaderMask | matSingleBit | (static_cast<std::uint32_t>(instanceData.materialData.material->GetSettings().GetMask()) << NUM_VERTEX_ATRRIBS);
+            }
+
+            //Mask for shadow usage.
+            if(useShadows)
+            {
+                shaderMask |= useShadowsBit;
             }
 
             //Uploaded data for this shader masking

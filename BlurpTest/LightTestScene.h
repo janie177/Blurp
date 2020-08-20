@@ -9,6 +9,8 @@
 
 #include <RenderPass_Skybox.h>
 
+#include "RenderPass_Clear.h"
+
 class LightTestScene : public Scene
 {
 public:
@@ -25,6 +27,7 @@ private:
     std::shared_ptr<blurp::RenderPipeline> m_Pipeline;
     std::shared_ptr<blurp::RenderPass_Forward> m_ForwardPass;
     std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
+    std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
     std::shared_ptr<blurp::Camera> m_Camera;
     std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
 

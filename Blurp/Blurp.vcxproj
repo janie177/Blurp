@@ -178,6 +178,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\Material.h" />
     <ClInclude Include="include\api\MaterialBatch.h" />
     <ClInclude Include="include\api\Mesh.h" />
+    <ClInclude Include="include\api\RenderPass_Clear.h" />
     <ClInclude Include="include\api\RenderPass_Skybox.h" />
     <ClInclude Include="include\api\ShaderCache.h" />
     <ClInclude Include="include\api\Mouse.h" />
@@ -201,6 +202,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\internal\opengl\MaterialBatch_GL.h" />
     <ClInclude Include="include\internal\opengl\Mesh_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderDevice_GL.h" />
+    <ClInclude Include="include\internal\opengl\RenderPass_Clear_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPass_Forward_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPass_HelloTriangle_GL.h" />
     <ClInclude Include="include\internal\opengl\RenderPass_Skybox_GL.h" />
@@ -226,6 +228,8 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\RenderDevice.cpp" />
     <ClCompile Include="src\RenderDevice_GL.cpp" />
     <ClCompile Include="src\RenderPass.cpp" />
+    <ClCompile Include="src\RenderPass_Clear.cpp" />
+    <ClCompile Include="src\RenderPass_Clear_GL.cpp" />
     <ClCompile Include="src\RenderPass_Forward.cpp" />
     <ClCompile Include="src\RenderPass_Forward_GL.cpp" />
     <ClCompile Include="src\RenderPass_HelloTriangle.cpp" />

@@ -159,6 +159,12 @@
     <ClInclude Include="include\internal\opengl\RenderPass_Skybox_GL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\api\RenderPass_Clear.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\internal\opengl\RenderPass_Clear_GL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
@@ -258,6 +264,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RenderPass_Skybox_GL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RenderPass_Clear.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RenderPass_Clear_GL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

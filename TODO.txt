@@ -11,6 +11,15 @@ TODO list:
 		
 	[x] Add a callback to the window class that is called when the window resizes.
 	
+	[ ]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
+		Use this for all shaders everywhere for all meshes.
+		Cleaner and can scale up with instance colors and other data.
+		
+	[ ] Implement clear render pass.
+	
+	[ ]	Implement shadowmap render pass.
+		Add input data to the shader, with a shader cache etc.
+	
 	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
 	
 	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.

@@ -42,12 +42,12 @@ namespace blurp
         /*
          * Returns true when this RenderTarget has a depth attachment.
          */
-        bool HasDepthAttachment() const;
+        virtual bool HasDepthAttachment() const;
 
         /*
          * Returns true when this RenderTarget has a stencil attachment.
          */
-        bool HasStencilAttachment() const;
+        virtual bool HasStencilAttachment() const;
 
         /*
          * Add an attachment to this render target in the given slot. 

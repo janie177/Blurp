@@ -94,7 +94,9 @@ namespace blurp
         rtSettings.viewPort = m_Settings.renderTargetSettings.viewPort;
 
         //Create the default OpenGL rendertarget which is really just a dummy. The boolean true makes it a dummy.
-        m_RenderTarget = std::make_shared<RenderTarget_GL>(rtSettings, true);
+        const bool hasDepth = m_Settings.renderTargetSettings.depthBits != 0;
+        const bool hasStencil = m_Settings.renderTargetSettings.stencilBits != 0;
+        m_RenderTarget = std::make_shared<RenderTarget_GL>(rtSettings, true, hasDepth, hasStencil);
         m_RenderTarget->Load(a_BlurpEngine);
 
         //Disable vsync if specified

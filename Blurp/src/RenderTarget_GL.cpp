@@ -1,10 +1,5 @@
 #include "opengl/RenderTarget_GL.h"
 
-
-
-#include <glm/common.hpp>
-#include <glm/common.hpp>
-#include <glm/common.hpp>
 #include <glm/common.hpp>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -24,6 +19,15 @@ namespace blurp
     bool RenderTarget_GL::IsDefaultGlTarget() const
     {
         return m_IsDefault;
+    }
+
+    void RenderTarget_GL::Bind()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
+
+        glClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, m_ClearColor.a);
+        glViewport(static_cast<int>(m_ViewPort.x), static_cast<int>(m_ViewPort.y), static_cast<int>(m_ViewPort.z), static_cast<int>(m_ViewPort.w));
+        glScissor(static_cast<int>(m_ScissorRect.x), static_cast<int>(m_ScissorRect.y), static_cast<int>(m_ScissorRect.z), static_cast<int>(m_ScissorRect.w));
     }
 
     bool RenderTarget_GL::OnLoad(BlurpEngine& a_BlurpEngine)
@@ -134,5 +138,17 @@ namespace blurp
             attachmentPoint = GL_DEPTH_ATTACHMENT;
         }
         glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, textureType, std::reinterpret_pointer_cast<Texture_GL>(a_Added)->GetTextureId(), 0);
+    }
+
+    bool RenderTarget_GL::HasDepthAttachment() const
+    {
+        //Overridden because OpenGL has the default depth attachment.
+        return  m_HasDefaultDepth || m_DepthStencilAttachment != nullptr;
+    }
+
+    bool RenderTarget_GL::HasStencilAttachment() const
+    {
+        //Overridden because OpenGL has the default stencil attachment.
+        return m_HasDefaultStencil || (m_DepthStencilAttachment != nullptr && m_DepthStencilAttachment->GetPixelFormat() == PixelFormat::DEPTH_STENCIL);
     }
 }

@@ -60,25 +60,15 @@ namespace blurp
     void RenderPass_Skybox_GL::Execute()
     {
         //Clear the target buffer.
-        const auto fboId = reinterpret_cast<RenderTarget_GL*>(m_Target.get())->GetFrameBufferId();
+        const auto fbGl = reinterpret_cast<RenderTarget_GL*>(m_Target.get());
 
-        //Set output data targets and reset the framebuffer color and depth.
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        const auto viewPort = m_Target->GetViewPort();
-        glViewport(static_cast<int>(viewPort.r), static_cast<int>(viewPort.g), static_cast<int>(viewPort.b), static_cast<int>(viewPort.a));
-        const auto scissorRect = m_Target->GetScissorRect();
-        glScissor(static_cast<int>(scissorRect.r), static_cast<int>(scissorRect.g), static_cast<int>(scissorRect.b), static_cast<int>(scissorRect.a));
-        const auto clearColor = m_Target->GetClearColor();
-
-        //Clear. TODO move this to its own ClearPass.
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //Bind the FBO and set the viewport / scissorrect.
+        fbGl->Bind();
 
         //Don't do depth writing.
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
-
         glDisable(GL_CULL_FACE);
 
         //Calculate the pv matrix.

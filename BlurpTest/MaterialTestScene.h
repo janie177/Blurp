@@ -6,6 +6,7 @@
 #include <Mesh.h>
 #include <Camera.h>
 #include <Material.h>
+#include <RenderPass_Skybox.h>
 
 
 class MaterialTestScene : public Scene
@@ -23,6 +24,7 @@ private:
     //Pipeline settings and other resources.
     std::shared_ptr<blurp::RenderPipeline> m_Pipeline;
     std::shared_ptr<blurp::RenderPass_Forward> m_ForwardPass;
+
     std::shared_ptr<blurp::Mesh> m_Mesh;
     std::shared_ptr<blurp::Camera> m_Camera;
     std::shared_ptr<blurp::Material> m_Material;
@@ -30,6 +32,10 @@ private:
     std::shared_ptr<blurp::GpuBuffer> m_UvModifierBuffer;
 
     std::shared_ptr<blurp::PointLight> m_Light;
+
+    //Skybox
+    std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
+    std::shared_ptr<blurp::Texture> m_SkyBoxTexture;
 
     //Data directly related to drawing the mesh.
     blurp::Transform m_MeshTransform;

@@ -206,7 +206,7 @@ void main()
     #else
         vec3 biTang = cross(norm, tang);
     #endif
-    outData.tbn = transpose(mat3x3(tang, biTang, norm));
+    outData.tbn = mat3x3(tang, biTang, norm);
 
     //Regular normals are active.
 #elif defined(VA_NORMAL_DEF)
@@ -232,20 +232,14 @@ void main()
     outData.materialID = int(aMaterialID);
 #endif
 
-    //WORLD SPACE POSITION FOR LIGHT CALCULATIONS
+    //The world space position of the fragment used in light calculations.
     outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
 
     //Pass the camera position in world space.
     outData.camPos = cameraPosition.xyz;
 
-    //PROJECTED SPACE. Do this before converting to tangent space.
+    //Calculate the projected space.
     gl_Position = viewProjection * vec4(outData.fragPos, 1.0);
-
-    //Convert to tangent space if active.
-#if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-    outData.camPos = outData.tbn * outData.camPos;
-    outData.fragPos = outData.tbn * outData.fragPos;
-#endif
 
     //Pass on light information.
     outData.numLights = numLights.xyz;

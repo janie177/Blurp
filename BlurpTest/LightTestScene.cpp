@@ -62,8 +62,15 @@ void LightTestScene::Init()
     pSettings.waitForGpu = true;
     m_Pipeline = m_Engine.GetResourceManager().CreatePipeline(pSettings);
 
+    m_ClearPass = m_Pipeline->AppendRenderPass<RenderPass_Clear>(RenderPassType::RP_CLEAR);
+
     //Set the clear color.
-    m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.1f, 0.1f, 1.f });
+    auto renderTarget = m_Window->GetRenderTarget();
+    renderTarget->SetClearColor({ 0.f, 0.1f, 0.1f, 1.f });
+
+    //Mark the render target for clearing at the start of each pass.
+    m_ClearPass->AddRenderTarget(renderTarget);
+
 
     //Create a camera to use.
     CameraSettings camSettings;

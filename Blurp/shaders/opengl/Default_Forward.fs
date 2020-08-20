@@ -100,10 +100,12 @@ layout(location = 5) uniform float alphaConstant;
 
 
 //LIGHT DATA
-	
+
+#ifdef USE_SHADOWS_DEFINE
 	//Shadow sampler arrays.
 	layout(binding = 6) uniform sampler2DArrayShadow shadowSampler2D;
 	layout(binding = 7) uniform samplerCubeArrayShadow shadowSamplerCube;
+#endif
 
     struct LightData
     {
@@ -212,6 +214,9 @@ void main()
 			surfaceNormal = surfaceNormal * 2.0 - 1.0;
 			surfaceNormal.g *= -1.0;
 			surfaceNormal = normalize(surfaceNormal);
+
+			//Transform from tangent to world space.
+			surfaceNormal = inData.tbn * surfaceNormal;
 		#endif
 
 		//Emissive constant
@@ -319,6 +324,9 @@ void main()
 			surfaceNormal.g *= -1.0;	//OpenGL inverts the g channel. G = +y and textures are -y format.
 			surfaceNormal = normalize(surfaceNormal);
 
+			//Transform from tangent to world space.
+			surfaceNormal = inData.tbn * surfaceNormal;
+
 			++texLayerOffset;
 		#endif
 
@@ -385,21 +393,15 @@ void main()
     {
 		LightData data = lightData[offset];
 
-		//Calculate the light position either in tangent or world space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightPos = inData.tbn * data.v2.xyz;
-        #else
-			vec3 lightPos = data.v2.xyz;
-        #endif
-
+		vec3 lightPos = data.v2.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
 		lightDir /= sqrt(length2);
 		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
 		//Append to total light.
         totalDiffuseLight += (intensity * lightColor);
 
@@ -407,61 +409,56 @@ void main()
         ++offset;
     }
 
+#ifdef USE_SHADOWS_DEFINE
 	//Point lights with shadowmaps.
 	for(int i = 0; i < inData.numShadows.x; ++i)
     {
 		LightData data = lightData[offset];
 
-		//Calculate the light position either in tangent or world space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightPos = inData.tbn * data.v2.xyz;
-        #else
-			vec3 lightPos = data.v2.xyz;
-        #endif
-
+		vec3 lightPos = data.v2.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
-		lightDir /= sqrt(length2);
-		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		float lDist = sqrt(length2);
+		lightDir /= lDist;
 
+		//Index into shadow map and check for shadow.
+		vec4 shadowCoord = vec4(lightDir, data.v2.w);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lDist);
 
-		//TODO index into shadow map and check for shadow with the light matrix.
-
+		//If nothing is in front of the light for the frag coord, do the lighting.
+		if(visibility > 0.0)
+		{
+			//Intensity is equal to the incoming angle multiplied by the inverse square law.
+			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+			//Append to total light.
+			totalDiffuseLight += (intensity * lightColor);
+		}
 
 		//Increment offset into light buffer.
         ++offset;
     }
-
+	//ENDIF SHADOWS
+#endif
 
 	//Spot lights.
     for(int i = 0; i < inData.numLights.y; ++i)
     {
 		LightData data = lightData[offset];
 
-		//Calculate the light position either in tangent or world space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightPos = inData.tbn * data.v2.xyz;
-			vec3 spotLightDirection = inData.tbn * data.v3.xyz;
-        #else
-			vec3 lightPos = data.v2.xyz;
-			vec3 spotLightDirection = data.v3.xyz;
-        #endif
-
+		vec3 lightPos = data.v2.xyz;
+		vec3 spotLightDirection = data.v3.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
 		lightDir /= sqrt(length2);
 
 		//Ensure that the position is within the angle.
-		float angle = acos(-dot(lightDir, spotLightDirection));
+		float angle = acos(dot(lightDir, spotLightDirection));
 		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
 		{
 			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
@@ -470,7 +467,7 @@ void main()
 		}
 
 		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
 		//Append to total light.
         totalDiffuseLight += (intensity * lightColor);
 
@@ -478,29 +475,24 @@ void main()
         ++offset;
     }
 
+#ifdef USE_SHADOWS_DEFINE
 	//Spot lights with shadows.
 	for(int i = 0; i < inData.numShadows.y; ++i)
     {
 		LightData data = lightData[offset];
 
-		//Calculate the light position either in tangent or world space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightPos = inData.tbn * data.v2.xyz;
-			vec3 spotLightDirection = inData.tbn * data.v3.xyz;
-        #else
-			vec3 lightPos = data.v2.xyz;
-			vec3 spotLightDirection = data.v3.xyz;
-        #endif
-
+		vec3 lightPos = data.v2.xyz;
+		vec3 spotLightDirection = data.v3.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir = lightPos - inData.fragPos.xyz;
+		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
-		lightDir /= sqrt(length2);
+		float lDist = sqrt(length2);
+		lightDir /= lDist;
 
 		//Ensure that the position is within the angle.
-		float angle = acos(-dot(lightDir, spotLightDirection));
+		float angle = acos(dot(lightDir, spotLightDirection));
 		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
 		{
 			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
@@ -508,33 +500,31 @@ void main()
 			continue;
 		}
 
-		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		//Index into shadow map and check for shadow.
+		vec4 shadowCoord = vec4(lightDir, data.v2.w);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lDist);
 
-
-
-		//TODO check shadowmap with index and then use the matrix to transform to shadow space.
-
-
+		//If nothing is in front of the light for the frag coord, do the lighting.
+		if(visibility > 0.0)
+		{
+			//Intensity is equal to the incoming angle multiplied by the inverse square law.
+			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+			//Append to total light.
+			totalDiffuseLight += (intensity * lightColor);
+		}
 
 		//Increment offset into light buffer.
         ++offset;
     }
+	//ENDIF SHADOWS
+#endif
 
     //Directional lights.
     for(int i = 0; i < inData.numLights.z; ++i)
     {
 		LightData data = lightData[offset];
 
-		//Retrieve the light direction and transform it if we're in tangent space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightDir = inData.tbn * data.v2.xyz;
-        #else
-			vec3 lightDir = data.v2.xyz;
-        #endif
-
+		vec3 lightDir = data.v2.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 
@@ -548,34 +538,48 @@ void main()
         ++offset;
     }
 
+#ifdef USE_SHADOWS_DEFINE
     //Directional lights with shadows.
     for(int i = 0; i < inData.numShadows.z; ++i)
     {
 		LightData data = lightData[offset];
 
-		//Retrieve the light direction and transform it if we're in tangent space.
-        #if defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE)
-			vec3 lightDir = inData.tbn * data.v2.xyz;
-        #else
-			vec3 lightDir = data.v2.xyz;
-        #endif
-
+		vec3 lightDir = data.v2.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 
-		//Intensity for dir lights has no dropoff because there's no position.
-		intensity = max(-dot(surfaceNormal, lightDir), 0.0);
 
 
-		//TODO compare shadows with shadow matrix and index into shadow texture.
+		//Do the shadow calculation.
 
+		//Calculate where in the light frustum the current pixel is.
+		vec4 fragLightSpace = data.m1 * vec4(inData.fragPos, 1.0);
 
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		//Convert this light space position to 2D texture coordinates by dividing with the projection and then mapping {-1, 1} to {0, 1}.
+		//Because this is in light space, X and Y are equal to the UV coordinates on the lights plane. Z is the depth.
+		vec3 fragLightCoords = ((fragLightSpace.xyz / fragLightSpace.w) * 0.5) + 0.5;
 
-		//Increment offset into light buffer.
-        ++offset;
+		//X = U, Y = V, Z = depthSlice, W = pixelDepth.
+		vec4 shadowCoords;
+		shadowCoords.xyw = fragLightCoords.xyz;
+		shadowCoords.z = data.v2.w;
+
+		float visibility = texture(shadowSampler2D, shadowCoords); 
+		if(visibility > 0.0)
+		{
+			//Intensity for dir lights has no dropoff because there's no position.
+			intensity = max(-dot(surfaceNormal, lightDir), 0.0);
+
+			//Append to total light.
+			totalDiffuseLight += (intensity * lightColor);
+
+			//Increment offset into light buffer.
+			++offset;
+		}
     }
+	//ENDIF SHADOWS
+#endif
+
 #endif
 
 	//Set the output color RGB channels to be within 0 and 1, with all light taken into account.
