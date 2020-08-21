@@ -421,9 +421,8 @@ void UniverseScene::Update()
     sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(iData.transformData.dataRange.end), 1, 16, &sunMat);
 
     //Queue for draw.
-    forwardPass->QueueForDraw(data);
-    forwardPass->QueueForDraw(iData);
-    forwardPass->QueueForDraw(sunData);
+    std::vector<DrawData> drawDatas = { data, iData, sunData};
+    forwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
 
     //Update the rendering pipeline.
     pipeline->Execute();

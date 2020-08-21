@@ -56,7 +56,6 @@ namespace blurp
         void Reset() override;
 
     protected:
-        std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const override;
         bool IsStateValid() override;
 
     protected:

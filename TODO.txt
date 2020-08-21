@@ -21,8 +21,13 @@ TODO list:
 
 	[x] Implement clear render pass.
 	
+	[ ] Add the option to partially clear textures in the Clear pass. Specify x,y,z w,h,d.
+	
+	[ ]	Move DrawData out of the renderpasses. Instead pass a pointer with a count.
+	
 	[ ]	Implement shadowmap render pass.
 		Add input data to the shader, with a shader cache etc.
+		Allow each light to have a separate set of draw data.
 	
 	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
 	

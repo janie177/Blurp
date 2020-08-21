@@ -47,12 +47,12 @@ namespace blurp
         void SetTarget(const std::shared_ptr<RenderTarget>& a_RenderTarget);
 
         /*
-         * Add one or more meshes to the drawing queue.
-         * The InstanceData object contains a pointer to the mesh to use.
-         * It also contains the number of instances, and a pointer to the start of the instance data.
-         * Data is rendered in the order provided.
+         * Provide a pointer to the draw data collection that is to be drawn.
+         * The amount of DrawData objects is to be specified as a_DrawDataCount.
+         *
+         * Note that this does not make any copies, and the data set is to remain valid until this render pass has finished executing.
          */
-        void QueueForDraw(DrawData a_Data);
+        void SetDrawData(DrawData* a_DrawDataPtr, std::uint32_t a_DrawDataCount);
 
         /*
          * Add a light to the scene with a corresponding shadowmap and light perspective matrix.
@@ -95,15 +95,14 @@ namespace blurp
     protected:
         bool IsStateValid() override;
 
-        std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const override;
-
     protected:
 
         std::shared_ptr<Camera> m_Camera;
         std::shared_ptr<RenderTarget> m_Output;
 
         //Drawqueue containing all drawable data. Order is kept while drawing.
-        std::vector<DrawData> m_DrawQueue;
+        DrawData* m_DrawDataPtr;
+        std::uint32_t m_DrawDataCount;
 
         //All queued up light data.
         std::vector<LightData> m_LightData;

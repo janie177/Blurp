@@ -337,13 +337,11 @@ void ShadowTestScene::Update()
     auto lightMat = m_LightMeshTransform.GetTransformation();
     m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_PlaneDrawData.transformData.dataRange.end), 1, 16, &lightMat);
 
-    //Queue for draw.
-    m_ForwardPass->QueueForDraw(m_PlaneDrawData);
-    m_ForwardPass->QueueForDraw(m_LightMeshDrawData);
-
     //Add the light to the scene.
     m_ForwardPass->AddLight(m_Light);
     m_ForwardPass->AddLight(m_AmbientLight);
+
+    std::vector<DrawData> drawDatas = { m_LightMeshDrawData, m_PlaneDrawData};
 
     //Add the other data for drawing.
     if(!m_Transforms.empty())
@@ -361,9 +359,11 @@ void ShadowTestScene::Update()
         //Upload.
         m_DrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_LightMeshDrawData.transformData.dataRange.end), mats.size(), 16, &mats[0]);
 
-        m_ForwardPass->QueueForDraw(m_DrawData);
+        drawDatas.push_back(m_DrawData);
     }
 
+    //Queue for draw.
+    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

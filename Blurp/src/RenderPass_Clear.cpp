@@ -25,22 +25,6 @@ namespace blurp
         m_Textures.clear();
     }
 
-    std::vector<std::pair<Lockable*, LockType>> RenderPass_Clear::GetLockableResources() const
-    {
-        std::vector<std::pair<Lockable*, LockType>> locked;
-        locked.reserve(m_Textures.size() + m_RenderTargets.size());
-        for(auto& tex : m_Textures)
-        {
-            locked.emplace_back(std::make_pair(tex.first.get(), LockType::WRITE));
-        }
-        for (auto& rt : m_RenderTargets)
-        {
-            locked.emplace_back(std::make_pair(rt.get(), LockType::WRITE));
-        }
-
-        return locked;
-    }
-
     bool RenderPass_Clear::IsStateValid()
     {
         return true;

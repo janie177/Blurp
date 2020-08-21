@@ -395,8 +395,8 @@ void LightTestScene::Update()
     m_LightMeshDrawData.instanceCount = lightTransforms.size();
 
     //Queue for draw.
-    m_ForwardPass->QueueForDraw(m_LightMeshDrawData);
-    m_ForwardPass->QueueForDraw(m_PlaneDrawData);
+    std::vector<DrawData> drawDatas = {m_LightMeshDrawData, m_PlaneDrawData};
+    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

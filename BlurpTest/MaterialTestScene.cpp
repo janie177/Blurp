@@ -484,8 +484,8 @@ void MaterialTestScene::Update()
     m_LightQueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.transformData.dataRange.end), 1, 16, &lightMat);
 
     //Queue for draw.
-    m_ForwardPass->QueueForDraw(m_QueueData);
-    m_ForwardPass->QueueForDraw(m_LightQueueData);
+    std::vector<DrawData> drawDatas = { m_QueueData, m_LightQueueData };
+    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
 
     //Add the light to the scene.
     m_ForwardPass->AddLight(m_Light);

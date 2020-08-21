@@ -280,10 +280,15 @@ namespace blurp
          */
 
 
-        for(auto& instanceData : m_DrawQueue)
+        for(auto i = 0u; i < m_DrawDataCount; ++i)
         {
+            auto& instanceData = m_DrawDataPtr[i];
+
             assert(instanceData.mesh != nullptr && "Mesh cannot be nullptr!");
             assert(instanceData.instanceCount > 0 && "Cannot draw 0 instances of mesh!");
+
+            //TODO lock using ResourceLock for all currently used resources.
+
             Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
 
             //Shadows active?

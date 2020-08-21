@@ -42,13 +42,6 @@ namespace blurp
         virtual void Reset() = 0;
 
     protected:
-
-        /*
-         * Get a vector containing every resource that should be locked while this pass is executing.
-         * Resources marked as READ_ONLY don't have to be locked.
-         */
-        virtual std::vector<std::pair<Lockable*, LockType>> GetLockableResources() const = 0;
-
         /*
          * Checks if the state inside this render target is valid.
          * Returns true if ready for drawing, false otherwise.

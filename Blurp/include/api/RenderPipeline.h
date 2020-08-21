@@ -4,7 +4,6 @@
 
 #include "RenderDevice.h"
 #include "RenderPass.h"
-#include "ResourceLock.h"
 
 namespace blurp
 {
@@ -53,13 +52,6 @@ namespace blurp
          */
         virtual bool HasFinishedExecuting() = 0;
 
-        /*
-         * Unlock all resources that were locked when Execute() was called.
-         * HasFinishedExecuting has to return true before this can be called.
-         * After calling this, resources can be used again by other pipelines.
-         */
-        void ReleaseResourceLocks();
-
     protected:
         /*
          * This is called before Execute is called on the render passes in this pipeline.
@@ -78,9 +70,6 @@ namespace blurp
 
     private:
         std::vector<std::shared_ptr<RenderPass>> m_RenderPasses;
-
-        //Locks that keep all resources locked while executing.
-        std::vector<ResourceLock> m_Locks;
     };
 
     template <typename T>

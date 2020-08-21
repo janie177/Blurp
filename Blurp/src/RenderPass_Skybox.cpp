@@ -46,18 +46,6 @@ namespace blurp
         //No reset needed.
     }
 
-    std::vector<std::pair<Lockable*, LockType>> RenderPass_Skybox::GetLockableResources() const
-    {
-        std::vector<std::pair<Lockable*, LockType>> lockVector;
-        if(m_Texture->GetAccessMode() != AccessMode::READ_ONLY)
-        {
-            lockVector.emplace_back(std::make_pair(m_Texture.get(), LockType::READ));
-        }
-
-        lockVector.emplace_back(std::make_pair(m_Target.get(), LockType::WRITE));
-        return lockVector;
-    }
-
     bool RenderPass_Skybox::IsStateValid()
     {
         return m_Camera != nullptr && m_Target != nullptr && m_Texture != nullptr && m_Texture->GetTextureType() == TextureType::TEXTURE_CUBEMAP;
