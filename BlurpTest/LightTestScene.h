@@ -9,7 +9,7 @@
 
 #include <RenderPass_Skybox.h>
 
-#include "RenderPass_Clear.h"
+#include <RenderPass_Clear.h>
 
 class LightTestScene : public Scene
 {

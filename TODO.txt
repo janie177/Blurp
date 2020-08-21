@@ -11,7 +11,7 @@ TODO list:
 		
 	[x] Add a callback to the window class that is called when the window resizes.
 	
-	[ ]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
+	[x]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
 		Use this for all shaders everywhere for all meshes.
 		Cleaner and can scale up with instance colors and other data.
 		Add UV mods to this as well!

@@ -166,10 +166,10 @@ void main()
 		#if (defined(MAT_OCCLUSION_TEXTURE_DEFINE) || defined(MAT_HEIGHT_TEXTURE_DEFINE))
 			#if defined(MAT_HEIGHT_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF) && defined(VA_NORMAL_DEF) && defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
 				//Take multiple samples from different layers, each oriented along the view direction.
-				const float numLayers = 10;
+				const float numLayers = 50;
 				float layerDepth = 1.0 / numLayers;
 				float currentLayerDepth = 0.0;
-				vec2 P = viewDirection.xy * 0.6;	//SCALE 
+				vec2 P = viewDirection.xy * 0.2;	//SCALE 
 				vec2 deltaTexCoords = P / numLayers;
 				vec2  currentTexCoords     = texCoords;
 				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;

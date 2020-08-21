@@ -227,7 +227,7 @@ void MaterialTestScene::Init()
      * Set up the material from the given paths.
      */
     MaterialData materialData;
-    materialData.path = "materials/broken_ice/";
+    materialData.path = "materials/eggs/";
     materialData.diffuseTextureName = "diffuse.jpg";
     materialData.normalTextureName = "normal.jpg";
     materialData.metallicTextureName = "metallic.jpg";
@@ -500,6 +500,4 @@ void MaterialTestScene::Update()
             break;
         }
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(3));
 }
