@@ -330,12 +330,12 @@ void ShadowTestScene::Update()
 
     //Calculate the mesh's MVP and upload it to the GPU buffer.
     auto matrix = m_PlaneTransform.GetTransformation();
-    m_PlaneDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
+    m_PlaneDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(0, 1, 16, &matrix);
 
     //Upload the mesh representing the light transform.
     m_LightMeshTransform.SetTranslation(m_Light->GetPosition());
     auto lightMat = m_LightMeshTransform.GetTransformation();
-    m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_PlaneDrawData.transformData.dataRange.end), 1, 16, &lightMat);
+    m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, 1, 16, &lightMat);
 
     //Add the light to the scene.
     m_ForwardPass->AddLight(m_Light);
@@ -357,7 +357,7 @@ void ShadowTestScene::Update()
         m_DrawData.instanceCount = mats.size();
 
         //Upload.
-        m_DrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_LightMeshDrawData.transformData.dataRange.end), mats.size(), 16, &mats[0]);
+        m_DrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_LightMeshDrawData.transformData.dataRange.end, mats.size(), 16, &mats[0]);
 
         drawDatas.push_back(m_DrawData);
     }

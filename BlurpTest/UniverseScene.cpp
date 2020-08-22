@@ -416,9 +416,9 @@ void UniverseScene::Update()
     auto sunMat = sunTransform.GetTransformation();
 
 
-    data.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(static_cast<void*>(0), transforms.size(), 16, &transforms[0]);
-    iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(data.transformData.dataRange.end), 1, 16, &m);
-    sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(iData.transformData.dataRange.end), 1, 16, &sunMat);
+    data.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(0, transforms.size(), 16, &transforms[0]);
+    iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(data.transformData.dataRange.end, 1, 16, &m);
+    sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(iData.transformData.dataRange.end, 1, 16, &sunMat);
 
     //Queue for draw.
     std::vector<DrawData> drawDatas = { data, iData, sunData};

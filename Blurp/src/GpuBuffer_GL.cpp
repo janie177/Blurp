@@ -43,12 +43,12 @@ namespace blurp
         return true;
     }
 
-    GpuBufferView GpuBuffer_GL::OnWrite(void* a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize,
+    GpuBufferView GpuBuffer_GL::OnWrite(std::uintptr_t a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize,
         std::uint32_t a_PerDataSize, const void* a_Data)
     {
         //Alignment for std430 is equal to the largest member size.
         const std::uintptr_t alignment = std::min(16u, a_LargestMemberSize);
-        const std::uintptr_t startPadding = (alignment - (reinterpret_cast<std::uintptr_t>(a_Offset) & (alignment - 1))) & (alignment - 1);
+        const std::uintptr_t startPadding = (alignment - (a_Offset & (alignment - 1))) & (alignment - 1);
         const std::uintptr_t elementPadding = (alignment - (a_PerDataSize & (alignment - 1))) & (alignment - 1);
         const std::uintptr_t elementPaddedSize = elementPadding +  a_PerDataSize;
         const std::uintptr_t sizeFromAlignedStart = elementPaddedSize * a_Count;
@@ -58,7 +58,7 @@ namespace blurp
         const std::uintptr_t paddedSize = startPadding + (a_Count * elementPaddedSize);
 
         //The total size required with the new data.
-        const auto totalSize = reinterpret_cast<std::uintptr_t>(a_Offset) + paddedSize;
+        const auto totalSize = a_Offset + paddedSize;
 
         //Overwriting buffer limits.
         if (totalSize > m_Settings.size)
@@ -98,12 +98,12 @@ namespace blurp
         }
 
         //Upload the padded data to the GPU.
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, reinterpret_cast<std::uintptr_t>(a_Offset), paddedSize, &paddedData[0]);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, a_Offset, paddedSize, &paddedData[0]);
 
         //Unbind the buffer.
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-        return GpuBufferView{reinterpret_cast<std::uintptr_t>(a_Offset) + startPadding, sizeFromAlignedStart, elementPaddedSize, totalSize};
+        return GpuBufferView{a_Offset + startPadding, sizeFromAlignedStart, elementPaddedSize};
     }
 
     std::vector<Lockable*> GpuBuffer_GL::GetRecursiveLockables()

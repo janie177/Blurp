@@ -290,7 +290,7 @@ void MaterialTestScene::Update()
     if (uvMod.w > 1.0f) uvMod.w -= 1.f;
 
     //Upload the UV modifier coords.
-    m_QueueData.uvModifierData.dataRange = m_UvModifierBuffer->WriteData<glm::vec4>(static_cast<void*>(0), 1, sizeof(glm::vec4), &uvMod);
+    m_QueueData.uvModifierData.dataRange = m_UvModifierBuffer->WriteData<glm::vec4>(0, 1, sizeof(glm::vec4), &uvMod);
 
     //Read the input from the window.
     auto input = m_Window->PollInput();
@@ -475,13 +475,13 @@ void MaterialTestScene::Update()
 
     //Calculate the mesh's MVP and upload it to the GPU buffer.
     auto matrix = m_MeshTransform.GetTransformation();;
-    m_QueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
+    m_QueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(0, 1, 16, &matrix);
 
     //Upload the mesh representing the light transform.
     Transform lightTransform;
     lightTransform.Translate(m_Light->GetPosition());
     auto lightMat = lightTransform.GetTransformation();
-    m_LightQueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_QueueData.transformData.dataRange.end), 1, 16, &lightMat);
+    m_LightQueueData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_QueueData.transformData.dataRange.end, 1, 16, &lightMat);
 
     //Queue for draw.
     std::vector<DrawData> drawDatas = { m_QueueData, m_LightQueueData };

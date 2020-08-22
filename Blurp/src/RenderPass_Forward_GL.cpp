@@ -442,7 +442,7 @@ namespace blurp
 
                 //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
                 //Shader is hard coded to use slot 0 for the buffer.
-                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.transformData.dataRange.start), instanceData.transformData.dataRange.size);
+                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.transformData.dataRange.start), instanceData.transformData.dataRange.totalSize);
             }
 
 
@@ -451,7 +451,7 @@ namespace blurp
             if(hasUvModifiers)
             {
                 auto glUvModifierBuffer = static_cast<GpuBuffer_GL*>(instanceData.uvModifierData.dataBuffer.get());
-                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.size);
+                glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.totalSize);
             }
 
             //Set the number of instances from the mesh itself in the uniform.

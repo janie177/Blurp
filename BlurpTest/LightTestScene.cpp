@@ -361,7 +361,7 @@ void LightTestScene::Update()
 
     //Upload the plane data.
     auto matrix = m_PlaneTransform.GetTransformation();;
-    m_PlaneDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(static_cast<void*>(0), 1, 16, &matrix);
+    m_PlaneDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(0, 1, 16, &matrix);
 
     //Calculate all the light mesh positions and upload them.
     std::vector<glm::mat4> lightTransforms;
@@ -388,7 +388,7 @@ void LightTestScene::Update()
 
     if(!lightTransforms.empty())
     {
-        m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(reinterpret_cast<void*>(m_PlaneDrawData.transformData.dataRange.end), lightTransforms.size(), 16, &lightTransforms[0]);
+        m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, lightTransforms.size(), 16, &lightTransforms[0]);
     }
 
     //Update the instance count for the lights.
