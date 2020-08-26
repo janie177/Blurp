@@ -432,10 +432,10 @@ void ShadowTestScene::Update()
         {
             std::string file = path + std::to_string(i) + extension;
 
-            unsigned char* data = m_PosShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(1024, 1024, 1), 1);
+            auto data = m_PosShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(1024, 1024, 1), 1);
             unsigned char* converted = new unsigned char[1024 * 1024 * 3];
 
-            float* asFloat = reinterpret_cast<float*>(data);
+            float* asFloat = reinterpret_cast<float*>(data.get());
             for(int i = 0; i < 1024; ++i)
             {
                 for(int j = 0; j < 1024; ++j)
@@ -459,8 +459,6 @@ void ShadowTestScene::Update()
             }
 
             SaveToImage(file, 1024, 1024, 3, converted);
-
-            delete[] data;
         }
     }
 }

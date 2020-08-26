@@ -9,12 +9,12 @@ namespace blurp
 
     }
 
-    bool Lockable::IsReadLocked(LockType a_LockType) const
+    bool Lockable::IsReadLocked() const
     {
         return m_ReadLockCount;
     }
 
-    bool Lockable::IsWriteLocked(LockType a_LockType) const
+    bool Lockable::IsWriteLocked() const
     {
         return m_WriteLock;
     }

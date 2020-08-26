@@ -18,12 +18,12 @@ namespace blurp
         /*
          * See if this lockable is currently locked for reading.
          */
-        bool IsReadLocked(LockType a_LockType) const;
+        bool IsReadLocked() const;
 
         /*
          * See if this lockable is currently locked for writing.
          */
-        bool IsWriteLocked(LockType a_LockType) const;
+        bool IsWriteLocked() const;
 
         /*
          * See if this lockable is currently locked for either reading or writing.

@@ -63,9 +63,10 @@ namespace blurp
          */
         AccessMode GetAccessMode() const;
 
-
-        //TODO remove this. Get pixels from an image.
-        virtual unsigned char* GetPixels(glm::vec3 a_Start, glm::vec3 a_Size, int a_Channels) = 0;
+        /*
+         * Get the contents of this image in unsigned char format.
+         */
+        virtual std::unique_ptr<std::uint8_t[]> GetPixels(const glm::vec3& a_Start, const glm::vec3& a_Size, int a_Channels) = 0;
 
     protected:
         void OnLock() override;

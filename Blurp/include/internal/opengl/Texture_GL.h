@@ -17,7 +17,7 @@ namespace blurp
          */
         GLuint GetTextureId() const;
 
-        unsigned char* GetPixels(glm::vec3 a_Start, glm::vec3 a_Size, int a_Channels) override;
+        std::unique_ptr<std::uint8_t[]> GetPixels(const glm::vec3& a_Start, const glm::vec3& a_Size, int a_Channels) override;
 
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;

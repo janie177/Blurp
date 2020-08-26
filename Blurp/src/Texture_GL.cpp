@@ -181,16 +181,17 @@ namespace blurp
         return true;
     }
 
-    unsigned char* Texture_GL::GetPixels(glm::vec3 a_Start, glm::vec3 a_Size, int a_Channels)
+    std::unique_ptr<std::uint8_t[]> Texture_GL::GetPixels(const glm::vec3& a_Start, const glm::vec3& a_Size, int a_Channels)
     {
         assert(a_Channels != 0 && a_Size.x != 0 && a_Size.y != 0 && a_Size.z != 0 && "Pixel size has to be at least 1.");
+        assert(!IsWriteLocked() && "Cannot read pixel data from texture when write locked.");
 
         const auto size = (int)a_Size.x * (int)a_Size.y * (int)a_Size.z * a_Channels * (int)Size_Of(m_Settings.dataType);
 
-        unsigned char* pixels = new unsigned char[size];
+        auto* pixels = new unsigned char[size];
 
         glGetTextureSubImage(m_Texture, 0, (GLsizei)a_Start.x, (GLsizei)a_Start.y, (GLsizei)a_Start.z, (GLsizei)a_Size.x, (GLsizei)a_Size.y, (GLsizei)a_Size.z, ToGL(m_Settings.pixelFormat), ToGL(m_Settings.dataType), size, pixels);
 
-        return pixels;
+        return std::unique_ptr<std::uint8_t[]>(pixels);
     }
 }
