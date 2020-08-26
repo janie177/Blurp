@@ -36,6 +36,7 @@ namespace blurp
     void Camera::SetProjection(const CameraSettings& a_Settings)
     {
         m_Settings = a_Settings;
+        m_DirtyFlag = true;
     }
 
     Transform& Camera::GetTransform()

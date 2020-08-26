@@ -24,7 +24,13 @@ namespace blurp
         for(auto& tex : m_Textures)
         {
             auto glTex = static_cast<Texture_GL*>(tex.first.get());
-            glClearTexImage(glTex->GetTextureId(), 0, ToGL(glTex->GetPixelFormat()), ToGL(glTex->GetDataType()), &tex.second);
+            auto& clearData = tex.second;
+
+            const auto dataType = ToGL(glTex->GetDataType());
+            const auto format = ToGL(glTex->GetPixelFormat());
+
+            //Clear the texture. This works for any dimension of texture because the parameters are left at 0 when they don't apply.
+            glClearTexSubImage(glTex->GetTextureId(), 0, static_cast<GLsizei>(clearData.offset.x), static_cast<GLsizei>(clearData.offset.y), static_cast<GLsizei>(clearData.offset.z), static_cast<GLsizei>(clearData.size.x), static_cast<GLsizei>(clearData.size.y), static_cast<GLsizei>(clearData.size.z), format, dataType, &clearData.clearValue);
         }
 
         for(auto& rt : m_RenderTargets)

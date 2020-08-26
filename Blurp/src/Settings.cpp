@@ -21,7 +21,7 @@ namespace blurp
         return *this;
     }
 
-    bool DrawAttributeMask::IsAttributeEnabled(DrawAttribute a_Attribute)
+    bool DrawAttributeMask::IsAttributeEnabled(DrawAttribute a_Attribute) const
     {
         return static_cast<DrawAttribute>(static_cast<std::uint32_t>(m_Mask) & static_cast<std::uint32_t>(a_Attribute)) == a_Attribute;
     }

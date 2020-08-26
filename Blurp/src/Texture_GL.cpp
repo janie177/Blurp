@@ -140,11 +140,13 @@ namespace blurp
         case TextureType::TEXTURE_CUBEMAP_ARRAY:
         {
             assert(m_Settings.dimensions.x == m_Settings.dimensions.y && "Error: Cubemap texture has to be square!");
+            assert(m_Settings.dimensions.z % 6 == 0 && "Error: Cubemap array depth has to be a multiple of 6!");
+
             glGenTextures(1, &m_Texture);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_Texture);
 
             //Generate 6x the layers because 6 faces per layer.
-            glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z * 6, 0, pixelFormat, dataType, m_Settings.textureCubeMapArray.data);
+            glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, sizedFormat, m_Settings.dimensions.x, m_Settings.dimensions.y, m_Settings.dimensions.z, 0, pixelFormat, dataType, m_Settings.textureCubeMapArray.data);
 
             glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, magFilter);
             glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, minFilter);
@@ -177,5 +179,18 @@ namespace blurp
         //Delete the texture.
         glDeleteTextures(1, &m_Texture);
         return true;
+    }
+
+    unsigned char* Texture_GL::GetPixels(glm::vec3 a_Start, glm::vec3 a_Size, int a_Channels)
+    {
+        assert(a_Channels != 0 && a_Size.x != 0 && a_Size.y != 0 && a_Size.z != 0 && "Pixel size has to be at least 1.");
+
+        const auto size = (int)a_Size.x * (int)a_Size.y * (int)a_Size.z * a_Channels * (int)Size_Of(m_Settings.dataType);
+
+        unsigned char* pixels = new unsigned char[size];
+
+        glGetTextureSubImage(m_Texture, 0, (GLsizei)a_Start.x, (GLsizei)a_Start.y, (GLsizei)a_Start.z, (GLsizei)a_Size.x, (GLsizei)a_Size.y, (GLsizei)a_Size.z, ToGL(m_Settings.pixelFormat), ToGL(m_Settings.dataType), size, pixels);
+
+        return pixels;
     }
 }

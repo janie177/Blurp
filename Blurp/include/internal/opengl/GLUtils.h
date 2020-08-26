@@ -191,6 +191,7 @@ namespace blurp
             {
             case DataType::INT:
             case DataType::UINT:
+                return GL_DEPTH_COMPONENT32;
             case DataType::FLOAT:
                 return GL_DEPTH_COMPONENT32F;
             case DataType::SHORT:

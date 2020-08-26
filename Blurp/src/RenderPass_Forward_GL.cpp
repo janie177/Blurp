@@ -62,7 +62,8 @@ namespace blurp
         }
 
         //Add a define for shadows enabled or not.
-        definitions.emplace_back("USE_SHADOWS_DEFINE");
+        definitions.emplace_back("USE_POS_SHADOWS_DEFINE");
+        definitions.emplace_back("USE_DIR_SHADOWS_DEFINE");
 
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
@@ -114,7 +115,7 @@ namespace blurp
          */
 
         //Shader attribute mask.
-        std::uint32_t prevMask = 0;
+        std::uint64_t prevMask = 0;
         std::shared_ptr<Material> prevMaterial;
         std::shared_ptr<MaterialBatch> prevMaterialBatch;
         std::shared_ptr<Mesh> prevMesh;
@@ -123,7 +124,8 @@ namespace blurp
         GLuint currentProgramId = 0;
 
         //Bits used for materials and uploaded data.
-        constexpr std::uint64_t useShadowsBit = 1 << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS + 1);
+        constexpr std::uint64_t usePosShadowsBit = static_cast<std::uint64_t>(1) << (NUM_MATERIAL_ATRRIBS + NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS);
+        constexpr std::uint64_t useDirShadowsBit = usePosShadowsBit << 1;
 
         //Prepare the lights for uploading to the GPU in a packed format.
         if(m_ReuploadLights)
@@ -243,6 +245,7 @@ namespace blurp
 
                 //Upload the data to the GPU.
                 glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 4, m_LightUbo);
                 glBufferSubData(GL_UNIFORM_BUFFER, 0, lightBuffer.size() * sizeof(LightDataPacked), static_cast<void*>(&lightBuffer[0]));
             }
 
@@ -251,12 +254,12 @@ namespace blurp
         }
 
         //Bind the shadow samplers if they are specified and there is lights that use shadows.
-        if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z)
+        if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z != 0)
         {
             glActiveTexture(GL_TEXTURE6);
             glBindTexture(GL_TEXTURE_2D_ARRAY, reinterpret_cast<Texture_GL*>(m_DirectionalShadowMaps.get())->GetTextureId());
         }
-        if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x || m_ShadowCounts.y))
+        if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0))
         {
             glActiveTexture(GL_TEXTURE7);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, reinterpret_cast<Texture_GL*>(m_PointSpotShadowMaps.get())->GetTextureId());
@@ -272,6 +275,7 @@ namespace blurp
         staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_StaticDataUbo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(staticData), static_cast<void*>(&staticData));
 
 
@@ -292,7 +296,8 @@ namespace blurp
             Mesh_GL* mesh = static_cast<Mesh_GL*>(instanceData.mesh.get());
 
             //Shadows active?
-            const bool useShadows = m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0 || m_ShadowCounts.z != 0;
+            const bool usePosShadows = m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0;
+            const bool useDirShadows = m_ShadowCounts.z != 0;
 
             //Has the material and materialbatch changed?
             const bool changedMaterial = prevMaterial != instanceData.materialData.material;
@@ -306,21 +311,25 @@ namespace blurp
             assert((material != materialBatch) || (!material && !materialBatch));
 
             //Shader mask matching the vertex layout.
-            std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask()) | (instanceData.attributes.GetMask() << NUM_VERTEX_ATRRIBS);
+            std::uint64_t shaderMask = static_cast<std::uint64_t>(mesh->GetVertexAttributeMask()) | (instanceData.attributes.GetMask() << NUM_VERTEX_ATRRIBS);
 
             if(material && instanceData.materialData.material != nullptr)
             {
-                shaderMask = shaderMask | (static_cast<std::uint32_t>(instanceData.materialData.material->GetSettings().GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
+                shaderMask = shaderMask | (static_cast<std::uint64_t>(instanceData.materialData.material->GetSettings().GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
             }
             else if(materialBatch && instanceData.materialData.materialBatch != nullptr)
             {
-                shaderMask = shaderMask | (static_cast<std::uint32_t>(instanceData.materialData.materialBatch->GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
+                shaderMask = shaderMask | (static_cast<std::uint64_t>(instanceData.materialData.materialBatch->GetMask()) << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS));
             }
 
             //Mask for shadow usage.
-            if(useShadows)
+            if(usePosShadows)
             {
-                shaderMask |= useShadowsBit;
+                shaderMask |= usePosShadowsBit;
+            }
+            if(useDirShadows)
+            {
+                shaderMask |= useDirShadowsBit;
             }
 
             //Has the shader changed?

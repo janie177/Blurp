@@ -21,7 +21,6 @@ namespace blurp
         GpuBufferView OnWrite(std::uintptr_t a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, std::uint32_t a_PerDataSize, const void* a_Data) override;
 
     public:
-        std::vector<Lockable*> GetRecursiveLockables() override;
 
         bool Resize(std::uint32_t a_Size, bool a_CopyData = true) override;
     private:

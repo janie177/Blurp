@@ -65,5 +65,11 @@
     <ClInclude Include="ShadowTestScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ImageUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

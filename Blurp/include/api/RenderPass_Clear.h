@@ -23,7 +23,7 @@ namespace blurp
         /*
          * Add a texture to be cleared with the given clear color.
          */
-        void AddTexture(const std::shared_ptr<Texture>& a_Texture, const glm::vec4& a_ClearColor);
+        void AddTexture(const std::shared_ptr<Texture>& a_Texture, const ClearData& a_ClearData);
 
         RenderPassType GetType() override;
         void Reset() override;
@@ -32,7 +32,7 @@ namespace blurp
         bool IsStateValid() override;
 
     protected:
-        std::vector<std::shared_ptr<RenderTarget> > m_RenderTargets;
-        std::vector<std::pair<std::shared_ptr<Texture>, glm::vec4>> m_Textures;
+        std::vector<std::shared_ptr<RenderTarget>> m_RenderTargets;
+        std::vector<std::pair<std::shared_ptr<Texture>, ClearData>> m_Textures;
     };
 }

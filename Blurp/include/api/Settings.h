@@ -503,7 +503,7 @@ namespace blurp
         /*
          * Returns true if the given attribute is enabled.
          */
-        bool IsAttributeEnabled(DrawAttribute a_Attribute);
+        bool IsAttributeEnabled(DrawAttribute a_Attribute) const;
 
         /*
          * Get the current dynamic attribute mask.
@@ -619,7 +619,9 @@ namespace blurp
             textureCubeMap.data[5] = nullptr;
         }
 
-        //The dimensions of this texture.
+        //The dimensions of this texture. X and Y are the texture dimensions while Z is the depth.
+        //For cubemap array textures, depth has be divisible by 6.
+        //Cubemap textures require X and Y to be equal as well.
         glm::vec<3, std::uint32_t> dimensions;
 
         //The pixel format for this texture. This determines how many channels this texture has and how they are used.
@@ -814,7 +816,7 @@ namespace blurp
         //The projection mode.
         ProjectionMode projectionMode;
 
-        //The field of view for this camera.
+        //The field of view for this camera in degrees.
         std::float_t fov;
 
         //How close to the camera do objects have to be to be cut off.
@@ -1480,5 +1482,39 @@ namespace blurp
          * Otherwise choose READ_WRITE.
          */
         AccessMode access;
+    };
+
+    /*
+     * Struct detailing a region in a texture to be cleared.
+     * Used with RenderPass_Clear.
+     */
+    struct ClearData
+    {
+        ClearData()
+        {
+            offset = glm::vec3(0.f);
+            size = glm::vec3(1.f);
+            clearValue.floats = glm::vec4(1.f);
+        }
+
+        //Offset where X, Y and Z start for the region to be cleared.
+        glm::vec3 offset;
+
+        //X, Y and Z sizes to be cleared.
+        glm::vec3 size;
+
+        //The value to clear the data with. Only the first n values apply for a buffer with n channels. For example, X is used when only depth is enabled.
+        //Use the correct data type to clear depending on the pixel format and data type used in the buffer that is being cleared.
+        union
+        {
+            glm::vec4 floats;
+            glm::vec<4, unsigned char> uChars;
+            glm::vec<4, char> chars;
+            glm::vec<4, int> ints;
+            glm::vec<4, unsigned int> uints;
+            glm::vec<4, short> shorts;
+            glm::vec<4, unsigned short> ushorts;
+
+        } clearValue;
     };
 }

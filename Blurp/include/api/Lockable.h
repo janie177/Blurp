@@ -1,6 +1,5 @@
 #pragma once
 #include <mutex>
-#include <vector>
 #include "LockType.h"
 
 namespace blurp
@@ -30,11 +29,6 @@ namespace blurp
          * See if this lockable is currently locked for either reading or writing.
          */
         bool IsLocked() const;
-
-        /*
-         * Get a vector of pointers to all lockables that need to be recursively locked.
-         */
-        virtual std::vector<Lockable*> GetRecursiveLockables() = 0;
 
     protected:
         /*

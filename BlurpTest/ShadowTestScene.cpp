@@ -3,13 +3,21 @@
 #include <BlurpEngine.h>
 #include <KeyCodes.h>
 #include <RenderResourceManager.h>
+#include <Texture.h>
 
 #include <RenderPass_Clear.h>
 #include "GpuBuffer.h"
 #include "MaterialLoader.h"
 #include "Sphere.h"
 
+#include "ImageUtil.h"
+
 #define MESH_SCALE 500.f
+
+#define NUM_SHADOW_POS_LIGHTS 1
+
+#define NEAR_PLANE 1.f
+#define FAR_PLANE 100.f
 
 const static std::float_t CUBE_DATA[]
 {
@@ -64,6 +72,7 @@ void ShadowTestScene::Init()
     pSettings.waitForGpu = true;
     m_Pipeline = m_Engine.GetResourceManager().CreatePipeline(pSettings);
 
+    //Add a clear pass first.
     m_ClearPass = m_Pipeline->AppendRenderPass<RenderPass_Clear>(RenderPassType::RP_CLEAR);
 
     //Set the clear color.
@@ -73,14 +82,13 @@ void ShadowTestScene::Init()
     //Mark the render target for clearing at the start of each pass.
     m_ClearPass->AddRenderTarget(renderTarget);
 
-
     //Create a camera to use.
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
     camSettings.fov = 120.f;
-    camSettings.nearPlane = 0.1f;
-    camSettings.farPlane = 1000.f;
+    camSettings.nearPlane = NEAR_PLANE;
+    camSettings.farPlane = FAR_PLANE;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
 
     //Load a skybox;
@@ -100,10 +108,37 @@ void ShadowTestScene::Init()
     m_SkyboxPass->SetTarget(m_Window->GetRenderTarget());
     m_SkyboxPass->SetTexture(m_SkyBoxTexture);
 
+    //Generate shadowmaps before doing the forward rendering.
+    m_ShadowGenerationPass = m_Pipeline->AppendRenderPass<RenderPass_ShadowMap>(RenderPassType::RP_SHADOWMAP);
+    m_ShadowGenerationPass->SetCamera(m_Camera);
+
+
+    TextureSettings shadowPosSettings;
+    shadowPosSettings.dimensions = glm::vec3(1024.f, 1024.f, NUM_SHADOW_POS_LIGHTS * 6);
+    shadowPosSettings.generateMipMaps = false;
+    shadowPosSettings.dataType = DataType::FLOAT;
+    shadowPosSettings.pixelFormat = PixelFormat::DEPTH;
+    shadowPosSettings.memoryAccess = AccessMode::READ_WRITE;
+    shadowPosSettings.memoryUsage = MemoryUsage::GPU;
+    shadowPosSettings.textureType = TextureType::TEXTURE_CUBEMAP_ARRAY;
+    m_PosShadowArray = m_Engine.GetResourceManager().CreateTexture(shadowPosSettings);
+
+    //Clear the shadow textures every frame.
+    ClearData posShadowClear;
+    posShadowClear.size = glm::vec3(1024, 1024, NUM_SHADOW_POS_LIGHTS * 6);
+    posShadowClear.clearValue.floats[0] = 1.f;
+    m_ClearPass->AddTexture(m_PosShadowArray, posShadowClear);
+
+    //Add the shadow data to the shadow pass.
+    m_ShadowGenerationPass->SetOutputPositional(m_PosShadowArray);
+
     //Create a forward renderpass that draws directly to the screen.
     m_ForwardPass = m_Pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
     m_ForwardPass->SetCamera(m_Camera);
     m_ForwardPass->SetTarget(m_Window->GetRenderTarget());
+
+    //Use shadow mapping
+    m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
 
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)
@@ -114,7 +149,7 @@ void ShadowTestScene::Init()
         camS.height = h;
         camS.fov = 120.f;
         camS.nearPlane = 0.1f;
-        camS.farPlane = 1000.f;
+        camS.farPlane = FAR_PLANE;
         m_Camera->SetProjection(camS);
     });
 
@@ -321,12 +356,9 @@ void ShadowTestScene::Update()
         m_Window->SetFullScreen(!m_Window->IsFullScreen());
     }
 
-    /*
-     * Upload the updated matrix data to the GPU.
-     */
-
      //Reset old data.
     m_ForwardPass->Reset();
+    m_ShadowGenerationPass->Reset();
 
     //Calculate the mesh's MVP and upload it to the GPU buffer.
     auto matrix = m_PlaneTransform.GetTransformation();
@@ -338,10 +370,10 @@ void ShadowTestScene::Update()
     m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, 1, 16, &lightMat);
 
     //Add the light to the scene.
-    m_ForwardPass->AddLight(m_Light);
+    m_ForwardPass->AddLight(m_Light);//TODO add shadow map index
     m_ForwardPass->AddLight(m_AmbientLight);
 
-    std::vector<DrawData> drawDatas = { m_LightMeshDrawData, m_PlaneDrawData};
+    std::vector<DrawData> drawDatas = {m_PlaneDrawData};
 
     //Add the other data for drawing.
     if(!m_Transforms.empty())
@@ -362,6 +394,21 @@ void ShadowTestScene::Update()
         drawDatas.push_back(m_DrawData);
     }
 
+    //Don't count the light for the shadow.
+    drawDatas.push_back(m_LightMeshDrawData);
+
+    //Setup the shadow mapping for this frame.
+    m_ShadowGenerationPass->AddLight(m_Light, 0, NEAR_PLANE, FAR_PLANE);
+    std::vector<LightIndexData> lIndexData;
+    lIndexData.reserve(drawDatas.size());
+    for(int i = 0; i < static_cast<int>(drawDatas.size()); ++i)
+    {
+        lIndexData.emplace_back(LightIndexData{std::vector<int>(), std::vector<int>{0}});
+    }
+    m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
+
+
+
     //Queue for draw.
     m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
 
@@ -373,6 +420,47 @@ void ShadowTestScene::Update()
         if (m_Pipeline->HasFinishedExecuting())
         {
             break;
+        }
+    }
+
+    //printscreen.
+    if(input.getKeyState(KEY_P) == ButtonState::FIRST_PRESSED)
+    {
+        std::string path = "shadowmap";
+        std::string extension = ".jpg";
+        for(int i = 0; i < 6; ++i)
+        {
+            std::string file = path + std::to_string(i) + extension;
+
+            unsigned char* data = m_PosShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(1024, 1024, 1), 1);
+            unsigned char* converted = new unsigned char[1024 * 1024 * 3];
+
+            float* asFloat = reinterpret_cast<float*>(data);
+            for(int i = 0; i < 1024; ++i)
+            {
+                for(int j = 0; j < 1024; ++j)
+                {
+                    int coordX = (3 * 1024 * i);
+                    int coordY =  (3 * j);
+
+                    float f = asFloat[i * 1024 + j];
+                    assert(f >= 0.f && f <= 1.f);
+
+                    float linear = (2.0 * NEAR_PLANE) / (FAR_PLANE + NEAR_PLANE - f * (FAR_PLANE - NEAR_PLANE));
+
+                    unsigned char value =  static_cast<unsigned char>(linear * 255.f);
+                    for (int k = 0; k < 3; ++k)
+                    {
+                        converted[coordX + coordY + 0] = value;
+                        converted[coordX + coordY + 1] = value;
+                        converted[coordX + coordY + 2] = value;
+                    }
+                }
+            }
+
+            SaveToImage(file, 1024, 1024, 3, converted);
+
+            delete[] data;
         }
     }
 }

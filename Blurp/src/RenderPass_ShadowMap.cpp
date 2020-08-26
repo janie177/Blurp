@@ -3,24 +3,38 @@
 
 namespace blurp
 {
-    void RenderPass_ShadowMap::AddLight(const ShadowMapGenerationData& a_Data)
+    void RenderPass_ShadowMap::SetCamera(const std::shared_ptr<Camera>& a_Camera)
     {
-        assert(a_Data.light && "Light cannot be nullptr!");
-        assert(a_Data.drawData != nullptr && a_Data.drawDataCount > 0 && "Generating a shadowmap without any geometry doesn't make sense!");
+        m_Camera = a_Camera;
+    }
 
-        switch (a_Data.light->GetType())
+    void RenderPass_ShadowMap::AddLight(const std::shared_ptr<Light>& a_Light, std::uint32_t a_Index, float a_Near, float a_Far)
+    {
+        assert(a_Light && "Light cannot be nullptr!");
+
+        //Cast to the right light type and then extract the required data.
+        switch (a_Light->GetType())
         {
         case LightType::LIGHT_POINT:
+            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<PointLight>(a_Light)->GetPosition(), a_Near, a_Far));
+            break;
         case LightType::LIGHT_SPOT:
-            m_PositionalLights.emplace_back(a_Data);
+            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<SpotLight>(a_Light)->GetPosition(), a_Near, a_Far));
             break;
         case LightType::LIGHT_DIRECTIONAL:
-            m_DirectionalLights.emplace_back(a_Data);
+            m_DirectionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<DirectionalLight>(a_Light)->GetDirection(), a_Near, a_Far));
             break;
         default:
             throw std::exception("Light type cannot generate a shadow!");
             break;
         }
+    }
+
+    void RenderPass_ShadowMap::SetGeometry(const DrawData* a_DrawData, const LightIndexData* a_LightIndexData, const std::uint32_t a_Count)
+    {
+        m_DrawDataPtr = a_DrawData;
+        m_DrawDataCount = a_Count;
+        m_LightIndices = a_LightIndexData;
     }
 
     void RenderPass_ShadowMap::SetOutputPositional(const std::shared_ptr<Texture>& a_Texture)
@@ -53,6 +67,8 @@ namespace blurp
     {
         m_DirectionalLights.clear();
         m_PositionalLights.clear();
+        m_DrawDataPtr = nullptr;
+        m_DrawDataCount = 0;
     }
 
     bool RenderPass_ShadowMap::IsStateValid()
@@ -63,6 +79,11 @@ namespace blurp
         }
 
         if (!m_PositionalLights.empty() && !m_ShadowMapsPositional)
+        {
+            return false;
+        }
+
+        if(m_Camera == nullptr)
         {
             return false;
         }

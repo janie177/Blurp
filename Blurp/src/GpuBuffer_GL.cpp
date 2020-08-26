@@ -106,12 +106,6 @@ namespace blurp
         return GpuBufferView{a_Offset + startPadding, sizeFromAlignedStart, elementPaddedSize};
     }
 
-    std::vector<Lockable*> GpuBuffer_GL::GetRecursiveLockables()
-    {
-        //Return an empty vector because there's no internal lockables.
-        return std::vector<Lockable*>();
-    }
-
     bool GpuBuffer_GL::Resize(std::uint32_t a_Size, bool a_CopyData)
     {
         assert(!IsLocked() && "Cannot resize a Gpu Buffer that is currently locked!");

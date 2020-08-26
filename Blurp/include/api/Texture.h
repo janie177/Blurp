@@ -63,7 +63,9 @@ namespace blurp
          */
         AccessMode GetAccessMode() const;
 
-        std::vector<Lockable*> GetRecursiveLockables() override;
+
+        //TODO remove this. Get pixels from an image.
+        virtual unsigned char* GetPixels(glm::vec3 a_Start, glm::vec3 a_Size, int a_Channels) = 0;
 
     protected:
         void OnLock() override;

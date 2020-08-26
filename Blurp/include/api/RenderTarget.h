@@ -120,8 +120,6 @@ namespace blurp
          */
         virtual void SetScissorRect(const glm::vec<4, std::uint32_t>& a_ScissorRect) = 0;
 
-        std::vector<Lockable*> GetRecursiveLockables() override;
-
     protected:
         void OnLock() override;
         void OnUnlock() override;

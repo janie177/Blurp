@@ -8,10 +8,10 @@ namespace blurp
         m_RenderTargets.emplace_back(a_Target);
     }
 
-    void RenderPass_Clear::AddTexture(const std::shared_ptr<Texture>& a_Texture, const glm::vec4& a_ClearColor)
+    void RenderPass_Clear::AddTexture(const std::shared_ptr<Texture>& a_Texture, const ClearData& a_ClearData)
     {
         assert(a_Texture->GetAccessMode() == AccessMode::READ_WRITE && "Textures can only be cleared if they are mutable!");
-        m_Textures.emplace_back(std::make_pair(a_Texture, a_ClearColor));
+        m_Textures.emplace_back(std::make_pair(a_Texture, a_ClearData));
     }
 
     RenderPassType RenderPass_Clear::GetType()

@@ -101,9 +101,12 @@ layout(location = 5) uniform float alphaConstant;
 
 //LIGHT DATA
 
-#ifdef USE_SHADOWS_DEFINE
 	//Shadow sampler arrays.
+#ifdef USE_DIR_SHADOWS_DEFINE
 	layout(binding = 6) uniform sampler2DArrayShadow shadowSampler2D;
+#endif
+
+#ifdef USE_POS_SHADOWS_DEFINE
 	layout(binding = 7) uniform samplerCubeArrayShadow shadowSamplerCube;
 #endif
 
@@ -409,7 +412,7 @@ void main()
         ++offset;
     }
 
-#ifdef USE_SHADOWS_DEFINE
+#ifdef USE_POS_SHADOWS_DEFINE
 	//Point lights with shadowmaps.
 	for(int i = 0; i < inData.numShadows.x; ++i)
     {
@@ -475,7 +478,7 @@ void main()
         ++offset;
     }
 
-#ifdef USE_SHADOWS_DEFINE
+#ifdef USE_POS_SHADOWS_DEFINE
 	//Spot lights with shadows.
 	for(int i = 0; i < inData.numShadows.y; ++i)
     {
@@ -538,7 +541,7 @@ void main()
         ++offset;
     }
 
-#ifdef USE_SHADOWS_DEFINE
+#ifdef USE_DIR_SHADOWS_DEFINE
     //Directional lights with shadows.
     for(int i = 0; i < inData.numShadows.z; ++i)
     {

@@ -11,6 +11,8 @@
 
 #include <RenderPass_Clear.h>
 
+#include <RenderPass_ShadowMap.h>
+
 class ShadowTestScene : public Scene
 {
 public:
@@ -26,6 +28,11 @@ private:
     //Pipeline settings and other resources.
     std::shared_ptr<blurp::RenderPipeline> m_Pipeline;
     std::shared_ptr<blurp::RenderPass_Forward> m_ForwardPass;
+
+    //Shadowmapping
+    std::shared_ptr<blurp::RenderPass_ShadowMap> m_ShadowGenerationPass;
+    std::shared_ptr<blurp::Texture> m_PosShadowArray;
+
     std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
     std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
     std::shared_ptr<blurp::Camera> m_Camera;

@@ -56,9 +56,4 @@ namespace blurp
     {
 
     }
-
-    std::vector<Lockable*> Texture::GetRecursiveLockables()
-    {
-        return std::vector<Lockable*>();
-    }
 }

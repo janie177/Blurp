@@ -15,6 +15,7 @@
 #include "opengl/RenderPass_Forward_GL.h"
 #include "Material.h"
 #include "opengl/RenderPass_Clear_GL.h"
+#include "opengl/RenderPass_ShadowMap_GL.h"
 #include "opengl/RenderPass_Skybox_GL.h"
 
 namespace blurp
@@ -121,6 +122,8 @@ namespace blurp
                 return std::make_shared<RenderPass_Skybox_GL>(a_Pipeline);
             case RenderPassType::RP_CLEAR:
                 return std::make_shared<RenderPass_Clear_GL>(a_Pipeline);
+            case RenderPassType::RP_SHADOWMAP:
+                return std::make_shared<RenderPass_ShadowMap_GL>(a_Pipeline);
         default:
             throw std::exception("RenderPassType not implemented for OpenGL!");
             break;
