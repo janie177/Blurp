@@ -10,6 +10,7 @@ namespace blurp
 {
     struct PosLightData
     {
+        glm::vec4 lightPosition;
         glm::mat4 matrices[6];
         glm::vec<4, std::int32_t> shadowMapIndex;   //3 Bytes padding.
     };

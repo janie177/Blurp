@@ -113,7 +113,7 @@ void LightTestScene::Init()
         camS.fov = 120.f;
         camS.nearPlane = 0.1f;
         camS.farPlane = 1000.f;
-        m_Camera->SetProjection(camS);
+        m_Camera->UpdateSettings(camS);
     });
 
     //Create the GPU buffer containing the transform for the mesh.

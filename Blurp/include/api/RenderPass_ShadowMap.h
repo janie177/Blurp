@@ -10,7 +10,7 @@ namespace blurp
      */
     struct LightShadowData
     {
-        LightShadowData(std::int32_t a_Index, const glm::vec3& a_Data, float a_Near, float a_Far) : index(a_Index), data(a_Data), farPlane(a_Far), nearPlane(a_Near)
+        LightShadowData(std::int32_t a_Index, const glm::vec3& a_Data) : index(a_Index), data(a_Data)
         {
             
         }
@@ -20,12 +20,6 @@ namespace blurp
 
         //The lights position or direction.
         glm::vec3 data;
-
-        //The far plane. This is the maximum shadow distance for this light.
-        float farPlane;
-
-        //The near plane. This is the minimum shadow distance for this light.
-        float nearPlane;
     };
 
     struct LightIndexData
@@ -57,7 +51,7 @@ namespace blurp
          * The index provided is the index into the array texture where the generated shadowmap will be stored.
          * Near and Far are used to construct the projection matrix for this light.
          */
-        void AddLight(const std::shared_ptr<Light>& a_Light, std::uint32_t a_Index, float a_Near, float a_Far);
+        void AddLight(const std::shared_ptr<Light>& a_Light, std::uint32_t a_Index);
 
         /*
          * Set the geometry that should cast shadows.

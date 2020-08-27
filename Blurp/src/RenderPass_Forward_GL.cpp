@@ -81,12 +81,21 @@ namespace blurp
         glBindBufferBase(GL_UNIFORM_BUFFER, 4, m_LightUbo);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+        //Create samplers to sample shadows maps.
+        glGenSamplers(1, &m_ShadowSampler);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_CUBE_MAP_SEAMLESS, GL_TRUE);
+
         return true;
     }
 
     bool RenderPass_Forward_GL::OnDestroy(BlurpEngine& a_BlurpEngine)
     {
         glDeleteBuffers(1, &m_StaticDataUbo);
+        glDeleteSamplers(1, &m_ShadowSampler);
         return true;
     }
 
@@ -174,7 +183,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[pSIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetPosition(), static_cast<float>(lData.shadowMapIndex));
 
                             ++pSIndex;
                         }
@@ -190,7 +199,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[sIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetPosition(), static_cast<float>(lData.shadowMapIndex));
                             data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
 
                             ++sIndex;
@@ -201,7 +210,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[sSIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetPosition(), static_cast<float>(lData.shadowMapIndex));
                             data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
 
                             ++sSIndex;
@@ -218,7 +227,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[dIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetDirection(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetDirection(), static_cast<float>(lData.shadowMapIndex));
 
                             data.shadowMatrix = lData.shadowMatrix;
 
@@ -230,7 +239,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[dSIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetDirection(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetDirection(), static_cast<float>(lData.shadowMapIndex));
 
                             data.shadowMatrix = lData.shadowMatrix;
 
@@ -256,20 +265,23 @@ namespace blurp
         //Bind the shadow samplers if they are specified and there is lights that use shadows.
         if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z != 0)
         {
-            glActiveTexture(GL_TEXTURE6);
+            glActiveTexture(GL_TEXTURE0 + 6);
+            glBindSampler(6, m_ShadowSampler);
             glBindTexture(GL_TEXTURE_2D_ARRAY, reinterpret_cast<Texture_GL*>(m_DirectionalShadowMaps.get())->GetTextureId());
         }
         if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0))
         {
-            glActiveTexture(GL_TEXTURE7);
+            glActiveTexture(GL_TEXTURE0 + 7);
+            glBindSampler(7, m_ShadowSampler);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, reinterpret_cast<Texture_GL*>(m_PointSpotShadowMaps.get())->GetTextureId());
+            int o = 5;
         }
         
 
         //Upload the static data to the GPU such as the camera and light counts.
         StaticData staticData;
         staticData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
-        staticData.camPos = glm::vec4(m_Camera->GetTransform().GetTranslation(), 0.f);
+        staticData.camPosFarPlane = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_Camera->GetSettings().farPlane);
         staticData.numLights = glm::vec4(m_LightCounts, 0.f);
         staticData.numShadows = glm::vec4(m_ShadowCounts, 0.f);
         staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
@@ -477,6 +489,9 @@ namespace blurp
             glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.instanceCount * mesh->GetInstanceCount());
         }
 
+        //Unbind state that may affect other rendering.
+        glBindSampler(6, 0);
+        glBindSampler(7, 0);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         glBindVertexArray(0);

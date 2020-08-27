@@ -14,7 +14,7 @@ namespace blurp
     struct StaticData
     {
         glm::mat4 pv;
-        glm::vec4 camPos;
+        glm::vec4 camPosFarPlane;
         glm::vec4 numLights;        //X = numPointLight. Y = numSpotLights. Z = numDirectionalLights.
         glm::vec4 numShadows;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.
         glm::vec4 ambientLight;     //The ambient light RGB.
@@ -38,7 +38,7 @@ namespace blurp
     {
     public:
         RenderPass_Forward_GL(RenderPipeline& a_Pipeline)
-            : RenderPass_Forward(a_Pipeline), m_StaticDataUbo(0), m_LightUbo(0)
+            : RenderPass_Forward(a_Pipeline), m_StaticDataUbo(0), m_LightUbo(0), m_ShadowSampler(0)
         {
         }
 
@@ -56,5 +56,8 @@ namespace blurp
 
         //UBOs used for light uploading and light transforming.
         GLuint m_LightUbo;
+
+        //Shadow sampler objects with texture comparisons enabled.
+        GLuint m_ShadowSampler;
     };
 }

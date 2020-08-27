@@ -16,8 +16,8 @@
 
 #define NUM_SHADOW_POS_LIGHTS 1
 
-#define NEAR_PLANE 1.f
-#define FAR_PLANE 100.f
+#define NEAR_PLANE 0.1f
+#define FAR_PLANE 1000.f
 
 const static std::float_t CUBE_DATA[]
 {
@@ -86,7 +86,7 @@ void ShadowTestScene::Init()
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
     camSettings.height = m_Window->GetDimensions().y;
-    camSettings.fov = 120.f;
+    camSettings.fov = 90.f;
     camSettings.nearPlane = NEAR_PLANE;
     camSettings.farPlane = FAR_PLANE;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
@@ -147,10 +147,10 @@ void ShadowTestScene::Init()
         CameraSettings camS;
         camS.width = w;
         camS.height = h;
-        camS.fov = 120.f;
+        camS.fov = 90.f;
         camS.nearPlane = 0.1f;
         camS.farPlane = FAR_PLANE;
-        m_Camera->SetProjection(camS);
+        m_Camera->UpdateSettings(camS);
     });
 
     //Create the GPU buffer containing the transform for the mesh.
@@ -370,7 +370,7 @@ void ShadowTestScene::Update()
     m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, 1, 16, &lightMat);
 
     //Add the light to the scene.
-    m_ForwardPass->AddLight(m_Light);//TODO add shadow map index
+    m_ForwardPass->AddLight(m_Light, 0, glm::mat4());
     m_ForwardPass->AddLight(m_AmbientLight);
 
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
@@ -397,11 +397,11 @@ void ShadowTestScene::Update()
     //Don't count the light for the shadow.
     drawDatas.push_back(m_LightMeshDrawData);
 
-    //Setup the shadow mapping for this frame.
-    m_ShadowGenerationPass->AddLight(m_Light, 0, NEAR_PLANE, FAR_PLANE);
+    //Setup the shadow mapping for this frame. Exclude the last Drawdata which is the light mesh.
+    m_ShadowGenerationPass->AddLight(m_Light, 0);
     std::vector<LightIndexData> lIndexData;
-    lIndexData.reserve(drawDatas.size());
-    for(int i = 0; i < static_cast<int>(drawDatas.size()); ++i)
+    lIndexData.reserve(drawDatas.size() - 1);
+    for(int i = 0; i < static_cast<int>(drawDatas.size() - 1); ++i)
     {
         lIndexData.emplace_back(LightIndexData{std::vector<int>(), std::vector<int>{0}});
     }
@@ -448,7 +448,7 @@ void ShadowTestScene::Update()
 
                     float linear = (2.0 * NEAR_PLANE) / (FAR_PLANE + NEAR_PLANE - f * (FAR_PLANE - NEAR_PLANE));
 
-                    unsigned char value =  static_cast<unsigned char>(linear * 255.f);
+                    unsigned char value =  static_cast<unsigned char>(f * 255.f);
                     for (int k = 0; k < 3; ++k)
                     {
                         converted[coordX + coordY + 0] = value;

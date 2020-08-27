@@ -2,10 +2,18 @@
 #define MAX_LIGHTS 64
 
 layout (triangles) in;
-layout (triangle_strip, max_vertices = 200) out;
+layout (triangle_strip, max_vertices = 78) out;
+
+
+out GEOMETRY_OUT
+{
+    flat vec4 lightPosition;
+    vec4 fragmentPosition;
+} outData;
 
 struct PosLightData
 {
+    vec4 lightPosition;
     mat4 transforms[6];
     int shadowMapId;
 };
@@ -53,7 +61,9 @@ void main()
                 gl_Layer = (6 * int(posLightData[lightIndex].shadowMapId)) + faceIndex;
                 for(int i = 0; i < gl_in.length(); ++i)
                 {
-                    gl_Position = posLightData[lightIndex].transforms[faceIndex] * gl_in[i].gl_Position;
+                    outData.fragmentPosition = gl_in[i].gl_Position;
+                    outData.lightPosition = posLightData[lightIndex].lightPosition;
+                    gl_Position = posLightData[lightIndex].transforms[faceIndex] * outData.fragmentPosition;
                     EmitVertex();
                 }
                 EndPrimitive();

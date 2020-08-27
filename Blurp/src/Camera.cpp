@@ -20,10 +20,10 @@ namespace blurp
         {
             if(m_Settings.projectionMode == ProjectionMode::PERSPECTIVE)
             {
-                m_Projection = glm::perspective(m_Settings.fov, m_Settings.width / m_Settings.height, m_Settings.nearPlane, m_Settings.farPlane);
+                m_Projection = glm::perspective(glm::radians(m_Settings.fov), m_Settings.width / m_Settings.height, m_Settings.nearPlane, m_Settings.farPlane);
             }
             else
-            {
+            { 
                 m_Projection = glm::ortho(0.0f, m_Settings.width, m_Settings.height, 0.0f, 0.1f, 100.0f);
             }
             
@@ -33,10 +33,15 @@ namespace blurp
         return m_Projection;
     }
 
-    void Camera::SetProjection(const CameraSettings& a_Settings)
+    void Camera::UpdateSettings(const CameraSettings& a_Settings)
     {
         m_Settings = a_Settings;
         m_DirtyFlag = true;
+    }
+
+    const CameraSettings& Camera::GetSettings() const
+    {
+        return m_Settings;
     }
 
     Transform& Camera::GetTransform()

@@ -83,11 +83,11 @@ layout(location = 0) uniform int numInstances;
 //STATIC DATAT: Always the same for all draw calls in this shader for a single frame.
 layout(std140, binding = 1) uniform StaticData
 {
-    mat4 viewProjection;    //PV matrix.
-    vec4 cameraPosition;    //Camera position in world space.
-    vec4 numLights;         //Number of lights. X = point, Y = spot, Z = directional.
-    vec4 numShadows;        //Number of shadow lights. X = point, Y = spot, Z = directional.
-    vec4 ambientLight;      //Total ambient light count.
+    mat4 viewProjection;            //PV matrix.
+    vec4 cameraPositionFarPlane;    //Camera position in world space. W is the far plane value.
+    vec4 numLights;                 //Number of lights. X = point, Y = spot, Z = directional.
+    vec4 numShadows;                //Number of shadow lights. X = point, Y = spot, Z = directional.
+    vec4 ambientLight;              //Total ambient light count.
 };
 
 //Uv modifiers
@@ -112,6 +112,9 @@ out VERTEX_OUT
 
     //Camera position.
     vec3 camPos;
+
+    //The far plane of the projection matrix.
+    float farPlane;
 
     //Point, spot and directional lights.
     flat vec3 numLights;
@@ -236,7 +239,10 @@ void main()
     outData.fragPos =  vec3(transform * vec4(aPos, 1.0));
 
     //Pass the camera position in world space.
-    outData.camPos = cameraPosition.xyz;
+    outData.camPos = cameraPositionFarPlane.xyz;
+
+    //The far plane is stored with the camera to save space.
+    outData.farPlane = cameraPositionFarPlane.w;
 
     //Calculate the projected space.
     gl_Position = viewProjection * vec4(outData.fragPos, 1.0);

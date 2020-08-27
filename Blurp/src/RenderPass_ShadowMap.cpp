@@ -8,7 +8,7 @@ namespace blurp
         m_Camera = a_Camera;
     }
 
-    void RenderPass_ShadowMap::AddLight(const std::shared_ptr<Light>& a_Light, std::uint32_t a_Index, float a_Near, float a_Far)
+    void RenderPass_ShadowMap::AddLight(const std::shared_ptr<Light>& a_Light, std::uint32_t a_Index)
     {
         assert(a_Light && "Light cannot be nullptr!");
 
@@ -16,13 +16,13 @@ namespace blurp
         switch (a_Light->GetType())
         {
         case LightType::LIGHT_POINT:
-            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<PointLight>(a_Light)->GetPosition(), a_Near, a_Far));
+            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<PointLight>(a_Light)->GetPosition()));
             break;
         case LightType::LIGHT_SPOT:
-            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<SpotLight>(a_Light)->GetPosition(), a_Near, a_Far));
+            m_PositionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<SpotLight>(a_Light)->GetPosition()));
             break;
         case LightType::LIGHT_DIRECTIONAL:
-            m_DirectionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<DirectionalLight>(a_Light)->GetDirection(), a_Near, a_Far));
+            m_DirectionalLights.emplace_back(LightShadowData(a_Index, std::static_pointer_cast<DirectionalLight>(a_Light)->GetDirection()));
             break;
         default:
             throw std::exception("Light type cannot generate a shadow!");

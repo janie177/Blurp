@@ -121,6 +121,10 @@ namespace blurp
             std::vector<PosLightData> posLightData;
             posLightData.resize(m_PositionalLights.size());
 
+            //Use the camera near and far plane for this light projection. Store light depth within the near-far range.
+            const auto nearPlane = m_Camera->GetSettings().nearPlane;
+            const auto farPlane = m_Camera->GetSettings().farPlane;
+
             for(int i = 0; i < static_cast<int>(m_PositionalLights.size()); ++i)
             {
                 auto& data = m_PositionalLights[i];
@@ -128,16 +132,19 @@ namespace blurp
                 //Shadow map index.
                 posLightData[i].shadowMapIndex.x = data.index;
 
+                //Store the light position as well to calculate the light distance from the fragment for depth storing.
+                posLightData[i].lightPosition = glm::vec4(data.data, 1.0);
+
                 //Calculate the projection matrix. Aspect is 1 because cubemaps have equal width and height.
-                glm::mat4 projection = glm::perspective(90.f, 1.f, data.nearPlane, data.farPlane);
+                glm::mat4 projection = glm::perspective(glm::radians(90.f), 1.f, nearPlane, farPlane);
 
                 //PV matrices for each face.
-                posLightData[i].matrices[0] = projection * glm::lookAt(data.data, data.data + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-                posLightData[i].matrices[1] = projection * glm::lookAt(data.data, data.data + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-                posLightData[i].matrices[2] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 1.0, 0.0), glm::vec3(1.0, 0.0, 0.0));
-                posLightData[i].matrices[3] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, -1.0, 0.0), glm::vec3(1.0, 0.0, 0.0));
-                posLightData[i].matrices[4] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0));
-                posLightData[i].matrices[5] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, 1.0, 0.0));
+                posLightData[i].matrices[0] = projection * glm::lookAt(data.data, data.data + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0));
+                posLightData[i].matrices[1] = projection * glm::lookAt(data.data, data.data + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0));
+                posLightData[i].matrices[2] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0));
+                posLightData[i].matrices[3] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0));
+                posLightData[i].matrices[4] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0));
+                posLightData[i].matrices[5] = projection * glm::lookAt(data.data, data.data + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0));
             }
 
             //Upload light data.
@@ -196,6 +203,9 @@ namespace blurp
 
                 //Set the number of instances from the mesh itself in the uniform.
                 glUniform1i(0, mesh->GetInstanceCount());
+
+                //Set the uniform for the far plane.
+                glUniform1f(1, farPlane);
 
                 //Calculate light indices. Has to be in vec4 format padded to vec4 size.
                 const LightIndexData& indices = m_LightIndices[i];

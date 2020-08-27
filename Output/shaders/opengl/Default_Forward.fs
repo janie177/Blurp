@@ -11,6 +11,9 @@ in VERTEX_OUT
     //Camera position.
     vec3 camPos;
 
+    //The far plane of the projection matrix.
+    float farPlane;
+
     //Point, spot and directional lights.
     flat vec3 numLights;
 
@@ -385,7 +388,7 @@ void main()
 
 
 //Light calculations
-	//Diffuse can always be applied.
+	//Diffuse can always be applied with ambient light.
 	vec3 totalDiffuseLight = inData.ambientLight;
 
 #if defined(VA_NORMAL_DEF)
@@ -400,7 +403,7 @@ void main()
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir =  inData.fragPos.xyz - lightPos;
+		vec3 lightDir = inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
 		lightDir /= sqrt(length2);
 		//Intensity is equal to the incoming angle multiplied by the inverse square law.
@@ -422,20 +425,20 @@ void main()
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 		//Get the light direction, distance and normalize.
-		vec3 lightDir =  inData.fragPos.xyz - lightPos;
+		vec3 lightDir = inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
 		float lDist = sqrt(length2);
 		lightDir /= lDist;
 
 		//Index into shadow map and check for shadow.
 		vec4 shadowCoord = vec4(lightDir, data.v2.w);
-		float visibility = texture(shadowSamplerCube, shadowCoord, lDist);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
 		if(visibility > 0.0)
 		{
 			//Intensity is equal to the incoming angle multiplied by the inverse square law.
-			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2) * visibility;
 			//Append to total light.
 			totalDiffuseLight += (intensity * lightColor);
 		}
@@ -505,13 +508,13 @@ void main()
 
 		//Index into shadow map and check for shadow.
 		vec4 shadowCoord = vec4(lightDir, data.v2.w);
-		float visibility = texture(shadowSamplerCube, shadowCoord, lDist);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
 		if(visibility > 0.0)
 		{
 			//Intensity is equal to the incoming angle multiplied by the inverse square law.
-			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
+			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2) * visibility;
 			//Append to total light.
 			totalDiffuseLight += (intensity * lightColor);
 		}

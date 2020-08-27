@@ -22,7 +22,13 @@ namespace blurp
         /*
          * Set the projection settings for this camera.
          */
-        void SetProjection(const CameraSettings& a_Settings);
+        void UpdateSettings(const CameraSettings& a_Settings);
+
+        /*
+         * Get the settings for this camera object.
+         * Returned as a const reference.
+         */
+        const CameraSettings& GetSettings() const;
 
         /*
          * Get the transform for this camera.
