@@ -266,15 +266,14 @@ namespace blurp
         if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z != 0)
         {
             glActiveTexture(GL_TEXTURE0 + 6);
-            glBindSampler(6, m_ShadowSampler);
             glBindTexture(GL_TEXTURE_2D_ARRAY, reinterpret_cast<Texture_GL*>(m_DirectionalShadowMaps.get())->GetTextureId());
+            glBindSampler(6, m_ShadowSampler);
         }
         if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0))
         {
             glActiveTexture(GL_TEXTURE0 + 7);
-            glBindSampler(7, m_ShadowSampler);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, reinterpret_cast<Texture_GL*>(m_PointSpotShadowMaps.get())->GetTextureId());
-            int o = 5;
+            glBindSampler(7, m_ShadowSampler);
         }
         
 
@@ -490,8 +489,6 @@ namespace blurp
         }
 
         //Unbind state that may affect other rendering.
-        glBindSampler(6, 0);
-        glBindSampler(7, 0);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         glBindVertexArray(0);
