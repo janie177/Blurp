@@ -173,7 +173,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[pIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetPosition(), lData.shadowMapIndex);
+                            data.vec2 = glm::vec4(light->GetPosition(), 0);
 
                             ++pIndex;
                         }
@@ -199,7 +199,7 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[sIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetPosition(), static_cast<float>(lData.shadowMapIndex));
+                            data.vec2 = glm::vec4(light->GetPosition(), 0);
                             data.vec3 = glm::vec4(light->GetDirection(), light->GetAngle());
 
                             ++sIndex;
@@ -227,22 +227,15 @@ namespace blurp
                             LightDataPacked& data = lightBuffer[dIndex];
 
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
-                            data.vec2 = glm::vec4(light->GetDirection(), static_cast<float>(lData.shadowMapIndex));
-
-                            data.shadowMatrix = lData.shadowMatrix;
-
+                            data.vec2 = glm::vec4(light->GetDirection(), 0);
                             ++dIndex;
                         }
                         //Shadow.
                         else
                         {
                             LightDataPacked& data = lightBuffer[dSIndex];
-
                             data.vec1 = glm::vec4(light->GetColor(), lData.light->GetIntensity());
                             data.vec2 = glm::vec4(light->GetDirection(), static_cast<float>(lData.shadowMapIndex));
-
-                            data.shadowMatrix = lData.shadowMatrix;
-
                             ++dSIndex;
                         }
                     }
@@ -263,11 +256,16 @@ namespace blurp
         }
 
         //Bind the shadow samplers if they are specified and there is lights that use shadows.
-        if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z != 0)
+        if (m_DirectionalShadowMaps != nullptr && m_ShadowCounts.z != 0 && m_DirShadowBuffer != nullptr)
         {
+            //Sampler and shadowmaps
             glActiveTexture(GL_TEXTURE0 + 6);
             glBindTexture(GL_TEXTURE_2D_ARRAY, reinterpret_cast<Texture_GL*>(m_DirectionalShadowMaps.get())->GetTextureId());
             glBindSampler(6, m_ShadowSampler);
+
+            //Bind the buffer containing light space transformations.
+            auto glBuffer = static_cast<GpuBuffer_GL*>(m_DirShadowBuffer.get());
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 5, glBuffer->GetBufferId(), static_cast<GLintptr>(m_DirShadowView->start), m_DirShadowView->totalSize);
         }
         if (m_PointSpotShadowMaps != nullptr && (m_ShadowCounts.x != 0 || m_ShadowCounts.y != 0))
         {
@@ -281,8 +279,8 @@ namespace blurp
         StaticData staticData;
         staticData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
         staticData.camPosFarPlane = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_Camera->GetSettings().farPlane);
-        staticData.numLights = glm::vec4(m_LightCounts, 0.f);
-        staticData.numShadows = glm::vec4(m_ShadowCounts, 0.f);
+        staticData.numLightsNumCascades = glm::vec4(m_LightCounts, m_NumDirCascades);
+        staticData.numShadowsCascadeDistance = glm::vec4(m_ShadowCounts, (m_DirCascadeDistance * m_DirCascadeDistance));
         staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);

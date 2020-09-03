@@ -13,15 +13,18 @@ in VERTEX_OUT
 
     //The far plane of the projection matrix.
     float farPlane;
-
     //Point, spot and directional lights.
     flat vec3 numLights;
-
     //Point spot and directional lights with shadows.
     flat vec3 numShadows;
-
     //The ambient light of the scene.
     flat vec3 ambientLight;
+
+#ifdef USE_DIR_SHADOWS_DEFINE
+    //Directional shadow cascading.
+    flat float numShadowCascades;
+    flat float shadowCascadeDistance;
+#endif
 
     //Material ID in the material batch.
 	#ifdef VA_MATERIALID_DEF
@@ -46,6 +49,7 @@ in VERTEX_OUT
     #elif defined(VA_NORMAL_DEF)
     vec3 normal;
     #endif
+
 } inData;
 
 //Samplers for single texture.
@@ -107,6 +111,13 @@ layout(location = 5) uniform float alphaConstant;
 	//Shadow sampler arrays.
 #ifdef USE_DIR_SHADOWS_DEFINE
 	layout(binding = 6) uniform sampler2DArrayShadow shadowSampler2D;
+
+	//Unbound array containing the transforms to light space for each directional light for each cascade.
+	layout(std430, binding = 5) buffer DirShadowTransforms
+    {
+        mat4 dirShadowTransforms[];
+    };
+
 #endif
 
 #ifdef USE_POS_SHADOWS_DEFINE
@@ -118,7 +129,6 @@ layout(location = 5) uniform float alphaConstant;
         vec4 v1;
         vec4 v2;
         vec4 v3;
-        mat4 m1;
     };
 
     layout(std140, binding = 4) uniform LightDataBuffer
@@ -179,6 +189,7 @@ void main()
 				vec2 deltaTexCoords = P / numLayers;
 				vec2  currentTexCoords     = texCoords;
 				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;
+
 				while(currentLayerDepth < currentDepthMapValue)
 				{
 					currentTexCoords -= deltaTexCoords;
@@ -554,21 +565,21 @@ void main()
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
 
-
-
 		//Do the shadow calculation.
+		int dirTransformIndex = int((i * inData.numShadowCascades) + min(length(inData.fragPos - inData.camPos) / inData.shadowCascadeDistance, inData.numShadowCascades - 1));
+		mat4 shadowMatrix = dirShadowTransforms[dirTransformIndex];
 
 		//Calculate where in the light frustum the current pixel is.
-		vec4 fragLightSpace = data.m1 * vec4(inData.fragPos, 1.0);
+		vec4 fragLightSpace = shadowMatrix * vec4(inData.fragPos, 1.0);
 
 		//Convert this light space position to 2D texture coordinates by dividing with the projection and then mapping {-1, 1} to {0, 1}.
 		//Because this is in light space, X and Y are equal to the UV coordinates on the lights plane. Z is the depth.
 		vec3 fragLightCoords = ((fragLightSpace.xyz / fragLightSpace.w) * 0.5) + 0.5;
 
-		//X = U, Y = V, Z = depthSlice, W = pixelDepth.
-		vec4 shadowCoords;
-		shadowCoords.xyw = fragLightCoords.xyz;
-		shadowCoords.z = data.v2.w;
+		vec4 shadowCoords;						
+		shadowCoords.xy = fragLightCoords.xy;					//UV coordinates.
+		shadowCoords.z = data.v2.w;								//Depth slice.
+		shadowCoords.w = fragLightCoords.z;	//Depth comparison. In the lights frustum, Z is equal to the depth.
 
 		float visibility = texture(shadowSampler2D, shadowCoords); 
 		if(visibility > 0.0)

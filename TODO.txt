@@ -21,23 +21,33 @@ TODO list:
 
 	[x] Implement clear render pass.
 	
-	[ ] Add the option to partially clear textures in the Clear pass. Specify x,y,z w,h,d.
+	[x] Add the option to partially clear textures in the Clear pass. Specify x,y,z w,h,d.
 	
-	[ ]	Move DrawData out of the renderpasses. Instead pass a pointer with a count.
+	[x]	Move DrawData out of the renderpasses. Instead pass a pointer with a count.
 	
-	[ ]	Implement shadowmap render pass.
+	[x]	Implement shadowmap render pass.
 		Add input data to the shader, with a shader cache etc.
 		Allow each light to have a separate set of draw data.
+		
+	[ ] Implement directional shadow cascading in the shadowmap render pass.
+		Calculate all the matrices used for cascading and upload them to the GPU in a single buffer.
+		Return a GpuBufferView to these matrices to be used in the forward pass (no duplicate uploading).
+	
+	
+	
+	[ ] Change light uploading in the forward render pass.
+		Point and spot lights don't need a matrix while directional lights need multiple. These are already uploaded in the shadowmap generation pass.
+		Have separate buffers. Reuse shadow pass buffer.
 	
 	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
+	
+	
 	
 	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
 	
 	[ ]	Implement metallic roughness in the forward shader. Correctly calculate diffuse and specular light this way.
 	
 	[x] Implement skybox rendering.
-	
-	[x] Set up locking correctly for forward pass.
 	
 	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
 	

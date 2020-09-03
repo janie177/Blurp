@@ -1,6 +1,6 @@
 #version 460 core
 
-#define MAX_LIGHTS 580
+#define MAX_LIGHTS 64
 
 #ifdef VA_POS3D_DEF
 layout(location = VA_POS3D_LOCATION_DEF) in vec3 aPos;
@@ -50,6 +50,10 @@ layout(location = VA_MATRIX_LOCATION_DEF) in mat4 aMatrix;
 layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
 #endif
 
+#ifdef DIRECTIONAL
+flat out int cascade;
+#endif
+
 
 //INSTANCE DATA
 #if defined(DYNAMIC_NORMALMATRIX_DEFINE) || defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
@@ -70,6 +74,15 @@ layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
     } aInstances;
 
 //END INSTANCE DATA
+#endif
+
+#ifdef DIRECTIONAL
+layout(std140, binding = 1) uniform DirLights
+{
+    int numCascades;
+    vec4 camPosCascadeDistance;
+    int dirShadowMapId[MAX_LIGHTS];
+} dirLights;
 #endif
 
 //Uniforms that are always required.
@@ -95,5 +108,11 @@ void main()
 #endif
 
     //The world space position of the fragment.
-    gl_Position = transform * vec4(aPos, 1.0);
+    vec4 fragPosition = transform * vec4(aPos, 1.0);
+    gl_Position = fragPosition;
+
+    //If directional, calculate the cascade.
+#ifdef DIRECTIONAL
+    cascade = int(min(dirLights.numCascades - 1, length(dirLights.camPosCascadeDistance.xyz - fragPosition.xyz) / dirLights.camPosCascadeDistance.w));
+#endif
 }

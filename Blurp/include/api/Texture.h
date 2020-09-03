@@ -18,7 +18,7 @@ namespace blurp
         /*
          * Get the dimensions of this texture.
          */
-        glm::vec2 GetDimensions() const;
+        glm::vec<3, std::uint32_t> GetDimensions() const;
 
         /*
          * Get the texture type of this texture.

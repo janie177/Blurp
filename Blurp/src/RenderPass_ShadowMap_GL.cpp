@@ -61,6 +61,9 @@ namespace blurp
             definitions.emplace_back(found->second.defineName);
         }
 
+        definitions.emplace_back("POSITIONAL");
+        definitions.emplace_back("DIRECTIONAL");
+
         m_ShaderCache.Init(a_BlurpEngine.GetResourceManager(), sSettings, definitions);
 
         //Set up the framebuffer for the shadow depth rendering.
@@ -71,10 +74,10 @@ namespace blurp
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-        //Generate the UBO for positional lights and allocate enough space for the maximum number of lights.
-        glGenBuffers(1, &m_PosLightUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, m_PosLightUbo);
-        glBufferData(GL_UNIFORM_BUFFER, MAX_NUM_LIGHTS * sizeof(PosLightData), nullptr, GL_DYNAMIC_DRAW);
+        //Generate the UBO for lights and allocate enough space for the maximum number of lights.
+        glGenBuffers(1, &m_LightUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+        glBufferData(GL_UNIFORM_BUFFER, MAX_NUM_LIGHTS * sizeof(PosLightData), nullptr, GL_DYNAMIC_DRAW);   //NOTE: PosLightData is used because it is far bigger than dir light data.
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         //Generate the UBO to store light indices in.
@@ -96,6 +99,11 @@ namespace blurp
     {
         //Ensure size if not exceeded.
         assert(m_PositionalLights.size() <= MAX_NUM_LIGHTS && "Max positional light count for shadow mapping exceeded!");
+        assert(m_DirectionalLights.size() <= MAX_LIGHTS && "Max number of directional lights exceeded!");
+
+        //Calculate bit masks for positional/directional use.
+        constexpr std::uint32_t POSITIONAL_BIT = 1 << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS);
+        constexpr std::uint32_t DIRECTIONAL_BIT = POSITIONAL_BIT << 1;
 
         //Render state
         glEnable(GL_DEPTH_TEST);
@@ -110,6 +118,9 @@ namespace blurp
 
         if(!m_PositionalLights.empty() && m_ShadowMapsPositional != nullptr)
         {
+            //Ensure enough space.
+            assert(m_ShadowMapsPositional->GetDimensions().z >= m_PositionalLights.size() * 6 && "Shadow map array has not enough layers for this many lights!");
+
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
             glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsPositional)->GetTextureId(), 0);
@@ -148,8 +159,8 @@ namespace blurp
             }
 
             //Upload light data.
-            glBindBuffer(GL_UNIFORM_BUFFER, m_PosLightUbo);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_PosLightUbo);
+            glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_LightUbo);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PosLightData) * posLightData.size(), &posLightData[0]);
 
             //Cached last shader mask.
@@ -164,7 +175,7 @@ namespace blurp
                 auto& drawAttribs = m_DrawDataPtr[i].attributes;
 
                 //TODO only mask the things that matter for this shader.
-                std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask()) | (drawAttribs.GetMask() << NUM_VERTEX_ATRRIBS);
+                std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask()) | (drawAttribs.GetMask() << NUM_VERTEX_ATRRIBS) | POSITIONAL_BIT;
 
                 //Has the shader changed?
                 const bool changedShader = shaderMask != prevMask;
@@ -241,10 +252,156 @@ namespace blurp
                 //Finally draw instanced.
                 glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
             }
-            
-
         }
 
-        //TODO directional light with cascading.
+        /*
+         * Directional lights.
+         */
+
+        if (!m_DirectionalLights.empty() && m_ShadowMapsDirectional != nullptr)
+        {
+            //Ensure there's enough space in the texture.
+            assert(m_ShadowMapsDirectional->GetDimensions().z >= m_DirectionalLights.size() * m_DirectionalCascades && "Shadow map array has not enough layers for this many lights!");
+
+            //Bind the FBO and attach the depth texture to it.
+            glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsPositional)->GetTextureId(), 0);
+            const auto dimensions = m_ShadowMapsDirectional->GetDimensions();
+            glViewport(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
+            glScissor(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
+
+            //Vector containing the padded data to be uploaded to the GPU.
+            //Format: NumCascades(vec4), CamPosCascadeDistance(vec4)
+            DirLightData data;
+            data.camPosCascadeDistance = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_DirectionalCascadeDistance);
+            data.numCascades.x = m_DirectionalCascades;
+            int lIndex = 0;
+            for(auto& dirLight : m_DirectionalLights)
+            {
+                data.shadowIndices[lIndex].x = dirLight.index;
+                ++lIndex;
+            }
+
+            /*const auto nearPlane = m_Camera->GetSettings().nearPlane;
+            const auto farPlane = m_Camera->GetSettings().farPlane;*/
+
+            //Iterate over all directional lights and set up their matrices.
+            std::vector<glm::mat4> dirMatrices;
+            dirMatrices.reserve(m_DirectionalCascades * m_DirectionalLights.size());
+
+            for (int i = 0; i < static_cast<int>(m_DirectionalLights.size()); ++i)
+            {
+                auto& lightData = m_DirectionalLights[i];
+
+                for (std::uint32_t cascade = 0; cascade < m_DirectionalCascades; ++cascade)
+                {
+                    //TODO calculate matrices and store in DirMatrices
+                    dirMatrices.emplace_back(glm::ortho(10.f, 10.f, 10.f, 10.f, 0.1f, 1000.f));
+                }
+            }
+
+            //Upload directional light data.
+            glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_LightUbo);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(DirLightData), &data);
+
+
+            //Upload the directional matrices for each light and cascade. Store the result in the view that was provided. Bind to the right shader slot and range.
+            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<glm::mat4>(m_DirShadowTransformOffset, static_cast<std::uint32_t>(dirMatrices.size()), sizeof(glm::mat4), &dirMatrices[0]);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, static_cast<GpuBuffer_GL*>(m_DirShadowTransformBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_DirShadowTransformView->start), m_DirShadowTransformView->totalSize);
+
+
+            /*
+             * Actual drawing.
+             */
+
+
+            //Cached last shader mask.
+            std::shared_ptr<Mesh> prevMesh;
+            std::uint32_t prevMask = 0;
+
+            //Loop over geometry and draw.
+            for (std::uint32_t i = 0; i < m_DrawDataCount; ++i)
+            {
+                auto& drawData = m_DrawDataPtr[i];
+                auto mesh = std::static_pointer_cast<Mesh_GL>(m_DrawDataPtr[i].mesh);
+                auto& drawAttribs = m_DrawDataPtr[i].attributes;
+
+                //TODO only mask the things that matter for this shader.
+                std::uint32_t shaderMask = static_cast<std::uint32_t>(mesh->GetVertexAttributeMask()) | (drawAttribs.GetMask() << NUM_VERTEX_ATRRIBS) | DIRECTIONAL_BIT;
+
+                //Has the shader changed?
+                const bool changedShader = shaderMask != prevMask;
+
+                //If the current mask is not the same as the one needed, switch shader.
+                if (changedShader)
+                {
+                    //Bind the new shader.
+                    prevMask = shaderMask;
+
+                    //Get the new shader. If not present, load a new one.
+                    auto newShader = m_ShaderCache.GetOrNull(shaderMask);
+                    if (newShader == nullptr)
+                    {
+                        newShader = m_ShaderCache.LoadShader(shaderMask, mesh->GetAttribLocations());
+                    }
+                    const std::shared_ptr<Shader_GL> currentShader = std::reinterpret_pointer_cast<Shader_GL>(newShader);
+                    const GLuint currentProgramId = currentShader->GetProgramId();
+                    glUseProgram(currentProgramId);
+                }
+
+                //Which DrawData is active?
+                const bool matrixEnabled = drawData.attributes.IsAttributeEnabled(DrawAttribute::TRANSFORMATION_MATRIX);
+                const bool normalMatrixEnabled = drawData.attributes.IsAttributeEnabled(DrawAttribute::NORMAL_MATRIX);
+
+                //If transforms are uploaded, bind the transform buffer.
+                if (drawData.transformData.dataBuffer != nullptr && (matrixEnabled || normalMatrixEnabled))
+                {
+                    //Bind the SSBO to the instance data slot (0).
+                    const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(drawData.transformData.dataBuffer);
+
+                    //Set the binding point that the shader interface block reads from to contain a specific range from the GPU buffer.
+                    //Shader is hard coded to use slot 0 for the buffer.
+                    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(drawData.transformData.dataRange.start), drawData.transformData.dataRange.totalSize);
+                }
+
+                //Set the number of instances from the mesh itself in the uniform.
+                glUniform1i(0, mesh->GetInstanceCount());
+
+                //Calculate light indices. Has to be in vec4 format padded to vec4 size.
+                const LightIndexData& indices = m_LightIndices[i];
+                std::vector<std::int32_t> lightIndices;
+                lightIndices.reserve(indices.dirIndices.size() + 4);
+
+                //Add the index.
+                lightIndices.push_back(static_cast<std::int32_t>(indices.dirIndices.size()));
+                lightIndices.push_back(0);
+                lightIndices.push_back(0);
+                lightIndices.push_back(0);
+
+                lightIndices.insert(lightIndices.end(), indices.dirIndices.begin(), indices.dirIndices.end());
+                const int paddingRequired = (~lightIndices.size() + 1) & (4 - 1);
+                for (int p = 0; p < paddingRequired; ++p)
+                {
+                    lightIndices.push_back(0);
+                }
+
+                //Upload light index data
+                glBindBuffer(GL_UNIFORM_BUFFER, m_LightIndicesUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_LightIndicesUbo);
+                glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(std::int32_t) * lightIndices.size(), &lightIndices[0]);
+
+                //If the geometry changed, bind the new geometry.
+                if (prevMesh != drawData.mesh)
+                {
+                    //TODO bind VBO manually and enable only required attributes.
+                    //Bind the VAO of the mesh.
+                    glBindVertexArray(mesh->GetVaoId());
+                }
+
+                //Finally draw instanced.
+                glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
+            }
+        }
     }
 }

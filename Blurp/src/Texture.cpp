@@ -7,7 +7,7 @@ namespace blurp
         return m_Settings.numMipMaps;
     }
 
-    glm::vec2 Texture::GetDimensions() const
+    glm::vec<3, std::uint32_t> Texture::GetDimensions() const
     {
         return m_Settings.dimensions;
     }

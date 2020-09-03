@@ -4,13 +4,29 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 78) out;
 
+//Input for directional lights.
+#ifdef DIRECTIONAL
+flat in int cascade[];
+#endif
 
+//Output for positional only.
+#ifdef POSITIONAL
 out GEOMETRY_OUT
 {
     flat vec4 lightPosition;
     vec4 fragmentPosition;
 } outData;
+#endif
 
+//Index data.
+layout(std140, binding = 2) uniform LightIndices
+{
+    int numLightIndices;
+    ivec4 lightIndices[MAX_LIGHTS];
+};
+
+//POS LIGHTS
+#ifdef POSITIONAL
 struct PosLightData
 {
     vec4 lightPosition;
@@ -22,28 +38,29 @@ layout(std140, binding = 1) uniform PosLights
 {
     PosLightData posLightData[MAX_LIGHTS];
 };
+#endif
 
-layout(std140, binding = 2) uniform LightIndices
+//DIR LIGHTS
+#ifdef DIRECTIONAL
+
+layout(std140, binding = 1) uniform DirLights
 {
-    int numLightIndices;
-    ivec4 lightIndices[MAX_LIGHTS];
+    int numCascades;
+    vec4 camPosCascadeDistance;
+    int dirShadowMapId[MAX_LIGHTS];
+} dirLights;
+
+//Transforms. N for each light, where N is the number of cascades.
+layout(std430, binding = 2) buffer DirTransforms
+{
+    mat4 dirTransforms[];
 };
+
+#endif
 
 void main()
 {
-//    for(int faceIndex = 0; faceIndex < 6; ++faceIndex)
-//    {   
-//        //Then calculate the layer index for the current light.
-//        gl_Layer = faceIndex;
-//        for(int i = 0; i < gl_in.length(); ++i)
-//        {
-//            vec4 pos = posLightData[0].transforms[faceIndex] * gl_in[i].gl_Position;
-//            gl_Position = pos;
-//            EmitVertex();
-//        }    
-//        EndPrimitive();
-//    }
-
+#ifdef POSITIONAL
     //First loop over every light index and get the corresponding light.
     for(int light = 0; light < numLightIndices; light += 4)
     {
@@ -70,4 +87,29 @@ void main()
             }
         }
     }
+#endif
+
+#ifdef DIRECTIONAL
+    for(int light = 0; light < numLightIndices; light += 4)
+    {
+        int numElements = min(numLightIndices - light, 4);
+        int vecIndex = light / 4;
+
+        for(int element = 0; element < numElements; ++element)
+        {
+            int lightIndex = lightIndices[vecIndex][element];
+        
+            //Calculate the layer based on the current cascade.
+            int index = (dirLights.numCascades * dirLights.dirShadowMapId[lightIndex]);
+            gl_Layer = index;
+            for(int i = 0; i < gl_in.length(); ++i)
+            {
+                gl_Position = dirTransforms[index + cascade[i]] * gl_in[i].gl_Position;
+                EmitVertex();
+            }
+            EndPrimitive();
+            
+        }
+    }
+#endif
 }  

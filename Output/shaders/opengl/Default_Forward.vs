@@ -78,15 +78,13 @@ layout(location = VA_ITMATRIX_LOCATION_DEF) in mat4 aITMatrix;
 layout(location = 0) uniform int numInstances;
 
 
-
-
 //STATIC DATAT: Always the same for all draw calls in this shader for a single frame.
 layout(std140, binding = 1) uniform StaticData
 {
     mat4 viewProjection;            //PV matrix.
     vec4 cameraPositionFarPlane;    //Camera position in world space. W is the far plane value.
-    vec4 numLights;                 //Number of lights. X = point, Y = spot, Z = directional.
-    vec4 numShadows;                //Number of shadow lights. X = point, Y = spot, Z = directional.
+    vec4 numLightsNumCascades;      //Number of lights. X = point, Y = spot, Z = directional.   W = number of directional shadow cascades.
+    vec4 numShadowsCascadeDistance; //Number of shadow lights. X = point, Y = spot, Z = directional.    W = Distance per directional shadow cascade.
     vec4 ambientLight;              //Total ambient light count.
 };
 
@@ -115,15 +113,18 @@ out VERTEX_OUT
 
     //The far plane of the projection matrix.
     float farPlane;
-
     //Point, spot and directional lights.
     flat vec3 numLights;
-
     //Point spot and directional lights with shadows.
     flat vec3 numShadows;
-
     //The ambient light of the scene.
     flat vec3 ambientLight;
+
+#ifdef USE_DIR_SHADOWS_DEFINE
+    //Directional shadow cascading.
+    flat float numShadowCascades;
+    flat float shadowCascadeDistance;
+#endif
 
     //Material ID in the material batch.
 	#ifdef VA_MATERIALID_DEF
@@ -248,7 +249,13 @@ void main()
     gl_Position = viewProjection * vec4(outData.fragPos, 1.0);
 
     //Pass on light information.
-    outData.numLights = numLights.xyz;
-    outData.numShadows = numShadows.xyz;
+    outData.numLights = numLightsNumCascades.xyz;
+    outData.numShadows = numShadowsCascadeDistance.xyz;
     outData.ambientLight = ambientLight.xyz;
+    
+#ifdef USE_DIR_SHADOWS_DEFINE
+    //If directional shadows are used, set the cascade information here.
+    outData.numShadowCascades = numLightsNumCascades.w;
+    outData.shadowCascadeDistance = numShadowsCascadeDistance.w;
+#endif
 }

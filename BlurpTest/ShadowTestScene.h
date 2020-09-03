@@ -32,6 +32,7 @@ private:
     //Shadowmapping
     std::shared_ptr<blurp::RenderPass_ShadowMap> m_ShadowGenerationPass;
     std::shared_ptr<blurp::Texture> m_PosShadowArray;
+    std::shared_ptr<blurp::Texture> m_DirShadowArray;
 
     std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
     std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
@@ -57,6 +58,10 @@ private:
     //Light
     std::shared_ptr<blurp::PointLight> m_Light;
     std::shared_ptr<blurp::Light> m_AmbientLight;
+
+    //Directional
+    std::shared_ptr<blurp::DirectionalLight> m_DirLight;
+    blurp::GpuBufferView m_DirLightMatView;
 
     //Skybox
     std::shared_ptr<blurp::Texture> m_SkyBoxTexture;

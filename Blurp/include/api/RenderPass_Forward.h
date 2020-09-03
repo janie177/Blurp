@@ -19,18 +19,17 @@ namespace blurp
             light = nullptr;
         }
 
-        LightData(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix) : light(a_Light), shadowMapIndex(a_ShadowMapIndex), shadowMatrix(a_ShadowMatrix) {}
+        LightData(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex) : light(a_Light), shadowMapIndex(a_ShadowMapIndex) {}
 
         std::shared_ptr<Light> light;
         std::int32_t shadowMapIndex;
-        glm::mat4 shadowMatrix;
     };
 
     class RenderPass_Forward : public RenderPass
     {
     public:
         RenderPass_Forward(RenderPipeline& a_Pipeline)
-            : RenderPass(a_Pipeline), m_LightCounts(0), m_ShadowCounts(0), m_AmbientLight(0), m_ReuploadLights(true)
+            : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_DrawDataCount(0), m_NumDirCascades(0), m_DirCascadeDistance(0), m_LightCounts(0), m_ShadowCounts(0), m_AmbientLight(0), m_ReuploadLights(true)
         {
         }
 
@@ -57,7 +56,7 @@ namespace blurp
         /*
          * Add a light to the scene with a corresponding shadowmap and light perspective matrix.
          */
-        void AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix);
+        void AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex);
 
         /*
          * Add a light with shadowmapping.
@@ -73,8 +72,14 @@ namespace blurp
         /*
          * Set the shadow maps used for all directional lights.
          * This has to be a Texture2D array.
+         * The GpuBuffer and GpuBufferView should contain the shadow matrix data.
+         * NumCascades represents the amount of shadow cascades for directional shadows.
+         * The GpuBufferView is passed by reference and stored as a pointer for reading at execution time.
          */
-        void SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps);
+        void SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_Texture,
+            const std::uint32_t a_NumCascades, const float a_CascadeDistance,
+            const std::shared_ptr<GpuBuffer>& a_TransformBuffer,
+            GpuBufferView& a_TransformViewPtr);
 
         /*
          * Reset all queued data. Call this to start a new fresh frame.
@@ -107,10 +112,14 @@ namespace blurp
         //All queued up light data.
         std::vector<LightData> m_LightData;
 
-        //Shadowmaps for directional lights. This has to be a texture 2d array.
+        //Shadowmaps for directional lights. This has to be a texture 2d array. Requires matrix transformations and cascade info.
         std::shared_ptr<Texture> m_DirectionalShadowMaps;
+        std::shared_ptr<GpuBuffer> m_DirShadowBuffer;         //The buffer containing the transformation matrices for the lights and all the 
+        GpuBufferView* m_DirShadowView;                      //The view into above buffer to where the matrices are stored.
+        std::uint32_t m_NumDirCascades;                     //The amount of cascades used with directional shadows.
+        float m_DirCascadeDistance;                        //The length of each shadow cascade. Measured in fragment position relative to the camera.
 
-        //Shadowmap for pointlights and spotlights. This has to be a cubemat texture array.
+        //Shadowmap for pointlights and spotlights. This has to be a cube map texture array.
         std::shared_ptr<Texture> m_PointSpotShadowMaps;
 
         //Counters for the lights that have been added.

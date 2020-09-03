@@ -36,7 +36,7 @@ namespace blurp
     public:
         RenderPass_ShadowMap(RenderPipeline& a_Pipeline)
             : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_LightIndices(nullptr), m_DrawDataCount(0),
-              m_DirectionalCascades(0), m_DirectionalCascadeDistance(0)
+              m_DirectionalCascades(0), m_DirectionalCascadeDistance(0), m_DirShadowTransformView(nullptr), m_DirShadowTransformOffset(0)
         {
         }
 
@@ -76,16 +76,16 @@ namespace blurp
          * This texture is used for all directional lights.
          * Has to be of texture type Texture2DArray.
          * PixelFormat has to be Depth.
-         */
-        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture);
-
-        /*
-         * Set directional light cascading mode.
-         * NumCascades is the number of cascades generated per directional light map. 0 For no cascading.
-         * CascadeDistance represents the distance each cascade will span along the light direction.
+         *
+         * NumCascades is the number of cascades generated per directional light map. A minimum of 1 is required.
+         * CascadeDistance represents the distance each cascade will span along the camera direction.
          * A minimum distance of 1 is required.
+         *
+         * The GpuBuffer provided will be used to upload light transformation matrices.
+         * They are uploaded with the provided TransformOffset into the buffer.
+         * The GpuBufferView provided is then filled with the relevant information about where the transforms reside on the GPU for later use.
          */
-        void SetDirectionalCascading(std::uint32_t a_NumCascades, std::uint32_t a_CascadeDistance);
+        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const float a_CascadeDistance, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset, GpuBufferView& a_TransformView);
 
         RenderPassType GetType() override;
 
@@ -115,7 +115,12 @@ namespace blurp
 
         //How many directional light cascades are used.
         std::uint32_t m_DirectionalCascades;
-        std::uint32_t m_DirectionalCascadeDistance;
+        std::float_t m_DirectionalCascadeDistance;
+
+        //Buffer and view used to upload directional light transformation matrices.
+        std::shared_ptr<GpuBuffer> m_DirShadowTransformBuffer;
+        GpuBufferView* m_DirShadowTransformView;
+        std::uintptr_t m_DirShadowTransformOffset;
 
     };
 }

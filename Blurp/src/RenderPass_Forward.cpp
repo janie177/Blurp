@@ -1,4 +1,7 @@
 #include "RenderPass_Forward.h"
+
+#include <algorithm>
+
 #include "Texture.h"
 
 namespace blurp
@@ -24,7 +27,7 @@ namespace blurp
         m_DrawDataCount = a_DrawDataCount;
     }
 
-    void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex, const glm::mat4& a_ShadowMatrix)
+    void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light, const std::int32_t a_ShadowMapIndex)
     {
         assert(a_Light != nullptr && "Cannot add nullptr light to forward renderer!");
 
@@ -79,13 +82,13 @@ namespace blurp
         break;
         }
 
-        m_LightData.emplace_back(LightData{ a_Light, a_ShadowMapIndex, a_ShadowMatrix });
+        m_LightData.emplace_back(LightData{ a_Light, a_ShadowMapIndex});
         m_ReuploadLights = true;
     }
 
     void RenderPass_Forward::AddLight(const std::shared_ptr<Light>& a_Light)
     {
-       AddLight(a_Light, -1, glm::mat4());
+       AddLight(a_Light, -1);
     }
 
     void RenderPass_Forward::SetPointSpotShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps)
@@ -94,10 +97,19 @@ namespace blurp
         m_PointSpotShadowMaps = a_ShadowMaps;
     }
 
-    void RenderPass_Forward::SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_ShadowMaps)
+    void RenderPass_Forward::SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_Texture,
+        const std::uint32_t a_NumCascades, const float a_CascadeDistance,
+        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, GpuBufferView& a_TransformViewPtr)
     {
-        assert(a_ShadowMaps->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Shadowmaps for directional lights need to be 2D texture arrays!");
-        m_DirectionalShadowMaps = a_ShadowMaps;
+        assert(a_Texture != nullptr && a_TransformBuffer != nullptr);
+        assert(a_NumCascades > 0u && "For directional lights, 1 cascade is the minimum!");
+        assert(a_CascadeDistance > 0.f && "Shadow cascade distance has to be a positive number!");
+        assert(a_Texture->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Shadowmaps for directional lights need to be 2D texture arrays!");
+        m_DirectionalShadowMaps = a_Texture;
+        m_DirShadowBuffer = a_TransformBuffer;
+        m_DirShadowView = &a_TransformViewPtr;
+        m_NumDirCascades = a_NumCascades;
+        m_DirCascadeDistance = a_CascadeDistance;
     }
 
     void RenderPass_Forward::Reset()

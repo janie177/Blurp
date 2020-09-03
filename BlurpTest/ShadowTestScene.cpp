@@ -21,7 +21,7 @@
 
 const static std::float_t CUBE_DATA[]
 {
-    //      X    Y     Z            NORMAL              UV                
+            //      X    Y     Z            NORMAL              UV                
             -0.5f, -0.5f, 0.5f,     0.f, 0.f, 1.f,      0.f, MESH_SCALE,
             -0.5f, 0.5f, 0.5f,      0.f, 0.f, 1.f,      0.f, 0.f,
             0.5f, -0.5f, 0.5f,      0.f, 0.f, 1.f,      MESH_SCALE, MESH_SCALE,
@@ -112,7 +112,7 @@ void ShadowTestScene::Init()
     m_ShadowGenerationPass = m_Pipeline->AppendRenderPass<RenderPass_ShadowMap>(RenderPassType::RP_SHADOWMAP);
     m_ShadowGenerationPass->SetCamera(m_Camera);
 
-
+    //Positional shadow array.
     TextureSettings shadowPosSettings;
     shadowPosSettings.dimensions = glm::vec3(1024.f, 1024.f, NUM_SHADOW_POS_LIGHTS * 6);
     shadowPosSettings.generateMipMaps = false;
@@ -122,6 +122,24 @@ void ShadowTestScene::Init()
     shadowPosSettings.memoryUsage = MemoryUsage::GPU;
     shadowPosSettings.textureType = TextureType::TEXTURE_CUBEMAP_ARRAY;
     m_PosShadowArray = m_Engine.GetResourceManager().CreateTexture(shadowPosSettings);
+
+    //Directional shadow array.
+    //3 cascades, 1 light.
+    TextureSettings shadowDirSettings;
+    shadowDirSettings.dimensions = glm::vec3(1024.f, 1024.f, 1 * 3);
+    shadowDirSettings.generateMipMaps = false;
+    shadowDirSettings.dataType = DataType::FLOAT;
+    shadowDirSettings.pixelFormat = PixelFormat::DEPTH;
+    shadowDirSettings.memoryAccess = AccessMode::READ_WRITE;
+    shadowDirSettings.memoryUsage = MemoryUsage::GPU;
+    shadowDirSettings.textureType = TextureType::TEXTURE_2D_ARRAY;
+    m_DirShadowArray = m_Engine.GetResourceManager().CreateTexture(shadowDirSettings);
+
+    //Clear the dir shadow buffer.
+    ClearData dirClear;
+    dirClear.size = glm::vec3(1024, 1024, 1);
+    dirClear.clearValue.floats[0] = 1.f;
+    m_ClearPass->AddTexture(m_DirShadowArray, dirClear);
 
     //Clear the shadow textures every frame.
     ClearData posShadowClear;
@@ -137,8 +155,16 @@ void ShadowTestScene::Init()
     m_ForwardPass->SetCamera(m_Camera);
     m_ForwardPass->SetTarget(m_Window->GetRenderTarget());
 
-    //Use shadow mapping
+    //Create the GPU buffer containing the transform for the mesh.
+    GpuBufferSettings gpuBufferSettings;
+    gpuBufferSettings.size = std::pow(2, 15);
+    gpuBufferSettings.resizeWhenFull = true;
+    gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
+    m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
+
+    //Use shadow mapping. m_DirLightMatView is passed by reference and stored as a pointer. This m
     m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
+    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, 3, 32.f, m_TransformBuffer, m_DirLightMatView);
 
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)
@@ -152,13 +178,6 @@ void ShadowTestScene::Init()
         camS.farPlane = FAR_PLANE;
         m_Camera->UpdateSettings(camS);
     });
-
-    //Create the GPU buffer containing the transform for the mesh.
-    GpuBufferSettings gpuBufferSettings;
-    gpuBufferSettings.size = std::pow(2, 15);
-    gpuBufferSettings.resizeWhenFull = true;
-    gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
-    m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Load the material for the plane.
     MaterialData materialData;
@@ -218,6 +237,15 @@ void ShadowTestScene::Init()
     pointSettings.type = LightType::LIGHT_POINT;
     m_Light = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(pointSettings));
 
+    //Dir light
+    LightSettings dirSettings;
+    dirSettings.color = { 1.f, 0.8f, 0.9f };
+    dirSettings.intensity = 0.6f;
+    dirSettings.directionalLight.direction = glm::normalize(glm::vec3(1.f, -1.f, 1.f));
+    dirSettings.type = LightType::LIGHT_DIRECTIONAL;
+    m_DirLight = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(dirSettings));
+
+
     //Ambient light
     LightSettings ambientSettings;
     ambientSettings.color = glm::vec3(1.f);
@@ -236,6 +264,23 @@ void ShadowTestScene::Init()
         t.SetTranslation({0.f, 5.f, -10.f});
         t.SetRotation({ 0.f, 1.f, 0.f }, 1.f);
         t.SetScale({4.f, 4.f, 4.f});
+        m_Transforms.emplace_back(t);
+    }
+
+    constexpr int count = 50;
+    constexpr float distance = 50.f;
+    for(int i = 0; i < count; ++i)
+    {
+        Transform t;
+
+        float dist = i % 2 == 0 ? distance : distance / 2.f;
+
+        float x = cosf((6.28f / count) * (float)i) * dist;
+        float y = 0;
+        float z = sinf((6.28f / count) * (float)i) * dist;
+
+        t.SetTranslation({ x, y, z});
+        t.SetScale({ 2.f, 20.f, 2.f });
         m_Transforms.emplace_back(t);
     }
 }
@@ -370,7 +415,8 @@ void ShadowTestScene::Update()
     m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, 1, 16, &lightMat);
 
     //Add the light to the scene.
-    m_ForwardPass->AddLight(m_Light, 0, glm::mat4());
+    m_ForwardPass->AddLight(m_Light, 0);
+    m_ForwardPass->AddLight(m_DirLight, 0);
     m_ForwardPass->AddLight(m_AmbientLight);
 
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
@@ -394,16 +440,21 @@ void ShadowTestScene::Update()
         drawDatas.push_back(m_DrawData);
     }
 
+    //Set dir shadow buffer info etc.
+    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, 3, 32.f, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
+
     //Don't count the light for the shadow.
     drawDatas.push_back(m_LightMeshDrawData);
 
     //Setup the shadow mapping for this frame. Exclude the last Drawdata which is the light mesh.
     m_ShadowGenerationPass->AddLight(m_Light, 0);
+    m_ShadowGenerationPass->AddLight(m_DirLight, 0);
     std::vector<LightIndexData> lIndexData;
     lIndexData.reserve(drawDatas.size() - 1);
     for(int i = 0; i < static_cast<int>(drawDatas.size() - 1); ++i)
     {
-        lIndexData.emplace_back(LightIndexData{std::vector<int>(), std::vector<int>{0}});
+        //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
+        lIndexData.emplace_back(LightIndexData{std::vector<int>(0), std::vector<int>{0}});
     }
     m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 

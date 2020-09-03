@@ -44,18 +44,27 @@ namespace blurp
         m_ShadowMapsPositional = a_Texture;
     }
 
-    void RenderPass_ShadowMap::SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture)
+    void RenderPass_ShadowMap::SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture,
+        const std::uint32_t a_NumCascades, const float a_CascadeDistance,
+        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset,
+        GpuBufferView& a_TransformView)
     {
+        //Ensure that cascading is set up correctly.
+        assert(a_CascadeDistance >= 1.f && "Shadow cascade length has to be at least 1.");
+        assert(a_NumCascades >= 1u && "A minimum of 1 shadow cascade is required.");
+        m_DirectionalCascades = a_NumCascades;
+        m_DirectionalCascadeDistance = a_CascadeDistance;
+
+        //Ensure the texture provided is the right format.
         assert(a_Texture->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Directional light shadows require a 2D Texture Array.");
         assert(a_Texture->GetPixelFormat() == PixelFormat::DEPTH && "Shadowmaps only need a depth channel.");
         m_ShadowMapsDirectional = a_Texture;
-    }
 
-    void RenderPass_ShadowMap::SetDirectionalCascading(std::uint32_t a_NumCascades, std::uint32_t a_CascadeDistance)
-    {
-        assert((a_CascadeDistance >= 1.f || a_NumCascades <= 1.f) && "When shadow cascading is enabled, the length of each cascade has to be at least 1.");
-        m_DirectionalCascades = a_NumCascades;
-        m_DirectionalCascadeDistance = a_CascadeDistance;
+        //Store the buffer and view with required offset to store transforms in for each light cascade.
+        assert(a_TransformBuffer != nullptr && "Directional shadow transform buffer cannot be nullptr!");
+        m_DirShadowTransformBuffer = a_TransformBuffer;
+        m_DirShadowTransformView = &a_TransformView;
+        m_DirShadowTransformOffset = a_TransformOffset;
     }
 
     RenderPassType RenderPass_ShadowMap::GetType()
@@ -73,7 +82,7 @@ namespace blurp
 
     bool RenderPass_ShadowMap::IsStateValid()
     {
-        if(!m_DirectionalLights.empty() && !m_ShadowMapsDirectional)
+        if(!m_DirectionalLights.empty() && (!m_ShadowMapsDirectional || !m_DirShadowTransformBuffer || m_DirShadowTransformView == nullptr))
         {
             return false;
         }

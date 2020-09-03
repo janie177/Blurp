@@ -14,9 +14,9 @@ namespace blurp
     struct StaticData
     {
         glm::mat4 pv;
-        glm::vec4 camPosFarPlane;
-        glm::vec4 numLights;        //X = numPointLight. Y = numSpotLights. Z = numDirectionalLights.
-        glm::vec4 numShadows;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.
+        glm::vec4 camPosFarPlane;   //XYZ = camera position. W = far plane distance.
+        glm::vec4 numLightsNumCascades;        //X = numPointLight. Y = numSpotLights. Z = numDirectionalLights.    W = number of dir shadow cascades.
+        glm::vec4 numShadowsCascadeDistance;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.    W = distance per directional cascade.
         glm::vec4 ambientLight;     //The ambient light RGB.
     };
 
@@ -31,7 +31,6 @@ namespace blurp
         glm::vec4 vec1;
         glm::vec4 vec2;
         glm::vec4 vec3;
-        glm::mat4 shadowMatrix;
     };
 
     class RenderPass_Forward_GL : public RenderPass_Forward
