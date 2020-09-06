@@ -124,6 +124,7 @@ out VERTEX_OUT
     //Directional shadow cascading.
     flat float numShadowCascades;
     flat float shadowCascadeDistance;
+    float fragDepth;
 #endif
 
     //Material ID in the material batch.
@@ -257,5 +258,6 @@ void main()
     //If directional shadows are used, set the cascade information here.
     outData.numShadowCascades = numLightsNumCascades.w;
     outData.shadowCascadeDistance = numShadowsCascadeDistance.w;
+    outData.fragDepth = gl_Position.z;
 #endif
 }

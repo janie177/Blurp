@@ -4,11 +4,6 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 78) out;
 
-//Input for directional lights.
-#ifdef DIRECTIONAL
-flat in int cascade[];
-#endif
-
 //Output for positional only.
 #ifdef POSITIONAL
 out GEOMETRY_OUT
@@ -50,11 +45,17 @@ layout(std140, binding = 1) uniform DirLights
     int dirShadowMapId[MAX_LIGHTS];
 } dirLights;
 
-//Transforms. N for each light, where N is the number of cascades.
-layout(std430, binding = 2) buffer DirTransforms
+struct DirCascade
 {
-    mat4 dirTransforms[];
+    vec4 depthClipSpace;
+    mat4 transform;
 };
+
+//Transforms. N for each light, where N is the number of cascades.
+layout(std430, binding = 3) buffer DirCascades
+{
+    DirCascade cascades[];
+} dirCascades;
 
 #endif
 
@@ -90,6 +91,12 @@ void main()
 #endif
 
 #ifdef DIRECTIONAL
+    
+    vec3 triangleCenter = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
+    
+    //Commented out. Instead of rendering to a single cascade, render to all of them. That way the forward shader only needs to compare each fragment.
+    //int cascadeOffset = int(min(dirLights.numCascades - 1, length(dirLights.camPosCascadeDistance.xyz - triangleCenter) / dirLights.camPosCascadeDistance.w));
+
     for(int light = 0; light < numLightIndices; light += 4)
     {
         int numElements = min(numLightIndices - light, 4);
@@ -100,15 +107,22 @@ void main()
             int lightIndex = lightIndices[vecIndex][element];
         
             //Calculate the layer based on the current cascade.
-            int index = (dirLights.numCascades * dirLights.dirShadowMapId[lightIndex]);
-            gl_Layer = index;
-            for(int i = 0; i < gl_in.length(); ++i)
+            int cascadeBase = (dirLights.numCascades * dirLights.dirShadowMapId[lightIndex]);
+
+            //Loop over every
+            for(int cascadeIndex = 0; cascadeIndex < dirLights.numCascades; ++cascadeIndex)
             {
-                gl_Position = dirTransforms[index + cascade[i]] * gl_in[i].gl_Position;
-                EmitVertex();
-            }
-            EndPrimitive();
-            
+                int cascade = cascadeBase + cascadeIndex;
+
+                //Loop over every vertex and output it to this cascade.
+                for(int i = 0; i < gl_in.length(); ++i)
+                {
+                    gl_Layer = cascade;
+                    gl_Position = dirCascades.cascades[cascade].transform * gl_in[i].gl_Position;
+                    EmitVertex();
+                }
+                EndPrimitive();
+            }            
         }
     }
 #endif

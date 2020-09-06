@@ -24,6 +24,7 @@ in VERTEX_OUT
     //Directional shadow cascading.
     flat float numShadowCascades;
     flat float shadowCascadeDistance;
+	float fragDepth;
 #endif
 
     //Material ID in the material batch.
@@ -112,10 +113,17 @@ layout(location = 5) uniform float alphaConstant;
 #ifdef USE_DIR_SHADOWS_DEFINE
 	layout(binding = 6) uniform sampler2DArrayShadow shadowSampler2D;
 
+	//Struct containing the shadow transform and the vector which contains the clip space depth for the far plane of each cascade.
+	struct DirCascade
+	{
+		vec4 depthClipSpace;
+		mat4 transform;
+	};
+
 	//Unbound array containing the transforms to light space for each directional light for each cascade.
-	layout(std430, binding = 5) buffer DirShadowTransforms
+	layout(std430, binding = 5) buffer DirCascades
     {
-        mat4 dirShadowTransforms[];
+        DirCascade cascades[];
     };
 
 #endif
@@ -564,10 +572,26 @@ void main()
 		vec3 lightDir = data.v2.xyz;
 		vec3 lightColor = data.v1.xyz;
 		float intensity = data.v1.w;
+		int shadowMapIndex = int(data.v2.w);
+		int numShadowCascades = int(inData.numShadowCascades);
 
-		//Do the shadow calculation.
-		int dirTransformIndex = int((i * inData.numShadowCascades) + min(length(inData.fragPos - inData.camPos) / inData.shadowCascadeDistance, inData.numShadowCascades - 1));
-		mat4 shadowMatrix = dirShadowTransforms[dirTransformIndex];
+		//Calculate the index of the current cascade in the shadow array based on distance from the camera.
+		int cascadeBase = int(shadowMapIndex * numShadowCascades);
+
+		//Calculate the cascade offset based on the clip depth.
+		int cascadeOffset = numShadowCascades;
+		for(int q = 0; q < numShadowCascades; ++q)
+		{
+			if(inData.fragDepth <= cascades[q].depthClipSpace.z)
+			{
+				cascadeOffset = q;
+				break;
+			}
+		}
+
+		int cascadeIndex = cascadeBase + cascadeOffset;
+
+		mat4 shadowMatrix = cascades[cascadeIndex].transform;
 
 		//Calculate where in the light frustum the current pixel is.
 		vec4 fragLightSpace = shadowMatrix * vec4(inData.fragPos, 1.0);
@@ -578,8 +602,8 @@ void main()
 
 		vec4 shadowCoords;						
 		shadowCoords.xy = fragLightCoords.xy;					//UV coordinates.
-		shadowCoords.z = data.v2.w;								//Depth slice.
-		shadowCoords.w = fragLightCoords.z;	//Depth comparison. In the lights frustum, Z is equal to the depth.
+		shadowCoords.z = cascadeIndex;							//Depth slice.
+		shadowCoords.w = fragLightCoords.z;						//Depth comparison. In the lights frustum, Z is equal to the depth.
 
 		float visibility = texture(shadowSampler2D, shadowCoords); 
 		if(visibility > 0.0)

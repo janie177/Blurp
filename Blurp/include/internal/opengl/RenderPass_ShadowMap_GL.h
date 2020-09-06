@@ -22,6 +22,12 @@ namespace blurp
         glm::ivec4 shadowIndices[MAX_NUM_LIGHTS];   //Only X is used.
     };
 
+    struct DirCascade
+    {
+        glm::vec4 clipDepth;
+        glm::mat4 transform;
+    };
+
     class RenderPass_ShadowMap_GL : public RenderPass_ShadowMap
     {
     public:

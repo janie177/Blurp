@@ -1,4 +1,7 @@
 #include "opengl/RenderPass_Forward_GL.h"
+
+#include <glm/gtc/type_ptr.hpp>
+
 #include "BlurpEngine.h"
 #include "FileReader.h"
 #include "opengl/GpuBuffer_GL.h"
@@ -88,6 +91,9 @@ namespace blurp
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_CUBE_MAP_SEAMLESS, GL_TRUE);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glSamplerParameterfv(m_ShadowSampler, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.f)));
 
         return true;
     }
@@ -280,7 +286,7 @@ namespace blurp
         staticData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
         staticData.camPosFarPlane = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_Camera->GetSettings().farPlane);
         staticData.numLightsNumCascades = glm::vec4(m_LightCounts, m_NumDirCascades);
-        staticData.numShadowsCascadeDistance = glm::vec4(m_ShadowCounts, (m_DirCascadeDistance * m_DirCascadeDistance));
+        staticData.numShadowsCascadeDistance = glm::vec4(m_ShadowCounts, m_DirCascadeDistance);
         staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);

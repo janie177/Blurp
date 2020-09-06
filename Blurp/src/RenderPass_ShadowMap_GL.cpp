@@ -265,7 +265,7 @@ namespace blurp
 
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsPositional)->GetTextureId(), 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsDirectional)->GetTextureId(), 0);
             const auto dimensions = m_ShadowMapsDirectional->GetDimensions();
             glViewport(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
             glScissor(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
@@ -286,29 +286,112 @@ namespace blurp
             const auto farPlane = m_Camera->GetSettings().farPlane;*/
 
             //Iterate over all directional lights and set up their matrices.
-            std::vector<glm::mat4> dirMatrices;
-            dirMatrices.reserve(m_DirectionalCascades * m_DirectionalLights.size());
+            std::vector<DirCascade> cascades;
+            cascades.reserve(m_DirectionalCascades * m_DirectionalLights.size());
+
+            //Matrix used to convert a point from camera space to world space.
+            glm::mat4 camToWorld = m_Camera->GetTransform().GetTransformation();
+
+            //Horizontal and vertical FOV.
+            auto& camSettings = m_Camera->GetSettings();
+            float horizontalFovTanHalved = tanf(glm::radians(camSettings.fov / 2.0f));
+            float verticalFovTanHalved = tanf(glm::radians((camSettings.fov * (camSettings.width / camSettings.height)) / 2.0f));
 
             for (int i = 0; i < static_cast<int>(m_DirectionalLights.size()); ++i)
             {
                 auto& lightData = m_DirectionalLights[i];
 
+                //Matrix transforming world to light space.
+                glm::mat4 lightMatrix = glm::lookAt(glm::vec3(0.f, 0.f, 0.f), lightData.data, glm::vec3(0.f, 1.f, 0.f));
+
+                glm::mat4 camToLight = lightMatrix * camToWorld;
+
                 for (std::uint32_t cascade = 0; cascade < m_DirectionalCascades; ++cascade)
                 {
-                    //TODO calculate matrices and store in DirMatrices
-                    dirMatrices.emplace_back(glm::ortho(10.f, 10.f, 10.f, 10.f, 0.1f, 1000.f));
+                    glm::vec4 cameraFrustumCorners[8];      //The 8 corners of the frustum.
+
+                    //Calculate the far and near Z positions of this cascade. The last cascade is goes all the way to the far plane.
+                    float nearZ = cascade * m_DirectionalCascadeDistance;
+                    float farZ = nearZ +  m_DirectionalCascadeDistance;
+                    if(cascade == m_DirectionalCascades - 1)
+                    {
+                        farZ = camSettings.farPlane;
+                    }
+
+                    //Calculate near and far X using some trigonometry.
+                    float nearX = nearZ * horizontalFovTanHalved;
+                    float farX = farZ * horizontalFovTanHalved;
+
+                    //Calculate Y using the vertical FOV.
+                    float nearY = nearZ * verticalFovTanHalved;
+                    float farY = farZ * verticalFovTanHalved;
+
+                    //Because the camera frustum points in negative Z direction, invert the Z coordinates.
+                    farZ *= -1.f;
+                    nearZ *= -1.f;
+
+                    //All 8 corners.
+                    cameraFrustumCorners[0] = { -nearX, -nearY, nearZ, 1.f };
+                    cameraFrustumCorners[1] = { +nearX, -nearY, nearZ, 1.f };
+                    cameraFrustumCorners[2] = { -nearX, +nearY, nearZ, 1.f };
+                    cameraFrustumCorners[3] = { +nearX, +nearY, nearZ, 1.f };
+                    cameraFrustumCorners[4] = { -farX, -farY, farZ, 1.f };
+                    cameraFrustumCorners[5] = { +farX, -farY, farZ, 1.f };
+                    cameraFrustumCorners[6] = { -farX, +farY, farZ, 1.f };
+                    cameraFrustumCorners[7] = { +farX, +farY, farZ, 1.f };
+
+                    //Min and max coordinates on each axis.
+                    glm::vec3 min(std::numeric_limits<float>::max());
+                    glm::vec3 max(-std::numeric_limits<float>::max());
+
+                    //Transform to world space and then to light space. All corners are now aligned with the light (Z = light dir).
+                    //Then compare the coordinates to find the min and max of each axis.
+                    for(int corner = 0; corner < 8; ++corner)
+                    {
+                        cameraFrustumCorners[corner] = camToLight * cameraFrustumCorners[corner];
+
+                        min.x = std::fmin(min.x, cameraFrustumCorners[corner].x);
+                        min.y = std::fmin(min.y, cameraFrustumCorners[corner].y);
+                        min.z = std::fmin(min.z, cameraFrustumCorners[corner].z);
+
+                        max.x = std::fmax(max.x, cameraFrustumCorners[corner].x);
+                        max.y = std::fmax(max.y, cameraFrustumCorners[corner].y);
+                        max.z = std::fmax(max.z, cameraFrustumCorners[corner].z);
+                    }
+
+                    //Dimensions of the frustum from the lights perspective.
+                    float widthH = (max.x - min.x) / 2.f;
+                    float heightH = (max.y - min.y) / 2.f;
+                    float depth = (max.z - min.z);
+                    float depthH = depth / 2.f;
+
+                    //Half far because the light is looking at the center of the frustum. This means that moving it away by half far will put it at the edge of the scene.
+                    float halfFarPlane = camSettings.farPlane / 2.f;
+
+
+                    glm::vec3 frustumCenterWorld = m_Camera->GetTransform().GetTranslation() + (m_Camera->GetTransform().GetForward() * (nearZ + ((farZ - nearZ) / 2.f)));
+                    glm::vec3 lightPosWorld = frustumCenterWorld - (lightData.data * halfFarPlane);
+
+                    lightMatrix = glm::lookAt(lightPosWorld, frustumCenterWorld, { 0.f, 1.f, 0.f });
+                    auto projectionMatrix = glm::ortho(-widthH, widthH, -heightH, heightH, 0.1f, camSettings.farPlane * 2.f);
+
+                    auto pv = projectionMatrix * lightMatrix;
+
+                    //Combine PV matrices.
+                    auto cascadeClipDepth = (m_Camera->GetProjectionMatrix() * glm::vec4(0.f, 0.f, farZ, 1.f));
+                    cascades.push_back(DirCascade{ cascadeClipDepth, pv });
                 }
             }
 
-            //Upload directional light data.
+            //Upload directional light matrices.
             glBindBuffer(GL_UNIFORM_BUFFER, m_LightUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_LightUbo);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(DirLightData), &data);
 
 
             //Upload the directional matrices for each light and cascade. Store the result in the view that was provided. Bind to the right shader slot and range.
-            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<glm::mat4>(m_DirShadowTransformOffset, static_cast<std::uint32_t>(dirMatrices.size()), sizeof(glm::mat4), &dirMatrices[0]);
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, static_cast<GpuBuffer_GL*>(m_DirShadowTransformBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_DirShadowTransformView->start), m_DirShadowTransformView->totalSize);
+            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<DirCascade>(m_DirShadowTransformOffset, static_cast<std::uint32_t>(cascades.size()), 16, &cascades[0]);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, static_cast<GpuBuffer_GL*>(m_DirShadowTransformBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_DirShadowTransformView->start), m_DirShadowTransformView->totalSize);
 
 
             /*

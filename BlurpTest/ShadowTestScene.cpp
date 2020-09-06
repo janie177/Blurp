@@ -12,12 +12,17 @@
 
 #include "ImageUtil.h"
 
-#define MESH_SCALE 500.f
+#define MESH_SCALE 900.f
 
 #define NUM_SHADOW_POS_LIGHTS 1
 
 #define NEAR_PLANE 0.1f
-#define FAR_PLANE 1000.f
+#define FAR_PLANE 200.f
+
+#define NUM_CASCADES 6
+#define CASCADE_DISTANCE 25.f
+
+#define SHADOW_MAP_DIMENSION 2048.f
 
 const static std::float_t CUBE_DATA[]
 {
@@ -114,7 +119,7 @@ void ShadowTestScene::Init()
 
     //Positional shadow array.
     TextureSettings shadowPosSettings;
-    shadowPosSettings.dimensions = glm::vec3(1024.f, 1024.f, NUM_SHADOW_POS_LIGHTS * 6);
+    shadowPosSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_SHADOW_POS_LIGHTS * 6);
     shadowPosSettings.generateMipMaps = false;
     shadowPosSettings.dataType = DataType::FLOAT;
     shadowPosSettings.pixelFormat = PixelFormat::DEPTH;
@@ -126,7 +131,7 @@ void ShadowTestScene::Init()
     //Directional shadow array.
     //3 cascades, 1 light.
     TextureSettings shadowDirSettings;
-    shadowDirSettings.dimensions = glm::vec3(1024.f, 1024.f, 1 * 3);
+    shadowDirSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES);
     shadowDirSettings.generateMipMaps = false;
     shadowDirSettings.dataType = DataType::FLOAT;
     shadowDirSettings.pixelFormat = PixelFormat::DEPTH;
@@ -137,13 +142,13 @@ void ShadowTestScene::Init()
 
     //Clear the dir shadow buffer.
     ClearData dirClear;
-    dirClear.size = glm::vec3(1024, 1024, 1);
+    dirClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES);
     dirClear.clearValue.floats[0] = 1.f;
     m_ClearPass->AddTexture(m_DirShadowArray, dirClear);
 
     //Clear the shadow textures every frame.
     ClearData posShadowClear;
-    posShadowClear.size = glm::vec3(1024, 1024, NUM_SHADOW_POS_LIGHTS * 6);
+    posShadowClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_SHADOW_POS_LIGHTS * 6);
     posShadowClear.clearValue.floats[0] = 1.f;
     m_ClearPass->AddTexture(m_PosShadowArray, posShadowClear);
 
@@ -164,7 +169,7 @@ void ShadowTestScene::Init()
 
     //Use shadow mapping. m_DirLightMatView is passed by reference and stored as a pointer. This m
     m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
-    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, 3, 32.f, m_TransformBuffer, m_DirLightMatView);
+    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, NUM_CASCADES, CASCADE_DISTANCE, m_TransformBuffer, m_DirLightMatView);
 
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)
@@ -241,7 +246,7 @@ void ShadowTestScene::Init()
     LightSettings dirSettings;
     dirSettings.color = { 1.f, 0.8f, 0.9f };
     dirSettings.intensity = 0.6f;
-    dirSettings.directionalLight.direction = glm::normalize(glm::vec3(1.f, -1.f, 1.f));
+    dirSettings.directionalLight.direction = glm::normalize(glm::vec3(-1.f, -1.f, 0.f));
     dirSettings.type = LightType::LIGHT_DIRECTIONAL;
     m_DirLight = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(dirSettings));
 
@@ -267,7 +272,7 @@ void ShadowTestScene::Init()
         m_Transforms.emplace_back(t);
     }
 
-    constexpr int count = 50;
+    constexpr int count = 35;
     constexpr float distance = 50.f;
     for(int i = 0; i < count; ++i)
     {
@@ -276,7 +281,7 @@ void ShadowTestScene::Init()
         float dist = i % 2 == 0 ? distance : distance / 2.f;
 
         float x = cosf((6.28f / count) * (float)i) * dist;
-        float y = 0;
+        float y = 10.f;
         float z = sinf((6.28f / count) * (float)i) * dist;
 
         t.SetTranslation({ x, y, z});
@@ -421,6 +426,106 @@ void ShadowTestScene::Update()
 
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
 
+    //TODO remove this
+    if (updateLightFrustumLocation)
+    {
+        static size_t oldSize = m_Transforms.size();
+        m_Transforms.resize(oldSize);
+        //TODO remove frustum visualization
+        {
+            //Matrix used to convert a point from camera space to world space.
+            glm::mat4 camToWorld = m_Camera->GetTransform().GetTransformation();
+            glm::mat4 lightMatrix = glm::lookAt(glm::vec3(0.f, 0.f, 0.f), m_DirLight->GetDirection(), glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 camToLight = lightMatrix * camToWorld;
+
+            //Horizontal and vertical FOV.
+            auto& camSettings = m_Camera->GetSettings();
+            float verticalFovTanHalved = tanf(glm::radians(camSettings.fov / 2.0f));
+            float aspectRatio = camSettings.width / camSettings.height;
+            float horizontalFovTanHalved = verticalFovTanHalved * aspectRatio;
+
+            glm::vec4 cameraFrustumCorners[8];      //The 8 corners of the frustum.
+
+            //Calculate the far and near Z positions of this cascade. The last cascade is goes all the way to the far plane.
+            int cascadeIndex = 0;
+            float nearZ = cascadeIndex * CASCADE_DISTANCE;
+            float farZ = nearZ + CASCADE_DISTANCE;
+
+            //Calculate near and far X using some trigonometry.
+            float nearX = nearZ * horizontalFovTanHalved;
+            float farX = farZ * horizontalFovTanHalved;
+
+            //Calculate Y using the vertical FOV.
+            float nearY = nearZ * verticalFovTanHalved;
+            float farY = farZ * verticalFovTanHalved;
+
+            //Because the camera frustum points in negative Z direction, invert the Z coordinates.
+            farZ *= -1.f;
+            nearZ *= -1.f;
+
+            //All 8 corners.
+            cameraFrustumCorners[0] = { -nearX, -nearY, nearZ, 1.f };
+            cameraFrustumCorners[1] = { +nearX, -nearY, nearZ, 1.f };
+            cameraFrustumCorners[2] = { -nearX, +nearY, nearZ, 1.f };
+            cameraFrustumCorners[3] = { +nearX, +nearY, nearZ, 1.f };
+            cameraFrustumCorners[4] = { -farX, -farY, farZ, 1.f };
+            cameraFrustumCorners[5] = { +farX, -farY, farZ, 1.f };
+            cameraFrustumCorners[6] = { -farX, +farY, farZ, 1.f };
+            cameraFrustumCorners[7] = { +farX, +farY, farZ, 1.f };
+
+            //Min and max coordinates on each axis.
+            glm::vec3 min(std::numeric_limits<float>::max());
+            glm::vec3 max(-std::numeric_limits<float>::max());
+
+            //Transform to world space and then to light space. All corners are now aligned with the light (Z = light dir).
+            //Then compare the coordinates to find the min and max of each axis.
+            for (int corner = 0; corner < 8; ++corner)
+            {
+                //Transform to light space.
+                cameraFrustumCorners[corner] = camToLight * cameraFrustumCorners[corner];
+
+                //Find min and max in the lights projection.
+                min.x = std::fmin(min.x, cameraFrustumCorners[corner].x);
+                min.y = std::fmin(min.y, cameraFrustumCorners[corner].y);
+                min.z = std::fmin(min.z, cameraFrustumCorners[corner].z);
+                max.x = std::fmax(max.x, cameraFrustumCorners[corner].x);
+                max.y = std::fmax(max.y, cameraFrustumCorners[corner].y);
+                max.z = std::fmax(max.z, cameraFrustumCorners[corner].z);
+            }
+
+            //Convert back to 8 points and convert those from light to world space.
+            auto invLight = glm::inverse(lightMatrix);
+            glm::vec4 lightBoundingBox[8];
+            lightBoundingBox[0] = glm::vec4(min.x, min.y, min.z, 1.f);
+            lightBoundingBox[1] = glm::vec4(min.x, max.y, min.z, 1.f);
+            lightBoundingBox[2] = glm::vec4(max.x, min.y, min.z, 1.f);
+            lightBoundingBox[3] = glm::vec4(max.x, max.y, min.z, 1.f);
+            lightBoundingBox[4] = glm::vec4(min.x, min.y, max.z, 1.f);
+            lightBoundingBox[5] = glm::vec4(min.x, max.y, max.z, 1.f);
+            lightBoundingBox[6] = glm::vec4(max.x, min.y, max.z, 1.f);
+            lightBoundingBox[7] = glm::vec4(max.x, max.y, max.z, 1.f);
+
+            for (int i = 0; i < 8; ++i)
+            {
+                lightBoundingBox[i] = invLight * lightBoundingBox[i];
+
+                Transform t;
+                t.SetTranslation(glm::vec3(lightBoundingBox[i]));
+                t.SetScale({ 2.f, 2.f, 2.f });
+                //m_Transforms.emplace_back(t);
+            }
+
+            glm::vec3 frustumCenterWorld = m_Camera->GetTransform().GetTranslation() + (m_Camera->GetTransform().GetForward() * (nearZ + ((farZ - nearZ) / 2.f)));
+            Transform t;
+            t.SetTranslation(frustumCenterWorld);
+            t.SetScale({ 5.f, 5.f, 5.f});
+            m_Transforms.emplace_back(t);
+        }
+
+        updateLightFrustumLocation = false;
+    }
+
+
     //Add the other data for drawing.
     if(!m_Transforms.empty())
     {
@@ -441,7 +546,7 @@ void ShadowTestScene::Update()
     }
 
     //Set dir shadow buffer info etc.
-    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, 3, 32.f, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
+    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, CASCADE_DISTANCE, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
 
     //Don't count the light for the shadow.
     drawDatas.push_back(m_LightMeshDrawData);
@@ -454,7 +559,7 @@ void ShadowTestScene::Update()
     for(int i = 0; i < static_cast<int>(drawDatas.size() - 1); ++i)
     {
         //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
-        lIndexData.emplace_back(LightIndexData{std::vector<int>(0), std::vector<int>{0}});
+        lIndexData.emplace_back(LightIndexData{ std::vector<int>({0}), std::vector<int>{0}});
     }
     m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 
@@ -462,6 +567,7 @@ void ShadowTestScene::Update()
 
     //Queue for draw.
     m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
+
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();
@@ -474,27 +580,33 @@ void ShadowTestScene::Update()
         }
     }
 
+    //TODO remove
+    if(input.getKeyState(KEY_L) == ButtonState::FIRST_PRESSED)
+    {
+        updateLightFrustumLocation = true;
+    }
+
     //printscreen.
     if(input.getKeyState(KEY_P) == ButtonState::FIRST_PRESSED)
     {
         std::string path = "shadowmap";
         std::string extension = ".jpg";
-        for(int i = 0; i < 6; ++i)
+        for(int i = 0; i < NUM_CASCADES; ++i)
         {
             std::string file = path + std::to_string(i) + extension;
 
-            auto data = m_PosShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(1024, 1024, 1), 1);
-            unsigned char* converted = new unsigned char[1024 * 1024 * 3];
+            auto data = m_DirShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 1), 1);
+            unsigned char* converted = new unsigned char[SHADOW_MAP_DIMENSION * SHADOW_MAP_DIMENSION * 3];
 
             float* asFloat = reinterpret_cast<float*>(data.get());
-            for(int i = 0; i < 1024; ++i)
+            for(int i = 0; i < SHADOW_MAP_DIMENSION; ++i)
             {
-                for(int j = 0; j < 1024; ++j)
+                for(int j = 0; j < SHADOW_MAP_DIMENSION; ++j)
                 {
-                    int coordX = (3 * 1024 * i);
+                    int coordX = (3 * SHADOW_MAP_DIMENSION * i);
                     int coordY =  (3 * j);
 
-                    float f = asFloat[i * 1024 + j];
+                    float f = asFloat[i * static_cast<int>(SHADOW_MAP_DIMENSION) + j];
                     assert(f >= 0.f && f <= 1.f);
 
                     float linear = (2.0 * NEAR_PLANE) / (FAR_PLANE + NEAR_PLANE - f * (FAR_PLANE - NEAR_PLANE));
@@ -509,7 +621,7 @@ void ShadowTestScene::Update()
                 }
             }
 
-            SaveToImage(file, 1024, 1024, 3, converted);
+            SaveToImage(file, SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 3, converted);
         }
     }
 }

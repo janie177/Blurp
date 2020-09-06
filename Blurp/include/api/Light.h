@@ -53,7 +53,11 @@ namespace blurp
     {
     public:
         DirectionalLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Direction(a_Settings.directionalLight.direction) {}
+            : Light(a_Settings), m_Direction(a_Settings.directionalLight.direction)
+        {
+            //Ensure that the direction is normalized.
+            assert(fabs(glm::length(m_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
+        }
 
         /*
          * Get the direction of this directional light.
@@ -77,7 +81,11 @@ namespace blurp
     {
     public:
         SpotLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Position(a_Settings.spotLight.position), m_Direction(a_Settings.spotLight.direction), m_Angle(a_Settings.spotLight.angle) {}
+            : Light(a_Settings), m_Position(a_Settings.spotLight.position), m_Direction(a_Settings.spotLight.direction), m_Angle(a_Settings.spotLight.angle)
+        {
+            //Direction has to be normalized.
+            assert(fabs(glm::length(m_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
+        }
 
         /*
          * Set the angle of this spotlight.
