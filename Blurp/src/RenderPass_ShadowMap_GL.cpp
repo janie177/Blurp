@@ -261,7 +261,7 @@ namespace blurp
         if (!m_DirectionalLights.empty() && m_ShadowMapsDirectional != nullptr)
         {
             //Ensure there's enough space in the texture.
-            assert(m_ShadowMapsDirectional->GetDimensions().z >= m_DirectionalLights.size() * m_DirectionalCascades && "Shadow map array has not enough layers for this many lights!");
+            assert(m_ShadowMapsDirectional->GetDimensions().z >= m_DirectionalLights.size() * m_NumDirectionalCascades && "Shadow map array has not enough layers for this many lights!");
 
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
@@ -273,8 +273,7 @@ namespace blurp
             //Vector containing the padded data to be uploaded to the GPU.
             //Format: NumCascades(vec4), CamPosCascadeDistance(vec4)
             DirLightData data;
-            data.camPosCascadeDistance = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_DirectionalCascadeDistance);
-            data.numCascades.x = m_DirectionalCascades;
+            data.numCascades.x = m_NumDirectionalCascades;
             int lIndex = 0;
             for(auto& dirLight : m_DirectionalLights)
             {
@@ -287,36 +286,42 @@ namespace blurp
 
             //Iterate over all directional lights and set up their matrices.
             std::vector<DirCascade> cascades;
-            cascades.reserve(m_DirectionalCascades * m_DirectionalLights.size());
+            cascades.reserve(m_NumDirectionalCascades * m_DirectionalLights.size());
 
             //Matrix used to convert a point from camera space to world space.
             glm::mat4 camToWorld = m_Camera->GetTransform().GetTransformation();
 
             //Horizontal and vertical FOV.
             auto& camSettings = m_Camera->GetSettings();
-            float horizontalFovTanHalved = tanf(glm::radians(camSettings.fov / 2.0f));
-            float verticalFovTanHalved = tanf(glm::radians((camSettings.fov * (camSettings.width / camSettings.height)) / 2.0f));
+            float verticalFovTanHalved = tanf(glm::radians(camSettings.fov / 2.0f));
+            float aspectRatio = camSettings.width / camSettings.height;
+            float horizontalFovTanHalved = verticalFovTanHalved * aspectRatio;
 
             for (int i = 0; i < static_cast<int>(m_DirectionalLights.size()); ++i)
             {
                 auto& lightData = m_DirectionalLights[i];
 
-                //Matrix transforming world to light space.
-                glm::mat4 lightMatrix = glm::lookAt(glm::vec3(0.f, 0.f, 0.f), lightData.data, glm::vec3(0.f, 1.f, 0.f));
+                //Find an up vector.
+                glm::vec3 up = Transform::GetWorldUp();
+                if (fabsf(glm::dot(up, lightData.data)) <= 0.f + std::numeric_limits<float>::epsilon())
+                {
+                    up = Transform::GetWorldRight();
+                }
 
+                //Matrices transforming Z to light direction, and camera to light space.
+                glm::mat4 lightMatrix = glm::lookAt(glm::vec3(0.f, 0.f, 0.f), lightData.data, up);
                 glm::mat4 camToLight = lightMatrix * camToWorld;
 
-                for (std::uint32_t cascade = 0; cascade < m_DirectionalCascades; ++cascade)
+                float lastFar = 0.f;
+
+                for (std::uint32_t cascade = 0; cascade < m_NumDirectionalCascades; ++cascade)
                 {
                     glm::vec4 cameraFrustumCorners[8];      //The 8 corners of the frustum.
 
                     //Calculate the far and near Z positions of this cascade. The last cascade is goes all the way to the far plane.
-                    float nearZ = cascade * m_DirectionalCascadeDistance;
-                    float farZ = nearZ +  m_DirectionalCascadeDistance;
-                    if(cascade == m_DirectionalCascades - 1)
-                    {
-                        farZ = camSettings.farPlane;
-                    }
+                    float nearZ = lastFar;
+                    float farZ = nearZ + m_DirectionalCascadeDistances[cascade];
+                    lastFar = farZ;
 
                     //Calculate near and far X using some trigonometry.
                     float nearX = nearZ * horizontalFovTanHalved;
@@ -359,21 +364,44 @@ namespace blurp
                         max.z = std::fmax(max.z, cameraFrustumCorners[corner].z);
                     }
 
-                    //Dimensions of the frustum from the lights perspective.
-                    float widthH = (max.x - min.x) / 2.f;
-                    float heightH = (max.y - min.y) / 2.f;
-                    float depth = (max.z - min.z);
-                    float depthH = depth / 2.f;
+                    ////Dimensions of the frustum from the lights perspective.
+                    //float widthH = fabsf(max.x - min.x) / 2.f;
+                    //float heightH = fabsf(max.y - min.y) / 2.f;
+                    //float depth = fabsf(max.z - min.z);
+                    //const float depthH = depth / 2.f;
 
-                    //Half far because the light is looking at the center of the frustum. This means that moving it away by half far will put it at the edge of the scene.
-                    float halfFarPlane = camSettings.farPlane / 2.f;
+                    //const float cascadeDepthH = fabsf((farZ - nearZ) / 2.f);
+                    //const float frustumCenterDistance = -nearZ + cascadeDepthH;
+
+                    ////Light is always far dist behind the camera. Added on top of that is the frustum center distance projected onto the light direction.
+                    ////The dot product is -1 when the light is right against the camera, which means only FAR_DIST is required.
+                    ////The dot product is 1 when the camera is facing away from the light, which means the FAR_DIST has to be twice as big.
+                    //const float scaleFactor = glm::dot(lightData.data, m_Camera->GetTransform().GetBack());
+
+                    ////The light is at least FAR_DIST away to cast shadows of objects behind the camera.
+                    ////When the camera looks into the light, the dot product cancels this out by being negative.
+                    //const float lightDistance = camSettings.farPlane + depthH + (frustumCenterDistance * scaleFactor);
+                    //const float farPlaneDistance = lightDistance + depthH;  //Far plane need to see the light distance + whatever is left of the frustum cascade.
 
 
-                    glm::vec3 frustumCenterWorld = m_Camera->GetTransform().GetTranslation() + (m_Camera->GetTransform().GetForward() * (nearZ + ((farZ - nearZ) / 2.f)));
-                    glm::vec3 lightPosWorld = frustumCenterWorld - (lightData.data * halfFarPlane);
+                    //glm::vec3 frustumCenterWorld = m_Camera->GetTransform().GetTranslation() + (m_Camera->GetTransform().GetBack() * frustumCenterDistance);
+                    //glm::vec3 lightPosWorld = frustumCenterWorld - (lightData.data * lightDistance);   //Move far plane + edge of frustum from light perspective.
 
-                    lightMatrix = glm::lookAt(lightPosWorld, frustumCenterWorld, { 0.f, 1.f, 0.f });
-                    auto projectionMatrix = glm::ortho(-widthH, widthH, -heightH, heightH, 0.1f, camSettings.farPlane * 2.f);
+                    //lightMatrix = glm::lookAt(lightPosWorld, frustumCenterWorld, up);
+                    //auto projectionMatrix = glm::ortho(-widthH, widthH, -heightH, heightH, 0.1f, farPlaneDistance); //This distance will cover from the light till the end of the frustum. Added 1 for bias.
+
+
+
+                    //Simpler way in world space without light translation. 
+                    const float depth = max.z - min.z;
+                    const float depthH = depth / 2.f;
+                    const float scaleFactor = glm::dot(lightData.data, m_Camera->GetTransform().GetBack());
+                    const float cascadeDepthH = fabsf((farZ - nearZ) / 2.f);
+                    const float frustumCenterDistance = -nearZ + cascadeDepthH;
+                    const float lightDistance = camSettings.farPlane + depthH + (frustumCenterDistance * scaleFactor);
+                    auto projectionMatrix = glm::ortho(min.x, max.x, min.y, max.y, min.z - lightDistance, max.z + camSettings.farPlane); //This distance will cover from the light till the end of the frustum. Added 1 for bias.
+
+
 
                     auto pv = projectionMatrix * lightMatrix;
 

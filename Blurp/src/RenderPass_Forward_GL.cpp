@@ -93,7 +93,9 @@ namespace blurp
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_CUBE_MAP_SEAMLESS, GL_TRUE);
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glSamplerParameteri(m_ShadowSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        glSamplerParameterfv(m_ShadowSampler, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.f)));
+
+        float border[]{1.f, 1.f, 1.f, 1.f};
+        glSamplerParameterfv(m_ShadowSampler, GL_TEXTURE_BORDER_COLOR, border);
 
         return true;
     }
@@ -286,7 +288,7 @@ namespace blurp
         staticData.pv = m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix();
         staticData.camPosFarPlane = glm::vec4(m_Camera->GetTransform().GetTranslation(), m_Camera->GetSettings().farPlane);
         staticData.numLightsNumCascades = glm::vec4(m_LightCounts, m_NumDirCascades);
-        staticData.numShadowsCascadeDistance = glm::vec4(m_ShadowCounts, m_DirCascadeDistance);
+        staticData.numShadows = glm::vec4(m_ShadowCounts, 0.f);
         staticData.ambientLight = glm::vec4(m_AmbientLight, 0.f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_StaticDataUbo);

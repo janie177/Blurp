@@ -12,15 +12,14 @@
 
 #include "ImageUtil.h"
 
-#define MESH_SCALE 900.f
+#define MESH_SCALE 5000.f
 
 #define NUM_SHADOW_POS_LIGHTS 1
 
 #define NEAR_PLANE 0.1f
-#define FAR_PLANE 200.f
+#define FAR_PLANE 1000.f
 
-#define NUM_CASCADES 6
-#define CASCADE_DISTANCE 25.f
+#define NUM_CASCADES 10
 
 #define SHADOW_MAP_DIMENSION 2048.f
 
@@ -169,7 +168,7 @@ void ShadowTestScene::Init()
 
     //Use shadow mapping. m_DirLightMatView is passed by reference and stored as a pointer. This m
     m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
-    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, NUM_CASCADES, CASCADE_DISTANCE, m_TransformBuffer, m_DirLightMatView);
+    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, NUM_CASCADES, m_TransformBuffer, m_DirLightMatView);
 
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)
@@ -272,8 +271,8 @@ void ShadowTestScene::Init()
         m_Transforms.emplace_back(t);
     }
 
-    constexpr int count = 35;
-    constexpr float distance = 50.f;
+    constexpr int count = 100;
+    constexpr float distance = 80.f;
     for(int i = 0; i < count; ++i)
     {
         Transform t;
@@ -281,11 +280,11 @@ void ShadowTestScene::Init()
         float dist = i % 2 == 0 ? distance : distance / 2.f;
 
         float x = cosf((6.28f / count) * (float)i) * dist;
-        float y = 10.f;
+        float y = 40.f;
         float z = sinf((6.28f / count) * (float)i) * dist;
 
         t.SetTranslation({ x, y, z});
-        t.SetScale({ 2.f, 20.f, 2.f });
+        t.SetScale({ 2.f, 10.f, 2.f });
         m_Transforms.emplace_back(t);
     }
 }
@@ -360,45 +359,88 @@ void ShadowTestScene::Update()
         }
     }
 
-    //Update the camera position based on the mouse input.
-    if (mouseMoveX != 0)
+    //Update the camera based on input.
     {
-        m_Camera->GetTransform().RotateAround(m_PlaneTransform.GetTranslation(), m_Camera->GetTransform().GetUp(), MOVE_SENSITIVITY * mouseMoveX);
-    }
-    if (mouseMoveY != 0)
-    {
-        m_Camera->GetTransform().RotateAround(m_PlaneTransform.GetTranslation(), m_Camera->GetTransform().GetRight(), MOVE_SENSITIVITY * mouseMoveY);
-    }
+        auto& transform = m_Camera->GetTransform();
+        bool shift = input.getKeyState(KEY_SHIFT) != ButtonState::NOT_PRESSED;
 
-    //Handle zooming in and out.
-    if (mouseScroll != 0)
-    {
-        const static float MIN_DISTANCE = 1.0f;
-        auto moved = m_Camera->GetTransform().GetForward() * SCROLL_SENSITIVITY * mouseScroll;
+        const float movespeed = (shift ? 1.f : 0.2f);
+        const float rotationSpeed = (shift ? 0.05f : 0.01f);
 
-        //Zooming out is always possible.
-        if (mouseScroll > 0)
+        if (input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
         {
-            m_Camera->GetTransform().Translate(moved);
+            transform.Translate(transform.GetForward() * -movespeed);
         }
-        //Make sure not zooming in too close.
-        else
+        if (input.getKeyState(KEY_A) != ButtonState::NOT_PRESSED)
         {
-            const auto oldDistance = glm::distance(m_Camera->GetTransform().GetTranslation(), m_PlaneTransform.GetTranslation());
-            const auto moveLength = glm::length(moved);
+            transform.Translate(transform.GetLeft() * movespeed);
+        }
+        if (input.getKeyState(KEY_S) != ButtonState::NOT_PRESSED)
+        {
+            transform.Translate(transform.GetBack() * -movespeed);
+        }
+        if (input.getKeyState(KEY_D) != ButtonState::NOT_PRESSED)
+        {
+            transform.Translate(transform.GetRight() * movespeed);
+        }
 
-            //Zoomed in too close. Set to correct distance.
-            if (oldDistance - moveLength < MIN_DISTANCE)
-            {
-                m_Camera->GetTransform().LookAt(m_PlaneTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE), m_PlaneTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE * 2.f), m_Camera->GetTransform().GetUp());
-            }
-            //Zoom allowed.
-            else
-            {
-                m_Camera->GetTransform().Translate(moved);
-            }
+        if (input.getKeyState(KEY_UP) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetRight(), rotationSpeed);
+        }
+        if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetUp(), rotationSpeed);
+        }
+        if (input.getKeyState(KEY_DOWN) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetRight(), -rotationSpeed);
+        }
+        if (input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetUp(), -rotationSpeed);
         }
     }
+
+    ////Update the camera position based on the mouse input.
+    //if (mouseMoveX != 0)
+    //{
+    //    m_Camera->GetTransform().RotateAround(m_PlaneTransform.GetTranslation(), m_Camera->GetTransform().GetUp(), MOVE_SENSITIVITY * mouseMoveX);
+    //}
+    //if (mouseMoveY != 0)
+    //{
+    //    m_Camera->GetTransform().RotateAround(m_PlaneTransform.GetTranslation(), m_Camera->GetTransform().GetRight(), MOVE_SENSITIVITY * mouseMoveY);
+    //}
+
+    ////Handle zooming in and out.
+    //if (mouseScroll != 0)
+    //{
+    //    const static float MIN_DISTANCE = 1.0f;
+    //    auto moved = m_Camera->GetTransform().GetForward() * SCROLL_SENSITIVITY * mouseScroll;
+
+    //    //Zooming out is always possible.
+    //    if (mouseScroll > 0)
+    //    {
+    //        m_Camera->GetTransform().Translate(moved);
+    //    }
+    //    //Make sure not zooming in too close.
+    //    else
+    //    {
+    //        const auto oldDistance = glm::distance(m_Camera->GetTransform().GetTranslation(), m_PlaneTransform.GetTranslation());
+    //        const auto moveLength = glm::length(moved);
+
+    //        //Zoomed in too close. Set to correct distance.
+    //        if (oldDistance - moveLength < MIN_DISTANCE)
+    //        {
+    //            m_Camera->GetTransform().LookAt(m_PlaneTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE), m_PlaneTransform.GetTranslation() + (m_Camera->GetTransform().GetForward() * MIN_DISTANCE * 2.f), m_Camera->GetTransform().GetUp());
+    //        }
+    //        //Zoom allowed.
+    //        else
+    //        {
+    //            m_Camera->GetTransform().Translate(moved);
+    //        }
+    //    }
+    //}
 
     //Handle alt enter to go fullscreen.
     if (input.getKeyState(KEY_ALT) != ButtonState::NOT_PRESSED && input.getKeyState(KEY_ENTER) == ButtonState::FIRST_PRESSED)
@@ -426,105 +468,6 @@ void ShadowTestScene::Update()
 
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
 
-    //TODO remove this
-    if (updateLightFrustumLocation)
-    {
-        static size_t oldSize = m_Transforms.size();
-        m_Transforms.resize(oldSize);
-        //TODO remove frustum visualization
-        {
-            //Matrix used to convert a point from camera space to world space.
-            glm::mat4 camToWorld = m_Camera->GetTransform().GetTransformation();
-            glm::mat4 lightMatrix = glm::lookAt(glm::vec3(0.f, 0.f, 0.f), m_DirLight->GetDirection(), glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 camToLight = lightMatrix * camToWorld;
-
-            //Horizontal and vertical FOV.
-            auto& camSettings = m_Camera->GetSettings();
-            float verticalFovTanHalved = tanf(glm::radians(camSettings.fov / 2.0f));
-            float aspectRatio = camSettings.width / camSettings.height;
-            float horizontalFovTanHalved = verticalFovTanHalved * aspectRatio;
-
-            glm::vec4 cameraFrustumCorners[8];      //The 8 corners of the frustum.
-
-            //Calculate the far and near Z positions of this cascade. The last cascade is goes all the way to the far plane.
-            int cascadeIndex = 0;
-            float nearZ = cascadeIndex * CASCADE_DISTANCE;
-            float farZ = nearZ + CASCADE_DISTANCE;
-
-            //Calculate near and far X using some trigonometry.
-            float nearX = nearZ * horizontalFovTanHalved;
-            float farX = farZ * horizontalFovTanHalved;
-
-            //Calculate Y using the vertical FOV.
-            float nearY = nearZ * verticalFovTanHalved;
-            float farY = farZ * verticalFovTanHalved;
-
-            //Because the camera frustum points in negative Z direction, invert the Z coordinates.
-            farZ *= -1.f;
-            nearZ *= -1.f;
-
-            //All 8 corners.
-            cameraFrustumCorners[0] = { -nearX, -nearY, nearZ, 1.f };
-            cameraFrustumCorners[1] = { +nearX, -nearY, nearZ, 1.f };
-            cameraFrustumCorners[2] = { -nearX, +nearY, nearZ, 1.f };
-            cameraFrustumCorners[3] = { +nearX, +nearY, nearZ, 1.f };
-            cameraFrustumCorners[4] = { -farX, -farY, farZ, 1.f };
-            cameraFrustumCorners[5] = { +farX, -farY, farZ, 1.f };
-            cameraFrustumCorners[6] = { -farX, +farY, farZ, 1.f };
-            cameraFrustumCorners[7] = { +farX, +farY, farZ, 1.f };
-
-            //Min and max coordinates on each axis.
-            glm::vec3 min(std::numeric_limits<float>::max());
-            glm::vec3 max(-std::numeric_limits<float>::max());
-
-            //Transform to world space and then to light space. All corners are now aligned with the light (Z = light dir).
-            //Then compare the coordinates to find the min and max of each axis.
-            for (int corner = 0; corner < 8; ++corner)
-            {
-                //Transform to light space.
-                cameraFrustumCorners[corner] = camToLight * cameraFrustumCorners[corner];
-
-                //Find min and max in the lights projection.
-                min.x = std::fmin(min.x, cameraFrustumCorners[corner].x);
-                min.y = std::fmin(min.y, cameraFrustumCorners[corner].y);
-                min.z = std::fmin(min.z, cameraFrustumCorners[corner].z);
-                max.x = std::fmax(max.x, cameraFrustumCorners[corner].x);
-                max.y = std::fmax(max.y, cameraFrustumCorners[corner].y);
-                max.z = std::fmax(max.z, cameraFrustumCorners[corner].z);
-            }
-
-            //Convert back to 8 points and convert those from light to world space.
-            auto invLight = glm::inverse(lightMatrix);
-            glm::vec4 lightBoundingBox[8];
-            lightBoundingBox[0] = glm::vec4(min.x, min.y, min.z, 1.f);
-            lightBoundingBox[1] = glm::vec4(min.x, max.y, min.z, 1.f);
-            lightBoundingBox[2] = glm::vec4(max.x, min.y, min.z, 1.f);
-            lightBoundingBox[3] = glm::vec4(max.x, max.y, min.z, 1.f);
-            lightBoundingBox[4] = glm::vec4(min.x, min.y, max.z, 1.f);
-            lightBoundingBox[5] = glm::vec4(min.x, max.y, max.z, 1.f);
-            lightBoundingBox[6] = glm::vec4(max.x, min.y, max.z, 1.f);
-            lightBoundingBox[7] = glm::vec4(max.x, max.y, max.z, 1.f);
-
-            for (int i = 0; i < 8; ++i)
-            {
-                lightBoundingBox[i] = invLight * lightBoundingBox[i];
-
-                Transform t;
-                t.SetTranslation(glm::vec3(lightBoundingBox[i]));
-                t.SetScale({ 2.f, 2.f, 2.f });
-                //m_Transforms.emplace_back(t);
-            }
-
-            glm::vec3 frustumCenterWorld = m_Camera->GetTransform().GetTranslation() + (m_Camera->GetTransform().GetForward() * (nearZ + ((farZ - nearZ) / 2.f)));
-            Transform t;
-            t.SetTranslation(frustumCenterWorld);
-            t.SetScale({ 5.f, 5.f, 5.f});
-            m_Transforms.emplace_back(t);
-        }
-
-        updateLightFrustumLocation = false;
-    }
-
 
     //Add the other data for drawing.
     if(!m_Transforms.empty())
@@ -545,8 +488,15 @@ void ShadowTestScene::Update()
         drawDatas.push_back(m_DrawData);
     }
 
+    std::vector<float> cascadeDistances;
+    cascadeDistances.resize(NUM_CASCADES);
+    for(int c = 0; c < NUM_CASCADES; ++c)
+    {
+        cascadeDistances[c] = 32.f;
+    }
+
     //Set dir shadow buffer info etc.
-    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, CASCADE_DISTANCE, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
+    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, cascadeDistances, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
 
     //Don't count the light for the shadow.
     drawDatas.push_back(m_LightMeshDrawData);
@@ -578,12 +528,6 @@ void ShadowTestScene::Update()
         {
             break;
         }
-    }
-
-    //TODO remove
-    if(input.getKeyState(KEY_L) == ButtonState::FIRST_PRESSED)
-    {
-        updateLightFrustumLocation = true;
     }
 
     //printscreen.

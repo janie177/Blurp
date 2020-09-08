@@ -84,7 +84,7 @@ layout(std140, binding = 1) uniform StaticData
     mat4 viewProjection;            //PV matrix.
     vec4 cameraPositionFarPlane;    //Camera position in world space. W is the far plane value.
     vec4 numLightsNumCascades;      //Number of lights. X = point, Y = spot, Z = directional.   W = number of directional shadow cascades.
-    vec4 numShadowsCascadeDistance; //Number of shadow lights. X = point, Y = spot, Z = directional.    W = Distance per directional shadow cascade.
+    vec4 numShadows;                //Number of shadow lights. X = point, Y = spot, Z = directional.
     vec4 ambientLight;              //Total ambient light count.
 };
 
@@ -123,7 +123,6 @@ out VERTEX_OUT
 #ifdef USE_DIR_SHADOWS_DEFINE
     //Directional shadow cascading.
     flat float numShadowCascades;
-    flat float shadowCascadeDistance;
     float fragDepth;
 #endif
 
@@ -251,13 +250,12 @@ void main()
 
     //Pass on light information.
     outData.numLights = numLightsNumCascades.xyz;
-    outData.numShadows = numShadowsCascadeDistance.xyz;
+    outData.numShadows = numShadows.xyz;
     outData.ambientLight = ambientLight.xyz;
     
 #ifdef USE_DIR_SHADOWS_DEFINE
     //If directional shadows are used, set the cascade information here.
     outData.numShadowCascades = numLightsNumCascades.w;
-    outData.shadowCascadeDistance = numShadowsCascadeDistance.w;
     outData.fragDepth = gl_Position.z;
 #endif
 }

@@ -45,15 +45,25 @@ namespace blurp
     }
 
     void RenderPass_ShadowMap::SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture,
-        const std::uint32_t a_NumCascades, const float a_CascadeDistance,
+        const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances,
         const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset,
         GpuBufferView& a_TransformView)
     {
         //Ensure that cascading is set up correctly.
-        assert(a_CascadeDistance >= 1.f && "Shadow cascade length has to be at least 1.");
+        assert(a_CascadeDistances.size() == a_NumCascades && "The amount of shadow cascade distances has to be equal to the amount of cascades!");
         assert(a_NumCascades >= 1u && "A minimum of 1 shadow cascade is required.");
-        m_DirectionalCascades = a_NumCascades;
-        m_DirectionalCascadeDistance = a_CascadeDistance;
+
+#ifndef NDEBUG
+        for (auto& f : a_CascadeDistances)
+        {
+            assert(f >= 0.f && "Cascade distances have to be positive!");
+        }
+#endif
+        //Ensure that all distances are positive.
+
+
+        m_NumDirectionalCascades = a_NumCascades;
+        m_DirectionalCascadeDistances = a_CascadeDistances;
 
         //Ensure the texture provided is the right format.
         assert(a_Texture->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Directional light shadows require a 2D Texture Array.");

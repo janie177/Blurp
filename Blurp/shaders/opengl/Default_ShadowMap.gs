@@ -41,7 +41,6 @@ layout(std140, binding = 1) uniform PosLights
 layout(std140, binding = 1) uniform DirLights
 {
     int numCascades;
-    vec4 camPosCascadeDistance;
     int dirShadowMapId[MAX_LIGHTS];
 } dirLights;
 
@@ -93,9 +92,6 @@ void main()
 #ifdef DIRECTIONAL
     
     vec3 triangleCenter = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
-    
-    //Commented out. Instead of rendering to a single cascade, render to all of them. That way the forward shader only needs to compare each fragment.
-    //int cascadeOffset = int(min(dirLights.numCascades - 1, length(dirLights.camPosCascadeDistance.xyz - triangleCenter) / dirLights.camPosCascadeDistance.w));
 
     for(int light = 0; light < numLightIndices; light += 4)
     {

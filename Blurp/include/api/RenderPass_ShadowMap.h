@@ -36,7 +36,7 @@ namespace blurp
     public:
         RenderPass_ShadowMap(RenderPipeline& a_Pipeline)
             : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_LightIndices(nullptr), m_DrawDataCount(0),
-              m_DirectionalCascades(0), m_DirectionalCascadeDistance(0), m_DirShadowTransformView(nullptr), m_DirShadowTransformOffset(0)
+              m_NumDirectionalCascades(0), m_DirShadowTransformView(nullptr), m_DirShadowTransformOffset(0)
         {
         }
 
@@ -78,14 +78,15 @@ namespace blurp
          * PixelFormat has to be Depth.
          *
          * NumCascades is the number of cascades generated per directional light map. A minimum of 1 is required.
-         * CascadeDistance represents the distance each cascade will span along the camera direction.
-         * A minimum distance of 1 is required.
+         * CascadeDistances is the depth offset from the last cascade. These have to be positive.
+         * The first cascade always starts at 0.f.
+         * The back of the scene will not be lit if the sum of the cascade distances is smaller than far plane distance.
          *
          * The GpuBuffer provided will be used to upload light transformation matrices.
          * They are uploaded with the provided TransformOffset into the buffer.
          * The GpuBufferView provided is then filled with the relevant information about where the transforms reside on the GPU for later use.
          */
-        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const float a_CascadeDistance, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset, GpuBufferView& a_TransformView);
+        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset, GpuBufferView& a_TransformView);
 
         RenderPassType GetType() override;
 
@@ -113,9 +114,9 @@ namespace blurp
         //The camera used to determine directional light positions.
         std::shared_ptr<Camera> m_Camera;
 
-        //How many directional light cascades are used.
-        std::uint32_t m_DirectionalCascades;
-        std::float_t m_DirectionalCascadeDistance;
+        //How many directional light cascades are used. A vector containing the distance for each cascade.
+        std::uint32_t m_NumDirectionalCascades;
+        std::vector<std::float_t> m_DirectionalCascadeDistances;
 
         //Buffer and view used to upload directional light transformation matrices.
         std::shared_ptr<GpuBuffer> m_DirShadowTransformBuffer;

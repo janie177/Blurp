@@ -29,7 +29,7 @@ namespace blurp
     {
     public:
         RenderPass_Forward(RenderPipeline& a_Pipeline)
-            : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_DrawDataCount(0), m_NumDirCascades(0), m_DirCascadeDistance(0), m_LightCounts(0), m_ShadowCounts(0), m_AmbientLight(0), m_ReuploadLights(true)
+            : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_DrawDataCount(0), m_NumDirCascades(0), m_LightCounts(0), m_ShadowCounts(0), m_AmbientLight(0), m_ReuploadLights(true)
         {
         }
 
@@ -77,7 +77,7 @@ namespace blurp
          * The GpuBufferView is passed by reference and stored as a pointer for reading at execution time.
          */
         void SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_Texture,
-            const std::uint32_t a_NumCascades, const float a_CascadeDistance,
+            const std::uint32_t a_NumCascades,
             const std::shared_ptr<GpuBuffer>& a_TransformBuffer,
             GpuBufferView& a_TransformViewPtr);
 
@@ -117,7 +117,6 @@ namespace blurp
         std::shared_ptr<GpuBuffer> m_DirShadowBuffer;         //The buffer containing the transformation matrices for the lights and all the 
         GpuBufferView* m_DirShadowView;                      //The view into above buffer to where the matrices are stored.
         std::uint32_t m_NumDirCascades;                     //The amount of cascades used with directional shadows.
-        float m_DirCascadeDistance;                        //The length of each shadow cascade. Measured in fragment position relative to the camera.
 
         //Shadowmap for pointlights and spotlights. This has to be a cube map texture array.
         std::shared_ptr<Texture> m_PointSpotShadowMaps;

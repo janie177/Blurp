@@ -16,7 +16,7 @@ namespace blurp
         glm::mat4 pv;
         glm::vec4 camPosFarPlane;   //XYZ = camera position. W = far plane distance.
         glm::vec4 numLightsNumCascades;        //X = numPointLight. Y = numSpotLights. Z = numDirectionalLights.    W = number of dir shadow cascades.
-        glm::vec4 numShadowsCascadeDistance;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.    W = distance per directional cascade.
+        glm::vec4 numShadows;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.
         glm::vec4 ambientLight;     //The ambient light RGB.
     };
 

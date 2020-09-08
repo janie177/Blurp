@@ -65,6 +65,4 @@ private:
 
     //Skybox
     std::shared_ptr<blurp::Texture> m_SkyBoxTexture;
-
-    bool updateLightFrustumLocation = false;
 };

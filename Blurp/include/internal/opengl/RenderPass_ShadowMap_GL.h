@@ -18,7 +18,6 @@ namespace blurp
     struct DirLightData
     {
         glm::ivec4 numCascades;                     //The amount of cascades stored in X.
-        glm::vec4 camPosCascadeDistance;            //Cam pos and the distance per cascade.
         glm::ivec4 shadowIndices[MAX_NUM_LIGHTS];   //Only X is used.
     };
 
