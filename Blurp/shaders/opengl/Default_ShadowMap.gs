@@ -90,9 +90,6 @@ void main()
 #endif
 
 #ifdef DIRECTIONAL
-    
-    vec3 triangleCenter = (gl_in[0].gl_Position.xyz + gl_in[1].gl_Position.xyz + gl_in[2].gl_Position.xyz) / 3.0;
-
     for(int light = 0; light < numLightIndices; light += 4)
     {
         int numElements = min(numLightIndices - light, 4);
@@ -105,7 +102,7 @@ void main()
             //Calculate the layer based on the current cascade.
             int cascadeBase = (dirLights.numCascades * dirLights.dirShadowMapId[lightIndex]);
 
-            //Loop over every
+            //Loop over every cascade because some triangles are in multiple cascades. 
             for(int cascadeIndex = 0; cascadeIndex < dirLights.numCascades; ++cascadeIndex)
             {
                 int cascade = cascadeBase + cascadeIndex;

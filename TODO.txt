@@ -29,19 +29,21 @@ TODO list:
 		Add input data to the shader, with a shader cache etc.
 		Allow each light to have a separate set of draw data.
 		
-	[ ] Implement directional shadow cascading in the shadowmap render pass.
+	[x] Implement directional shadow cascading in the shadowmap render pass.
 		Calculate all the matrices used for cascading and upload them to the GPU in a single buffer.
 		Return a GpuBufferView to these matrices to be used in the forward pass (no duplicate uploading).
 	
-	
-	
-	[ ] Change light uploading in the forward render pass.
+	[x] Change light uploading in the forward render pass.
 		Point and spot lights don't need a matrix while directional lights need multiple. These are already uploaded in the shadowmap generation pass.
 		Have separate buffers. Reuse shadow pass buffer.
 	
+	[ ] Having multiple directional lights results in only the first one generating a shadow map. Why?
+	
+	[ ] Light shadow pass can only support a few lights at a time. Add a loop for each light type to do them in different calls.
+	
 	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
 	
-	
+	[ ] Implement directional shadow multisampling because they kinda wiggle around now.
 	
 	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
 	
@@ -49,7 +51,7 @@ TODO list:
 	
 	[x] Implement skybox rendering.
 	
-	[ ] Make the mesh registry static global for forward pass in OpenGL. Always the same for all GL shaders.
+	[ ] Make the shader registry static global for forward pass in OpenGL. Always the same for all GL shaders. Same for other shader caches.
 	
 	[x] Set up shadowmapping.
 	
@@ -61,7 +63,9 @@ TODO list:
 		- File contains all raw texture data that can be loaded straight into the GPU.
 		- File contains all constants.
 		
-	[ ]	Create model loader in test project that can load GLTF meshes.
+	[ ] Create a custom binary mesh format.
+		
+	[ ]	Create a GLTF loader utility to load mesh from file.
 	
 	[ ] Add functionality to meshes to overwrite data partially. Ensure not locked and not read only.
 	

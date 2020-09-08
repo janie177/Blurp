@@ -31,7 +31,7 @@ namespace blurp
     {
     public:
         explicit RenderPass_ShadowMap_GL(RenderPipeline& a_Pipeline)
-            : RenderPass_ShadowMap(a_Pipeline), m_Fbo(0), m_LightUbo(0)
+            : RenderPass_ShadowMap(a_Pipeline), m_Fbo(0), m_LightUbo(0), m_MaxDirLightsPerCall(0), m_MaxPosLightsPerCall(0), m_MaxComponents(0), m_MaxTriangles(0)
         {
         }
 
@@ -45,5 +45,11 @@ namespace blurp
         GLuint m_LightUbo;          //Used for both pos and dir lights. Data overwritten and interpreted differently in the shader.
         GLuint m_LightIndicesUbo;   //Used for both lights, data overwritten between outputs.
         ShaderCache<std::uint32_t, std::uint32_t> m_ShaderCache;
+
+        //The maximum number of output by the geometry shader for the current platform.
+        GLint m_MaxDirLightsPerCall;
+        GLint m_MaxPosLightsPerCall;
+        GLint m_MaxComponents;
+        GLint m_MaxTriangles;
     };
 }

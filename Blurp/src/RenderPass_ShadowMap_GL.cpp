@@ -1,4 +1,7 @@
 #include "opengl/RenderPass_ShadowMap_GL.h"
+
+#include <algorithm>
+
 #include "opengl/Texture_GL.h"
 #include "Mesh.h"
 
@@ -86,6 +89,18 @@ namespace blurp
         glBufferData(GL_UNIFORM_BUFFER, MAX_NUM_LIGHTS + 1 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+        //Retrieve the maximum amount of vertex outputs.
+        GLint maxVertices = 0;
+        glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &maxVertices);
+        glGetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, &m_MaxComponents);
+
+        //3 vertices per triangle.
+        m_MaxTriangles = maxVertices / 3;
+
+        //These are static counts determined by how the shader works. This has to be updated if the shader changes.
+        constexpr int posComponentsPerLight = 6 * 3 * (4 + 4 + 1); //6 faces * 3 vertices * (fragPos + lPos + layer).
+        m_MaxPosLightsPerCall = std::min(m_MaxComponents / posComponentsPerLight, m_MaxTriangles);
+
         return true;
     }
 
@@ -99,7 +114,7 @@ namespace blurp
     {
         //Ensure size if not exceeded.
         assert(m_PositionalLights.size() <= MAX_NUM_LIGHTS && "Max positional light count for shadow mapping exceeded!");
-        assert(m_DirectionalLights.size() <= MAX_LIGHTS && "Max number of directional lights exceeded!");
+        assert(m_DirectionalLights.size() <= MAX_NUM_LIGHTS && "Max number of directional lights exceeded!");
 
         //Calculate bit masks for positional/directional use.
         constexpr std::uint32_t POSITIONAL_BIT = 1 << (NUM_VERTEX_ATRRIBS + NUM_DRAW_ATTRIBS);
@@ -218,39 +233,51 @@ namespace blurp
                 //Set the uniform for the far plane.
                 glUniform1f(1, farPlane);
 
-                //Calculate light indices. Has to be in vec4 format padded to vec4 size.
+                //Draw the mesh for every batch of lights. Size determined by m_MaxPosLightsPerCall.
                 const LightIndexData& indices = m_LightIndices[i];
-                std::vector<std::int32_t> lightIndices;
-                lightIndices.reserve(indices.posIndices.size() + 4);
+                int numBatches = static_cast<int>(std::ceil(static_cast<float>(indices.posIndices.size()) / static_cast<float>(m_MaxPosLightsPerCall)));
+                int lightsLeft = static_cast<int>(indices.posIndices.size());
 
-                //Add the index.
-                lightIndices.push_back(static_cast<std::int32_t>(indices.posIndices.size()));
-                lightIndices.push_back(0);
-                lightIndices.push_back(0);
-                lightIndices.push_back(0);
-
-                lightIndices.insert(lightIndices.end(), indices.posIndices.begin(), indices.posIndices.end());
-                const int paddingRequired = (~lightIndices.size() + 1) & (4 - 1);
-                for(int p = 0; p < paddingRequired; ++p)
+                for (int lBatch = 0; lBatch < numBatches; ++lBatch)
                 {
+                    std::vector<std::int32_t> lightIndices;
+                    int numLightsInBatch = std::min(lightsLeft, m_MaxPosLightsPerCall);
+                    lightIndices.reserve( static_cast<size_t>(numLightsInBatch) + 4);
+                    lightsLeft -= numLightsInBatch;
+
+                    //Add the amount of lights in this batch.
+                    lightIndices.push_back(static_cast<std::int32_t>(numLightsInBatch));
                     lightIndices.push_back(0);
+                    lightIndices.push_back(0);
+                    lightIndices.push_back(0);
+
+                    int startIndex = lBatch * m_MaxPosLightsPerCall;
+                    int endIndex = startIndex + numLightsInBatch;
+
+                    lightIndices.insert(lightIndices.end(), indices.posIndices.begin() + startIndex, indices.posIndices.begin() + endIndex);
+                    const int paddingRequired = (~lightIndices.size() + 1) & (4 - 1);
+                    for (int p = 0; p < paddingRequired; ++p)
+                    {
+                        lightIndices.push_back(0);
+                    }
+
+                    //Upload light index data
+                    glBindBuffer(GL_UNIFORM_BUFFER, m_LightIndicesUbo);
+                    glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_LightIndicesUbo);
+                    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(std::int32_t) * lightIndices.size(), &lightIndices[0]);
+
+                    //If the geometry changed, bind the new geometry.
+                    if (prevMesh != drawData.mesh)
+                    {
+                        //TODO bind VBO manually and enable only required attributes.
+                        //Bind the VAO of the mesh.
+                        glBindVertexArray(mesh->GetVaoId());
+                        prevMesh = drawData.mesh;
+                    }
+
+                    //Finally draw instanced.
+                    glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
                 }
-
-                //Upload light index data
-                glBindBuffer(GL_UNIFORM_BUFFER, m_LightIndicesUbo);
-                glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_LightIndicesUbo);
-                glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(std::int32_t) * lightIndices.size(), &lightIndices[0]);
-
-                //If the geometry changed, bind the new geometry.
-                if (prevMesh != drawData.mesh)
-                {
-                    //TODO bind VBO manually and enable only required attributes.
-                    //Bind the VAO of the mesh.
-                    glBindVertexArray(mesh->GetVaoId());
-                }
-
-                //Finally draw instanced.
-                glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
             }
         }
 
@@ -262,6 +289,10 @@ namespace blurp
         {
             //Ensure there's enough space in the texture.
             assert(m_ShadowMapsDirectional->GetDimensions().z >= m_DirectionalLights.size() * m_NumDirectionalCascades && "Shadow map array has not enough layers for this many lights!");
+
+            //Max dir lights is determined by the cascades, which is a runtime value.
+            const int dirComponentsPerLight = 3 * static_cast<int>(m_NumDirectionalCascades) * (4 + 1); //3 vertices * cascades * (pos + layer)
+            m_MaxDirLightsPerCall = std::min(m_MaxComponents / dirComponentsPerLight, m_MaxTriangles);
 
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
@@ -501,39 +532,51 @@ namespace blurp
                 //Set the number of instances from the mesh itself in the uniform.
                 glUniform1i(0, mesh->GetInstanceCount());
 
-                //Calculate light indices. Has to be in vec4 format padded to vec4 size.
+                //Draw the mesh for every batch of lights. Size determined by m_MaxPosLightsPerCall.
                 const LightIndexData& indices = m_LightIndices[i];
-                std::vector<std::int32_t> lightIndices;
-                lightIndices.reserve(indices.dirIndices.size() + 4);
+                int numBatches = static_cast<int>(std::ceil(static_cast<float>(indices.dirIndices.size()) / static_cast<float>(m_MaxDirLightsPerCall)));
+                int lightsLeft = static_cast<int>(indices.dirIndices.size());
 
-                //Add the index.
-                lightIndices.push_back(static_cast<std::int32_t>(indices.dirIndices.size()));
-                lightIndices.push_back(0);
-                lightIndices.push_back(0);
-                lightIndices.push_back(0);
-
-                lightIndices.insert(lightIndices.end(), indices.dirIndices.begin(), indices.dirIndices.end());
-                const int paddingRequired = (~lightIndices.size() + 1) & (4 - 1);
-                for (int p = 0; p < paddingRequired; ++p)
+                for (int lBatch = 0; lBatch < numBatches; ++lBatch)
                 {
+                    std::vector<std::int32_t> lightIndices;
+                    int numLightsInBatch = std::min(lightsLeft, m_MaxDirLightsPerCall);
+                    lightIndices.reserve(static_cast<size_t>(numLightsInBatch) + 4);
+                    lightsLeft -= numLightsInBatch;
+
+                    //Add the amount of lights in this batch.
+                    lightIndices.push_back(static_cast<std::int32_t>(numLightsInBatch));
                     lightIndices.push_back(0);
+                    lightIndices.push_back(0);
+                    lightIndices.push_back(0);
+
+                    int startIndex = lBatch * m_MaxDirLightsPerCall;
+                    int endIndex = startIndex + numLightsInBatch;
+
+                    lightIndices.insert(lightIndices.end(), indices.dirIndices.begin() + startIndex, indices.dirIndices.begin() + endIndex);
+                    const int paddingRequired = (~lightIndices.size() + 1) & (4 - 1);
+                    for (int p = 0; p < paddingRequired; ++p)
+                    {
+                        lightIndices.push_back(0);
+                    }
+
+                    //Upload light index data
+                    glBindBuffer(GL_UNIFORM_BUFFER, m_LightIndicesUbo);
+                    glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_LightIndicesUbo);
+                    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(std::int32_t) * lightIndices.size(), &lightIndices[0]);
+
+                    //If the geometry changed, bind the new geometry.
+                    if (prevMesh != drawData.mesh)
+                    {
+                        //TODO bind VBO manually and enable only required attributes.
+                        //Bind the VAO of the mesh.
+                        glBindVertexArray(mesh->GetVaoId());
+                        prevMesh = drawData.mesh;
+                    }
+
+                    //Finally draw instanced.
+                    glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
                 }
-
-                //Upload light index data
-                glBindBuffer(GL_UNIFORM_BUFFER, m_LightIndicesUbo);
-                glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_LightIndicesUbo);
-                glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(std::int32_t) * lightIndices.size(), &lightIndices[0]);
-
-                //If the geometry changed, bind the new geometry.
-                if (prevMesh != drawData.mesh)
-                {
-                    //TODO bind VBO manually and enable only required attributes.
-                    //Bind the VAO of the mesh.
-                    glBindVertexArray(mesh->GetVaoId());
-                }
-
-                //Finally draw instanced.
-                glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
             }
         }
     }

@@ -493,6 +493,7 @@ namespace blurp
             {
                 //Bind the VAO of the mesh.
                 glBindVertexArray(mesh->GetVaoId());
+                prevMesh = instanceData.mesh;
             }
 
             //Finally draw instanced.

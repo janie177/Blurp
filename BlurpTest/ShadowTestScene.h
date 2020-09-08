@@ -56,11 +56,17 @@ private:
     blurp::DrawData m_LightMeshDrawData;
 
     //Light
-    std::shared_ptr<blurp::PointLight> m_Light;
+    std::vector<std::shared_ptr<blurp::PointLight>> m_PointLights;
+
+    //Moving point light data.
+    std::vector<glm::vec3> m_LDirs;
+    std::vector<glm::vec3> m_LDirMods;
+    std::vector<float> m_LSpeeds;
+
     std::shared_ptr<blurp::Light> m_AmbientLight;
 
     //Directional
-    std::shared_ptr<blurp::DirectionalLight> m_DirLight;
+    std::vector<std::shared_ptr<blurp::DirectionalLight>> m_DirLights;
     std::shared_ptr<blurp::GpuBufferView> m_DirLightMatView;
     std::shared_ptr<blurp::GpuBufferView> m_DirLightDataOffsetView;
 

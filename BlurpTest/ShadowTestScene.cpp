@@ -13,13 +13,15 @@
 #include "ImageUtil.h"
 
 #define MESH_SCALE 5000.f
+#define LIGHT_BOUND 200.f
 
-#define NUM_SHADOW_POS_LIGHTS 1
+#define NUM_SHADOW_POS_LIGHTS 6
+#define NUM_SHADOW_DIR_LIGHTS 2
 
 #define NEAR_PLANE 0.1f
 #define FAR_PLANE 1000.f
 
-#define NUM_CASCADES 10
+#define NUM_CASCADES 5
 
 #define SHADOW_MAP_DIMENSION 2048.f
 
@@ -134,7 +136,7 @@ void ShadowTestScene::Init()
     //Directional shadow array.
     //3 cascades, 1 light.
     TextureSettings shadowDirSettings;
-    shadowDirSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES);
+    shadowDirSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES * NUM_SHADOW_DIR_LIGHTS);
     shadowDirSettings.generateMipMaps = false;
     shadowDirSettings.dataType = DataType::FLOAT;
     shadowDirSettings.pixelFormat = PixelFormat::DEPTH;
@@ -176,9 +178,17 @@ void ShadowTestScene::Init()
 
     std::vector<float> cascadeDistances;
     cascadeDistances.resize(NUM_CASCADES);
+    float cd = 32.f;
+    float total = 0.f;
     for (int c = 0; c < NUM_CASCADES; ++c)
     {
-        cascadeDistances[c] = 32.f;
+        cascadeDistances[c] = cd;
+        total += cd;
+        cd *= 1.618f;
+        if(c == NUM_CASCADES - 2)
+        {
+            cd = FAR_PLANE - total;
+        }
     }
 
     //Resize callback.
@@ -244,22 +254,56 @@ void ShadowTestScene::Init()
     m_LightMeshDrawData.materialData.material = m_LightMaterial;
     m_LightMeshDrawData.mesh = m_LightMesh;
 
-    //Set up the light itself.
-    LightSettings pointSettings;
-    pointSettings.color = { 1.f, 1.f, 1.f };
-    pointSettings.intensity = 250.f;
-    pointSettings.pointLight.position = { 0.f, 8.f, 0.f };
-    pointSettings.type = LightType::LIGHT_POINT;
-    m_Light = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(pointSettings));
+    //Point lights.
+    constexpr float maxIntensity = 50.f;
+    constexpr float minIntensity = 12.f;
+    constexpr float spawnRadius = 200.f;
+    constexpr float maxHeight = 30.f;
+    constexpr float minHeight = 4.f;
+
+    for(int pl = 0; pl < NUM_SHADOW_POS_LIGHTS; ++pl)
+    {
+        float intensity = ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxIntensity - minIntensity)) + minIntensity;
+        float r = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+        float g = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+        float b = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+
+        float x = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * spawnRadius;
+        float y = ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxHeight - minHeight)) + minHeight;
+        float z = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * spawnRadius;
+
+        glm::vec3 color = glm::vec3{ r, g, b };
+        glm::vec3 position = glm::vec3{ x, y, z };
+
+        LightSettings pointSettings;
+        pointSettings.color = color;
+        pointSettings.intensity = 250.f;
+        pointSettings.pointLight.position = position;
+        pointSettings.type = LightType::LIGHT_POINT;
+        m_PointLights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(pointSettings)));
+    }
 
     //Dir light
-    LightSettings dirSettings;
-    dirSettings.color = { 1.f, 0.8f, 0.9f };
-    dirSettings.intensity = 0.6f;
-    dirSettings.directionalLight.direction = glm::normalize(glm::vec3(-1.f, -1.f, 0.f));
-    dirSettings.type = LightType::LIGHT_DIRECTIONAL;
-    m_DirLight = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(dirSettings));
+    for(int dl = 0; dl < NUM_SHADOW_DIR_LIGHTS; ++dl)
+    {
+        float r = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+        float g = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+        float b = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
 
+        float x = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * 2.f;
+        float y = ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX))) - 1.2f; //Always looking down.
+        float z = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * 2.f;
+
+        glm::vec3 color = glm::vec3{r, g, b};
+        glm::vec3 direction = glm::vec3{x, y, z};
+
+        LightSettings dirSettings;
+        dirSettings.color = color;
+        dirSettings.intensity = 1.f / (static_cast<float>(NUM_SHADOW_DIR_LIGHTS) * 6.f);
+        dirSettings.directionalLight.direction = glm::normalize(direction);
+        dirSettings.type = LightType::LIGHT_DIRECTIONAL;
+        m_DirLights.push_back(std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(dirSettings)));
+    }
 
     //Ambient light
     LightSettings ambientSettings;
@@ -295,12 +339,48 @@ void ShadowTestScene::Init()
         float dist = i % 2 == 0 ? distance : distance / 2.f;
 
         float x = cosf((6.28f / count) * (float)i) * dist;
-        float y = 40.f;
+        float y = 10.f;
         float z = sinf((6.28f / count) * (float)i) * dist;
 
         t.SetTranslation({ x, y, z});
         t.SetScale({ 2.f, 10.f, 2.f });
         m_Transforms.emplace_back(t);
+    }
+
+    for (int i = 0; i < count; ++i)
+    {
+        Transform t;
+
+        float dist = 2.2f * (i % 2 == 0 ? distance : distance / 2.f);
+        float hMod = (i % 2 == 0 ? 0 : 20.f);
+
+        float x = cosf((6.28f / count) * (float)i) * dist;
+        float y = 10.f + hMod;
+        float z = sinf((6.28f / count) * (float)i) * dist;
+
+        t.SetTranslation({ x, y, z });
+        t.SetScale({ 2.f, 30.f, 2.f });
+        m_Transforms.emplace_back(t);
+    }
+
+
+    //Update moving pos light directions and all that.
+    m_LDirs.resize(NUM_SHADOW_POS_LIGHTS);
+    m_LDirMods.resize(NUM_SHADOW_POS_LIGHTS);
+    m_LSpeeds.resize(NUM_SHADOW_POS_LIGHTS);
+
+    constexpr float maxSpeed = 1.5f;
+    constexpr float minSpeed = 0.2f;
+
+    for (int i = 0; i < NUM_SHADOW_POS_LIGHTS; ++i)
+    {
+        float x = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * 2.f;
+        float y = 0.f;//(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));        //DONT MOVE Y
+        float z = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f) * 2.f;
+        m_LDirs[i] = (glm::normalize(glm::vec3(x, y, z)));
+
+        float speed = ((static_cast <float> (rand()) / static_cast <float> (RAND_MAX)) * (maxSpeed - minSpeed)) + minSpeed;
+        m_LSpeeds[i] = speed;
     }
 }
 
@@ -324,31 +404,31 @@ void ShadowTestScene::Update()
     }
 
     //Move the light.
-    const static float MOVE_SPEED = 0.1f;
-    if (input.getKeyState(KEY_A) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ -MOVE_SPEED, 0.f, 0.f });
-    }
-    if (input.getKeyState(KEY_D) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ MOVE_SPEED, 0.f, 0.f });
-    }
-    if (input.getKeyState(KEY_E) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, MOVE_SPEED, 0.f });
-    }
-    if (input.getKeyState(KEY_Q) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, -MOVE_SPEED, 0.f });
-    }
-    if (input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, 0.f, -MOVE_SPEED});
-    }
-    if (input.getKeyState(KEY_S) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, 0.f, MOVE_SPEED });
-    }
+    //const static float MOVE_SPEED = 0.1f;
+    //if (input.getKeyState(KEY_A) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ -MOVE_SPEED, 0.f, 0.f });
+    //}
+    //if (input.getKeyState(KEY_D) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ MOVE_SPEED, 0.f, 0.f });
+    //}
+    //if (input.getKeyState(KEY_E) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ 0.f, MOVE_SPEED, 0.f });
+    //}
+    //if (input.getKeyState(KEY_Q) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ 0.f, -MOVE_SPEED, 0.f });
+    //}
+    //if (input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ 0.f, 0.f, -MOVE_SPEED});
+    //}
+    //if (input.getKeyState(KEY_S) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_PointLights->SetPosition(m_PointLights->GetPosition() + glm::vec3{ 0.f, 0.f, MOVE_SPEED });
+    //}
 
     const static float MOVE_SENSITIVITY = 0.001f;
     const static float SCROLL_SENSITIVITY = 1.5f;
@@ -471,14 +551,53 @@ void ShadowTestScene::Update()
     auto matrix = m_PlaneTransform.GetTransformation();
     m_PlaneDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(0, 1, 16, &matrix);
 
-    //Upload the mesh representing the light transform.
-    m_LightMeshTransform.SetTranslation(m_Light->GetPosition());
-    auto lightMat = m_LightMeshTransform.GetTransformation();
-    m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, 1, 16, &lightMat);
+    //Upload the mesh representing the light transform for positional lights.
+    //Also upload their positions and directions.
+    std::vector<glm::mat4> shadowPosTransforms;
+    for(int i = 0; i < NUM_SHADOW_POS_LIGHTS; ++i)
+    {
+        auto pos = m_PointLights[i]->GetPosition();
+        //Make sure not to leave the plane. Return to center if far away.
+        if (glm::length(pos) > LIGHT_BOUND)
+        {
+            glm::vec3 toCenter = glm::normalize(glm::vec3(-pos.x, 0, -pos.z));
+            m_LDirMods[i] = toCenter;
+            m_LDirs[i] = toCenter;
+        }
+        //In range so possibly change randomly.
+        else if (rand() % 50 == 1)
+        {
+            float modX = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) * 2.f;
+            float modZ = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5) * 2.f;
+            m_LDirMods[i] = glm::normalize(glm::vec3(modX, 0.f, modZ));
+        }
 
-    //Add the light to the scene.
-    m_ForwardPass->AddLight(m_Light, 0);
-    m_ForwardPass->AddLight(m_DirLight, 0);
+        //Slowly move towards new target direction.
+        constexpr float percentageLerp = 0.05f;
+        m_LDirs[i] = glm::normalize(m_LDirMods[i] * percentageLerp + (1.f - percentageLerp) * m_LDirs[i]);
+        m_PointLights[i]->SetPosition(m_PointLights[i]->GetPosition() + (m_LDirs[i] * m_LSpeeds[i]));
+
+
+        m_LightMeshTransform.SetTranslation(m_PointLights[i]->GetPosition());
+        shadowPosTransforms.emplace_back(m_LightMeshTransform.GetTransformation());
+    }
+    
+    m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, NUM_SHADOW_POS_LIGHTS, 16, &shadowPosTransforms[0]);
+    m_LightMeshDrawData.instanceCount = shadowPosTransforms.size();
+
+    //Pos lights
+    for(int i = 0; i < NUM_SHADOW_POS_LIGHTS; ++i)
+    {
+        m_ForwardPass->AddLight(m_PointLights[i], i);
+    }
+
+    //Dir lights
+    for (int i = 0; i < NUM_SHADOW_DIR_LIGHTS; ++i)
+    {
+        m_ForwardPass->AddLight(m_DirLights[i], i);
+    }
+
+    //Ambient
     m_ForwardPass->AddLight(m_AmbientLight);
 
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
@@ -503,19 +622,37 @@ void ShadowTestScene::Update()
         drawDatas.push_back(m_DrawData);
     }
 
-    //Don't count the light for the shadow.
+    //Add the positional light representations to the drawing.
     drawDatas.push_back(m_LightMeshDrawData);
 
+    //Every light affects every geometry, so make a collection of each index.
+    std::vector<int> dirLightShadowIndices;
+    std::vector<int> posLightShadowIndices;
+
     //Setup the shadow mapping for this frame. Exclude the last Drawdata which is the light mesh.
-    m_ShadowGenerationPass->AddLight(m_Light, 0);
-    m_ShadowGenerationPass->AddLight(m_DirLight, 0);
+    for(int i = 0; i < NUM_SHADOW_POS_LIGHTS; ++i)
+    {
+        m_ShadowGenerationPass->AddLight(m_PointLights[i], i);
+        posLightShadowIndices.push_back(i);
+    }
+
+    for(int i = 0; i < NUM_SHADOW_DIR_LIGHTS; ++i)
+    {
+       m_ShadowGenerationPass->AddLight(m_DirLights[i], i);
+       dirLightShadowIndices.push_back(i);
+    }
+    
+
     std::vector<LightIndexData> lIndexData;
     lIndexData.reserve(drawDatas.size() - 1);
+
+    //Don't generate shadows for the light spheres (which are at the last index of drawDatas).
     for(int i = 0; i < static_cast<int>(drawDatas.size() - 1); ++i)
     {
         //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
-        lIndexData.emplace_back(LightIndexData{ std::vector<int>({0}), std::vector<int>{0}});
+        lIndexData.emplace_back(LightIndexData{ dirLightShadowIndices, posLightShadowIndices});
     }
+
     m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 
     //Update the shadow generation view pointer data. This means the light matrices will be appended to the end.
@@ -541,37 +678,40 @@ void ShadowTestScene::Update()
     {
         std::string path = "shadowmap";
         std::string extension = ".jpg";
-        for(int i = 0; i < NUM_CASCADES; ++i)
+        for (int j = 0; j < NUM_SHADOW_DIR_LIGHTS; ++j)
         {
-            std::string file = path + std::to_string(i) + extension;
-
-            auto data = m_DirShadowArray->GetPixels(glm::vec3(0.f, 0.f, i), glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 1), 1);
-            unsigned char* converted = new unsigned char[SHADOW_MAP_DIMENSION * SHADOW_MAP_DIMENSION * 3];
-
-            float* asFloat = reinterpret_cast<float*>(data.get());
-            for(int i = 0; i < SHADOW_MAP_DIMENSION; ++i)
+            for (int i = 0; i < NUM_CASCADES; ++i)
             {
-                for(int j = 0; j < SHADOW_MAP_DIMENSION; ++j)
+                std::string file = path + std::to_string(j) + std::to_string(i) + extension;
+
+                auto data = m_DirShadowArray->GetPixels(glm::vec3(0.f, 0.f, j * NUM_CASCADES + i), glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 1), 1);
+                unsigned char* converted = new unsigned char[SHADOW_MAP_DIMENSION * SHADOW_MAP_DIMENSION * 3];
+
+                float* asFloat = reinterpret_cast<float*>(data.get());
+                for (int i = 0; i < SHADOW_MAP_DIMENSION; ++i)
                 {
-                    int coordX = (3 * SHADOW_MAP_DIMENSION * i);
-                    int coordY =  (3 * j);
-
-                    float f = asFloat[i * static_cast<int>(SHADOW_MAP_DIMENSION) + j];
-                    assert(f >= 0.f && f <= 1.f);
-
-                    float linear = (2.0 * NEAR_PLANE) / (FAR_PLANE + NEAR_PLANE - f * (FAR_PLANE - NEAR_PLANE));
-
-                    unsigned char value =  static_cast<unsigned char>(f * 255.f);
-                    for (int k = 0; k < 3; ++k)
+                    for (int j = 0; j < SHADOW_MAP_DIMENSION; ++j)
                     {
-                        converted[coordX + coordY + 0] = value;
-                        converted[coordX + coordY + 1] = value;
-                        converted[coordX + coordY + 2] = value;
+                        int coordX = (3 * SHADOW_MAP_DIMENSION * i);
+                        int coordY = (3 * j);
+
+                        float f = asFloat[i * static_cast<int>(SHADOW_MAP_DIMENSION) + j];
+                        assert(f >= 0.f && f <= 1.f);
+
+                        float linear = (2.0 * NEAR_PLANE) / (FAR_PLANE + NEAR_PLANE - f * (FAR_PLANE - NEAR_PLANE));
+
+                        unsigned char value = static_cast<unsigned char>(f * 255.f);
+                        for (int k = 0; k < 3; ++k)
+                        {
+                            converted[coordX + coordY + 0] = value;
+                            converted[coordX + coordY + 1] = value;
+                            converted[coordX + coordY + 2] = value;
+                        }
                     }
                 }
-            }
 
-            SaveToImage(file, SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 3, converted);
+                SaveToImage(file, SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 3, converted);
+            }
         }
     }
 }
