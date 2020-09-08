@@ -83,10 +83,10 @@ namespace blurp
          * The back of the scene will not be lit if the sum of the cascade distances is smaller than far plane distance.
          *
          * The GpuBuffer provided will be used to upload light transformation matrices.
-         * They are uploaded with the provided TransformOffset into the buffer.
-         * The GpuBufferView provided is then filled with the relevant information about where the transforms reside on the GPU for later use.
+         * The offset into the GpuBuffer is determined by a_Offset's end.
+         * The GpuBufferView a_TransformView is then filled with the relevant information about where the transforms reside on the GPU for later use.
          */
-        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset, GpuBufferView& a_TransformView);
+        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::shared_ptr<GpuBufferView>& a_Offset, const std::shared_ptr<GpuBufferView>& a_TransformView);
 
         RenderPassType GetType() override;
 
@@ -120,8 +120,8 @@ namespace blurp
 
         //Buffer and view used to upload directional light transformation matrices.
         std::shared_ptr<GpuBuffer> m_DirShadowTransformBuffer;
-        GpuBufferView* m_DirShadowTransformView;
-        std::uintptr_t m_DirShadowTransformOffset;
+        std::shared_ptr<GpuBufferView> m_DirShadowTransformView;
+        std::shared_ptr<GpuBufferView> m_DirShadowTransformOffset;
 
     };
 }

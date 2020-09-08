@@ -61,7 +61,8 @@ private:
 
     //Directional
     std::shared_ptr<blurp::DirectionalLight> m_DirLight;
-    blurp::GpuBufferView m_DirLightMatView;
+    std::shared_ptr<blurp::GpuBufferView> m_DirLightMatView;
+    std::shared_ptr<blurp::GpuBufferView> m_DirLightDataOffsetView;
 
     //Skybox
     std::shared_ptr<blurp::Texture> m_SkyBoxTexture;

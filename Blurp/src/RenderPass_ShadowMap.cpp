@@ -46,10 +46,12 @@ namespace blurp
 
     void RenderPass_ShadowMap::SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture,
         const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances,
-        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::uintptr_t a_TransformOffset,
-        GpuBufferView& a_TransformView)
+        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::shared_ptr<GpuBufferView>& a_Offset,
+        const std::shared_ptr<GpuBufferView>& a_TransformView)
     {
         //Ensure that cascading is set up correctly.
+        assert(a_Offset != nullptr && "Offset buffer cannot be empty!");
+        assert(a_TransformView != nullptr && "The GpuBuffer to store information in cannot be empty!");
         assert(a_CascadeDistances.size() == a_NumCascades && "The amount of shadow cascade distances has to be equal to the amount of cascades!");
         assert(a_NumCascades >= 1u && "A minimum of 1 shadow cascade is required.");
 
@@ -73,8 +75,8 @@ namespace blurp
         //Store the buffer and view with required offset to store transforms in for each light cascade.
         assert(a_TransformBuffer != nullptr && "Directional shadow transform buffer cannot be nullptr!");
         m_DirShadowTransformBuffer = a_TransformBuffer;
-        m_DirShadowTransformView = &a_TransformView;
-        m_DirShadowTransformOffset = a_TransformOffset;
+        m_DirShadowTransformView = a_TransformView;
+        m_DirShadowTransformOffset = a_Offset;
     }
 
     RenderPassType RenderPass_ShadowMap::GetType()

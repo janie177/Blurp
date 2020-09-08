@@ -23,6 +23,14 @@ namespace blurp
         }
 
         /*
+         * Create an empty GpuBufferView shared pointer.
+         */
+        static std::shared_ptr<GpuBufferView> MakeShared()
+        {
+            return std::make_shared<GpuBufferView>();
+        }
+
+        /*
          * Create a GpuBufferView spanning from the first to last element index provided.
          * Both elements are inclusive.
          *

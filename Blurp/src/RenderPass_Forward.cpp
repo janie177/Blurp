@@ -99,14 +99,14 @@ namespace blurp
 
     void RenderPass_Forward::SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_Texture,
         const std::uint32_t a_NumCascades,
-        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, GpuBufferView& a_TransformViewPtr)
+        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::shared_ptr<GpuBufferView>& a_TransformView)
     {
         assert(a_Texture != nullptr && a_TransformBuffer != nullptr);
         assert(a_NumCascades > 0u && "For directional lights, 1 cascade is the minimum!");
         assert(a_Texture->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Shadowmaps for directional lights need to be 2D texture arrays!");
         m_DirectionalShadowMaps = a_Texture;
         m_DirShadowBuffer = a_TransformBuffer;
-        m_DirShadowView = &a_TransformViewPtr;
+        m_DirShadowView = a_TransformView;
         m_NumDirCascades = a_NumCascades;
     }
 

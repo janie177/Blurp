@@ -399,11 +399,30 @@ namespace blurp
                     const float cascadeDepthH = fabsf((farZ - nearZ) / 2.f);
                     const float frustumCenterDistance = -nearZ + cascadeDepthH;
                     const float lightDistance = camSettings.farPlane + depthH + (frustumCenterDistance * scaleFactor);
-                    auto projectionMatrix = glm::ortho(min.x, max.x, min.y, max.y, min.z - lightDistance, max.z + camSettings.farPlane); //This distance will cover from the light till the end of the frustum. Added 1 for bias.
+
+                    /*
+                     * Z is always along the -z axis. THis means that the max Z value is closer to 0 than min.z.
+                     * In light space, the light always points down -z axis. This means that near plane is always max.z.
+                     * FarPlane is min.z because it's further away from the Z origin.
+                     *
+                     * Finally add lightDistance onto the nearplane. This moves it into the positive Z direction, which means objects in the lights frustum are captured.
+                     */
+                    float nearPlane = max.z + lightDistance;
+                    float farPlane = min.z;
+
+                    /*
+                     * Construct the projection matrix from identity (1 in constructor makes it identity).
+                     */
+                    glm::mat<4, 4, float, glm::defaultp> proj(1);
+                    proj[0][0] = static_cast<float>(2) / (max.x - min.x);
+                    proj[1][1] = static_cast<float>(2) / (max.y - min.y);
+                    proj[2][2] = static_cast<float>(2) / (farPlane - nearPlane);    //Z is already negative so no need to flip.
+                    proj[3][0] = -(max.x + min.x) / (max.x - min.x);
+                    proj[3][1] = -(max.y + min.y) / (max.y - min.y);
+                    proj[3][2] = -(farPlane + nearPlane) / (farPlane - nearPlane);
 
 
-
-                    auto pv = projectionMatrix * lightMatrix;
+                    auto pv = proj * lightMatrix;
 
                     //Combine PV matrices.
                     auto cascadeClipDepth = (m_Camera->GetProjectionMatrix() * glm::vec4(0.f, 0.f, farZ, 1.f));
@@ -418,7 +437,7 @@ namespace blurp
 
 
             //Upload the directional matrices for each light and cascade. Store the result in the view that was provided. Bind to the right shader slot and range.
-            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<DirCascade>(m_DirShadowTransformOffset, static_cast<std::uint32_t>(cascades.size()), 16, &cascades[0]);
+            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<DirCascade>(m_DirShadowTransformOffset->end, static_cast<std::uint32_t>(cascades.size()), 16, &cascades[0]);
             glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, static_cast<GpuBuffer_GL*>(m_DirShadowTransformBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_DirShadowTransformView->start), m_DirShadowTransformView->totalSize);
 
 
@@ -466,8 +485,11 @@ namespace blurp
                 const bool normalMatrixEnabled = drawData.attributes.IsAttributeEnabled(DrawAttribute::NORMAL_MATRIX);
 
                 //If transforms are uploaded, bind the transform buffer.
-                if (drawData.transformData.dataBuffer != nullptr && (matrixEnabled || normalMatrixEnabled))
+                if (matrixEnabled || normalMatrixEnabled)
                 {
+                    //Ensure that the drawData contains valid pointers.
+                    assert(drawData.transformData.dataBuffer != nullptr);
+
                     //Bind the SSBO to the instance data slot (0).
                     const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(drawData.transformData.dataBuffer);
 

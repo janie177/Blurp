@@ -461,8 +461,11 @@ namespace blurp
             const bool uvModEnabled = instanceData.attributes.IsAttributeEnabled(DrawAttribute::UV_MODIFIER);
 
             //If transforms are uploaded, bind the transform buffer.
-            if(instanceData.transformData.dataBuffer != nullptr && (matrixEnabled || normalMatrixEnabled))
+            if(matrixEnabled || normalMatrixEnabled)
             {
+                //Make sure the buffer and view are valid.
+                assert(instanceData.transformData.dataBuffer != nullptr);
+
                 //Bind the SSBO to the instance data slot (0).
                 const auto glTransformGpuBuffer = std::reinterpret_pointer_cast<GpuBuffer_GL>(instanceData.transformData.dataBuffer);
 
@@ -476,6 +479,8 @@ namespace blurp
             const bool hasUvModifiers = (uvModEnabled && (mesh->GetVertexAttributeMask() & VertexAttribute::UV_MODIFIER_ID) == VertexAttribute::UV_MODIFIER_ID) && instanceData.uvModifierData.dataBuffer != nullptr;
             if(hasUvModifiers)
             {
+                assert(instanceData.uvModifierData.dataBuffer != nullptr);
+
                 auto glUvModifierBuffer = static_cast<GpuBuffer_GL*>(instanceData.uvModifierData.dataBuffer.get());
                 glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.totalSize);
             }

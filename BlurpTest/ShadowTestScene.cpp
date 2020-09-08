@@ -71,6 +71,10 @@ void ShadowTestScene::Init()
 {
     using namespace blurp;
 
+    //Create empty GpuBufferViews.
+    m_DirLightMatView = GpuBufferView::MakeShared();
+    m_DirLightDataOffsetView = GpuBufferView::MakeShared();
+
     //Create the pipeline object.
     PipelineSettings pSettings;
     pSettings.waitForGpu = true;
@@ -170,6 +174,13 @@ void ShadowTestScene::Init()
     m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
     m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, NUM_CASCADES, m_TransformBuffer, m_DirLightMatView);
 
+    std::vector<float> cascadeDistances;
+    cascadeDistances.resize(NUM_CASCADES);
+    for (int c = 0; c < NUM_CASCADES; ++c)
+    {
+        cascadeDistances[c] = 32.f;
+    }
+
     //Resize callback.
     m_Window->SetResizeCallback([&](int w, int h)
     {
@@ -261,6 +272,10 @@ void ShadowTestScene::Init()
     m_DrawData.mesh = m_Cube;
     m_DrawData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX);
     m_DrawData.transformData.dataBuffer = m_TransformBuffer;
+
+    //Set dir shadow buffer info etc.
+    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, cascadeDistances, m_TransformBuffer, m_DirLightDataOffsetView, m_DirLightMatView);
+
 
     //Add the actual transforms.
     {
@@ -488,16 +503,6 @@ void ShadowTestScene::Update()
         drawDatas.push_back(m_DrawData);
     }
 
-    std::vector<float> cascadeDistances;
-    cascadeDistances.resize(NUM_CASCADES);
-    for(int c = 0; c < NUM_CASCADES; ++c)
-    {
-        cascadeDistances[c] = 32.f;
-    }
-
-    //Set dir shadow buffer info etc.
-    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, cascadeDistances, m_TransformBuffer, m_DrawData.transformData.dataRange.end, m_DirLightMatView);
-
     //Don't count the light for the shadow.
     drawDatas.push_back(m_LightMeshDrawData);
 
@@ -513,7 +518,8 @@ void ShadowTestScene::Update()
     }
     m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 
-
+    //Update the shadow generation view pointer data. This means the light matrices will be appended to the end.
+    *m_DirLightDataOffsetView = m_DrawData.transformData.dataRange;
 
     //Queue for draw.
     m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());

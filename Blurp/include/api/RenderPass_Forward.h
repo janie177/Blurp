@@ -79,7 +79,7 @@ namespace blurp
         void SetDirectionalShadowMaps(const std::shared_ptr<Texture>& a_Texture,
             const std::uint32_t a_NumCascades,
             const std::shared_ptr<GpuBuffer>& a_TransformBuffer,
-            GpuBufferView& a_TransformViewPtr);
+            const std::shared_ptr<GpuBufferView>& a_TransformView);
 
         /*
          * Reset all queued data. Call this to start a new fresh frame.
@@ -115,7 +115,7 @@ namespace blurp
         //Shadowmaps for directional lights. This has to be a texture 2d array. Requires matrix transformations and cascade info.
         std::shared_ptr<Texture> m_DirectionalShadowMaps;
         std::shared_ptr<GpuBuffer> m_DirShadowBuffer;         //The buffer containing the transformation matrices for the lights and all the 
-        GpuBufferView* m_DirShadowView;                      //The view into above buffer to where the matrices are stored.
+        std::shared_ptr<GpuBufferView> m_DirShadowView;      //The view into above buffer to where the matrices are stored.
         std::uint32_t m_NumDirCascades;                     //The amount of cascades used with directional shadows.
 
         //Shadowmap for pointlights and spotlights. This has to be a cube map texture array.

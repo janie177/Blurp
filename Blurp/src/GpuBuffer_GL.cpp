@@ -103,7 +103,7 @@ namespace blurp
         //Unbind the buffer.
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-        return GpuBufferView{a_Offset + startPadding, sizeFromAlignedStart, elementPaddedSize};
+        return GpuBufferView(a_Offset + startPadding, sizeFromAlignedStart, elementPaddedSize);
     }
 
     bool GpuBuffer_GL::Resize(std::uint32_t a_Size, bool a_CopyData)
