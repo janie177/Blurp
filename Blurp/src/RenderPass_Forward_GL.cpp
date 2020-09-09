@@ -131,7 +131,7 @@ namespace blurp
          * Global data setup that is used for all draw calls.
          */
 
-        //Shader attribute mask.
+        //Cache last used bound data to prevent binding it again unless it changes.
         std::uint64_t prevMask = 0;
         std::shared_ptr<Material> prevMaterial;
         std::shared_ptr<MaterialBatch> prevMaterialBatch;
@@ -319,6 +319,10 @@ namespace blurp
             //Has the material and materialbatch changed?
             const bool changedMaterial = prevMaterial != instanceData.materialData.material;
             const bool changedBatch = prevMaterialBatch != instanceData.materialData.materialBatch;
+
+            //Cache last used batch/material
+            prevMaterial = instanceData.materialData.material;
+            prevMaterialBatch = instanceData.materialData.materialBatch;
 
             //See if materials or batches are enabled.
             const bool material = instanceData.attributes.IsAttributeEnabled(DrawAttribute::MATERIAL_SINGLE);

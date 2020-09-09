@@ -1,134 +1,85 @@
 TODO list:
-	
-	[x]	Correctly set up OpenGL SwapChain window from the settings.
-
-	[x] Implement material batch in the forward shader.
+	Required:			
+		[ ] Make the shader registry static global for forward pass in OpenGL. Always the same for all GL shaders. Same for other shader caches.
+		[ ] Copy RenderPass: Copy texture to texture. Provide source and destination rectangle including depth.
+		[ ] RenderPass2D: Allow the drawing of 2D shapes in 3D space. Also text.
+			- Lines, circles, triangles, quads drawn in 3D space. Uploaded and drawn in bulk.
+			- Each of these has a settings object containing pos, color, uv (where aplicable), opacity etc.
+			- Billboards (Textured quads always facing the camera).
+			- Text rendering. Draw given text at a specific location. Font and fontsize can be chosen in settings object.
 		
-	[x] Implement light uploading.
-		- Each light has a shadowmap index (into array texture).
-		- Uniforms uploaded: numPointLight, numPointLightShadows, numDirLights... etc.
-		- Upload lights in world space.
+	Improvement:
+		[ ] Decal rendering. This ties in closely with the forward/deferred passes. How can I make a system that works for both? 
+		[ ] Deferred pass.
+		[ ] Gpu particle system.
+		[ ] Gaussian blur: RenderPass to blur a texture by a set amount.
+		[ ] DOF: RenderPass to apply blur depending on depth value difference with focus point.
+		[ ] Move ShadowMapping parameters to their own settings object in the Settings header.
+		[ ]	Look into settings like anti aliasing. See where I can add these (RenderState maybe?). What about multisampling?
+		[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc. Support for different topology in shaders (geometry especially for shadows).
+		[ ] Implement variance shadowmaps for directional shadows to get softer shadows.
+		[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
+		[ ]	Implement metallic roughness in the forward shader. Correctly calculate diffuse and specular light this way.
+		[ ] Directional Shadows sometimes seem to cut off. I'm not sure why but the frustum probably is not perfectly fit still. Maybe far and near plane are not wide enough?
+		[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
+		[ ] Add functionality to meshes to overwrite data partially. Ensure not locked and not read only.
 		
-	[x] Add a callback to the window class that is called when the window resizes.
-	
-	[x]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
-		Use this for all shaders everywhere for all meshes.
-		Cleaner and can scale up with instance colors and other data.
-		Add UV mods to this as well!
-		OpenGL allows a single GPU Buffer to be bound to different slots and different ranges. I can put ALL DATA in a single buffer and then read it from different slots at different ranges.
-		In the shader has multiple SSBO binding points that expect different data.
-		Maybe allow each attribute to have its own buffer specified? Some attributes will be coupled in a single buffer.
-
-	[x] Implement clear render pass.
-	
-	[x] Add the option to partially clear textures in the Clear pass. Specify x,y,z w,h,d.
-	
-	[x]	Move DrawData out of the renderpasses. Instead pass a pointer with a count.
-	
-	[x]	Implement shadowmap render pass.
-		Add input data to the shader, with a shader cache etc.
-		Allow each light to have a separate set of draw data.
+	Future ideas:
+		[ ] Voxel rendering:
+			- Create atlas with all materials on it that is power of 2 (the entire atlas).
+			- Create separate atlas for the normal maps of the materials. Do the same for parallax/ao/mra etc.
+			- Offset UV for animations by moving them using the uv mod addition, mutliplication to 1 (So that it only shifts. All textures need to be same size for this).
+		[ ] Setup basic geometry utility: Geometry::CreateSphere(radius, xcomp, ycomp), Geometry::CreateCube(); Tangent generation is required for these.
+		[ ]	Create a GLTF loader utility to load mesh from file.
+		[ ]	Create custom material format. Converter to convert existing data and loader to load from file.
+			- File contains all raw texture data that can be loaded straight into the GPU.
+			- File contains all constants.
+		[ ] Create a custom binary mesh format. Create a utility to store loaded meshes this way.
+			- File contains the vertex data in the right format.
+			- File contains the masks.
+			- File contains references to the materials.
 		
-	[x] Implement directional shadow cascading in the shadowmap render pass.
-		Calculate all the matrices used for cascading and upload them to the GPU in a single buffer.
-		Return a GpuBufferView to these matrices to be used in the forward pass (no duplicate uploading).
-	
-	[x] Change light uploading in the forward render pass.
-		Point and spot lights don't need a matrix while directional lights need multiple. These are already uploaded in the shadowmap generation pass.
-		Have separate buffers. Reuse shadow pass buffer.
-	
-	[ ] Having multiple directional lights results in only the first one generating a shadow map. Why?
-	
-	[ ] Light shadow pass can only support a few lights at a time. Add a loop for each light type to do them in different calls.
-	
-	[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc.
-	
-	[ ] Implement directional shadow multisampling because they kinda wiggle around now.
-	
-	[ ] Implement parallax mapping: Currently artifacts with layers when steep. Needs configurable scale parameter in material attributes.
-	
-	[ ]	Implement metallic roughness in the forward shader. Correctly calculate diffuse and specular light this way.
-	
-	[x] Implement skybox rendering.
-	
-	[ ] Make the shader registry static global for forward pass in OpenGL. Always the same for all GL shaders. Same for other shader caches.
-	
-	[x] Set up shadowmapping.
-	
-	[ ]	Look into multisampling / anti aliasing. See where I can add these (RenderState maybe?).
-	
-	[ ] Setup basic geometry utility: Geometry::CreateSphere(radius, xcomp, ycomp), Geometry::CreateCube();
-	
-	[ ]	Create custom material format. Converter to convert existing data and loader to load from file.
-		- File contains all raw texture data that can be loaded straight into the GPU.
-		- File contains all constants.
+	DONE:
+		[x]	Dynamically index vertex attributes to get around the maximum index limit.
+		[x] Fix up Triangle pass to be clean. Just a triangle.
 		
-	[ ] Create a custom binary mesh format.
-		
-	[ ]	Create a GLTF loader utility to load mesh from file.
-	
-	[ ] Add functionality to meshes to overwrite data partially. Ensure not locked and not read only.
-	
-	[x]	Dynamically index vertex attributes to get around the maximum index limit.
-	
-	[ ] Go over TODOs in the project that are left over and do whatever I didn't do yet.
-	
-	[x] Fix up Triangle pass to be clean. Just a triangle.
-	
-	[x]	Implement material UV offset.
-		- vec2 multiply;
-		- vec2 origin;
-		- Use GpuBuffer and GpuBufferView to upload this data and then bind it.
-		- VertexAttribute: UvModifier. Index of the GpuBufferView bound above.
-		
-	[ ] Voxel rendering:
-		- Create atlas with all materials on it that is power of 2 (the entire atlas).
-		- Create separate atlas for the normal maps of the materials. Do the same for parallax/ao/mra etc.
-		- Offset UV 
+		[x]	Implement material UV offset.
+			- vec2 multiply;
+			- vec2 origin;
+			- Use GpuBuffer and GpuBufferView to upload this data and then bind it.
+			- VertexAttribute: UvModifier. Index of the GpuBufferView bound above.
+		[x] Set up shadowmapping.
+		[x] Implement skybox rendering.
+		[x] Light shadow pass can only support a few lights at a time. Add a loop for each light type to do them in different calls.	
+		[x]	Correctly set up OpenGL SwapChain window from the settings.
+		[x] Implement material batch in the forward shader.	
+		[x] Implement light uploading.
+			- Each light has a shadowmap index (into array texture).
+			- Uniforms uploaded: numPointLight, numPointLightShadows, numDirLights... etc.
+			- Upload lights in world space.	
+		[x] Add a callback to the window class that is called when the window resizes.
+		[x]	Move the matrix input data from Forward to Settings. Add bit masking for it like materials/attributes.
+			Use this for all shaders everywhere for all meshes.
+			Cleaner and can scale up with instance colors and other data.
+			Add UV mods to this as well!
+			OpenGL allows a single GPU Buffer to be bound to different slots and different ranges. I can put ALL DATA in a single buffer and then read it from different slots at different ranges.
+			In the shader has multiple SSBO binding points that expect different data.
+			Maybe allow each attribute to have its own buffer specified? Some attributes will be coupled in a single buffer.
+		[x] Implement clear render pass.
+		[x] Add the option to partially clear textures in the Clear pass. Specify x,y,z w,h,d.
+		[x]	Move DrawData out of the renderpasses. Instead pass a pointer with a count.
+		[x]	Implement shadowmap render pass.
+			Add input data to the shader, with a shader cache etc.
+			Allow each light to have a separate set of draw data.	
+		[x] Implement directional shadow cascading in the shadowmap render pass.
+			Calculate all the matrices used for cascading and upload them to the GPU in a single buffer.
+			Return a GpuBufferView to these matrices to be used in the forward pass (no duplicate uploading).
+		[x] Change light uploading in the forward render pass.
+			Point and spot lights don't need a matrix while directional lights need multiple. These are already uploaded in the shadowmap generation pass.
+			Have separate buffers. Reuse shadow pass buffer.
+		[x] Having multiple directional lights results in only the first one generating a shadow map. Why?
 
 	Passes:
-		ComputeMatrices:
-			Input:
-				- GpuBuffer in
-				- {GpuBufferView inputView, mat4 transform, uintptr_t offset}[] toTransform
-				- GpuBuffer out
-			Output:
-				- GpuBufferView[]& output
-			Process:
-				- Assert that output size is equal to input toTransform size.
-				- Ensure that no overflow can happen when writing to an output buffer.
-				- Read from the input buffer at each input view. Transform it with the given mat4 and store it in the output. Put views at matching index with the offset into the output buffer specified.
-
-		Shadowmap:
-			Input:
-				- {Mesh, GpuBufferView transforms}[]
-				- Light[]
-			Output:
-				- Tex2D || Tex2D[] || Tex2DCube || Tex2DCube[]
-			Process:
-				- Bind the output to a render target. Transform the matrices on the GPU. Draw depth into output texture.
-				- Draw to 2d/cube | single/array.
-				
-		Forward:
-			Input:
-				- {Mesh, Transform[], InstanceData[]}[]
-				- {Light, shadowmap}[]
-				- Camera
-				- AmbientLight;
-			Output:
-				- RenderTarget
-			Process:
-				- Upload every light. Bind mesh. Transform on GPU into empty buffer. Bind buffer and instance data etc. Draw and perform light calculations. Order of input is kept.
-				
-		Clear:
-			Input:
-				- {RenderTarget, clearflag}[]
-			
-			Output:
-				- Nothing. 
-			Process:
-				- Clears all buffers attached to the render target. Flags (depth, attachment1, attachment2 etc.) determine which are cleared.
-
 		Blit:
 			Input:
 				- {RenderTarget, RenderTarget, BlendMode, SrcRect, DstRect, Attachment[], DepthStencil}[]

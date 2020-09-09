@@ -16,7 +16,7 @@
 #define LIGHT_BOUND 200.f
 
 #define NUM_SHADOW_POS_LIGHTS 6
-#define NUM_SHADOW_DIR_LIGHTS 3
+#define NUM_SHADOW_DIR_LIGHTS 1
 
 #define NEAR_PLANE 0.1f
 #define FAR_PLANE 1000.f
