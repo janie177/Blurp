@@ -16,12 +16,12 @@
 #define LIGHT_BOUND 200.f
 
 #define NUM_SHADOW_POS_LIGHTS 6
-#define NUM_SHADOW_DIR_LIGHTS 2
+#define NUM_SHADOW_DIR_LIGHTS 3
 
 #define NEAR_PLANE 0.1f
 #define FAR_PLANE 1000.f
 
-#define NUM_CASCADES 5
+#define NUM_CASCADES 4
 
 #define SHADOW_MAP_DIMENSION 2048.f
 
@@ -147,7 +147,7 @@ void ShadowTestScene::Init()
 
     //Clear the dir shadow buffer.
     ClearData dirClear;
-    dirClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES);
+    dirClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES * NUM_SHADOW_DIR_LIGHTS);
     dirClear.clearValue.floats[0] = 1.f;
     m_ClearPass->AddTexture(m_DirShadowArray, dirClear);
 
