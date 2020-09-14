@@ -120,7 +120,7 @@ layout(location = 5) uniform float alphaConstant;
 	};
 
 	//Unbound array containing the transforms to light space for each directional light for each cascade.
-	layout(std430, binding = 5) buffer DirCascades
+	layout(std430, binding = 4) buffer DirCascades
     {
         DirCascade cascades[];
     };
@@ -131,16 +131,41 @@ layout(location = 5) uniform float alphaConstant;
 	layout(binding = 7) uniform samplerCubeArrayShadow shadowSamplerCube;
 #endif
 
-    struct LightData
+    struct DirectionalLightData
     {
-        vec4 v1;
-        vec4 v2;
-        vec4 v3;
+        vec4 colorIntensity;
+        vec4 directionShadowMapIndex;
     };
 
-    layout(std140, binding = 4) uniform LightDataBuffer
+    struct SpotLightData
     {
-        LightData lightData[MAX_LIGHTS];
+        vec4 colorIntensity;
+        vec4 directionAngle;
+        vec4 positionShadowMapIndex;
+    };
+
+    struct PointLightData
+    {
+        vec4 colorIntensity;
+        vec4 positionShadowMapIndex;
+    };
+
+	//Pointlights and shadow point lights.
+	layout(std430, binding = 5) buffer PointLightDataBuffer
+    {
+        PointLightData pointLightData[];
+    };
+
+	//Same as above but for spot lights and shadow spot lights.
+	layout(std430, binding = 6) buffer SpotLightDataBuffer
+    {
+        SpotLightData spotLightData[];
+    };
+
+	//Buffer contains all directional light data. First regular, then shadow.
+    layout(std430, binding = 7) buffer DirectionalLightDataBuffer
+    {
+        DirectionalLightData dirLightData[];
     };
 //END LIGHT DATA
 
@@ -410,16 +435,14 @@ void main()
 	vec3 totalDiffuseLight = inData.ambientLight;
 
 #if defined(VA_NORMAL_DEF)
-    int offset = 0;
-
     //Point lights.
     for(int i = 0; i < inData.numLights.x; ++i)
     {
-		LightData data = lightData[offset];
+		PointLightData data = pointLightData[i];
 
-		vec3 lightPos = data.v2.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
+		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
 		//Get the light direction, distance and normalize.
 		vec3 lightDir = inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
@@ -428,20 +451,17 @@ void main()
 		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
 		//Append to total light.
         totalDiffuseLight += (intensity * lightColor);
-
-		//Increment offset into light buffer.
-        ++offset;
     }
 
 #ifdef USE_POS_SHADOWS_DEFINE
 	//Point lights with shadowmaps.
 	for(int i = 0; i < inData.numShadows.x; ++i)
     {
-		LightData data = lightData[offset];
+		PointLightData data = pointLightData[int(inData.numLights.x) + i];
 
-		vec3 lightPos = data.v2.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
+		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
 		//Get the light direction, distance and normalize.
 		vec3 lightDir = inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
@@ -449,7 +469,7 @@ void main()
 		lightDir /= lDist;
 
 		//Index into shadow map and check for shadow.
-		vec4 shadowCoord = vec4(lightDir, data.v2.w);
+		vec4 shadowCoord = vec4(lightDir, data.positionShadowMapIndex.w);
 		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
@@ -460,9 +480,6 @@ void main()
 			//Append to total light.
 			totalDiffuseLight += (intensity * lightColor);
 		}
-
-		//Increment offset into light buffer.
-        ++offset;
     }
 	//ENDIF SHADOWS
 #endif
@@ -470,12 +487,12 @@ void main()
 	//Spot lights.
     for(int i = 0; i < inData.numLights.y; ++i)
     {
-		LightData data = lightData[offset];
+		SpotLightData data = spotLightData[i];
 
-		vec3 lightPos = data.v2.xyz;
-		vec3 spotLightDirection = data.v3.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
+		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		vec3 spotLightDirection = data.directionAngle.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
 		//Get the light direction, distance and normalize.
 		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
@@ -483,10 +500,8 @@ void main()
 
 		//Ensure that the position is within the angle.
 		float angle = acos(dot(lightDir, spotLightDirection));
-		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
+		if (angle > data.directionAngle.w)
 		{
-			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
-			++offset;
 			continue;
 		}
 
@@ -494,21 +509,18 @@ void main()
 		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
 		//Append to total light.
         totalDiffuseLight += (intensity * lightColor);
-
-		//Increment offset into light buffer.
-        ++offset;
     }
 
 #ifdef USE_POS_SHADOWS_DEFINE
 	//Spot lights with shadows.
 	for(int i = 0; i < inData.numShadows.y; ++i)
     {
-		LightData data = lightData[offset];
+		SpotLightData data = spotLightData[int(inData.numLights.y) + i];
 
-		vec3 lightPos = data.v2.xyz;
-		vec3 spotLightDirection = data.v3.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
+		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		vec3 spotLightDirection = data.directionAngle.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
 		//Get the light direction, distance and normalize.
 		vec3 lightDir =  inData.fragPos.xyz - lightPos;
 		float length2 = dot(lightDir, lightDir);
@@ -517,15 +529,13 @@ void main()
 
 		//Ensure that the position is within the angle.
 		float angle = acos(dot(lightDir, spotLightDirection));
-		if (angle > data.v3.w)	//v3.w contains the angle of the spotlight.
+		if (angle > data.directionAngle.w)
 		{
-			//Angle doesn't fall in the cone of the spotlight, so just don't do anything.
-			++offset;
 			continue;
 		}
 
 		//Index into shadow map and check for shadow.
-		vec4 shadowCoord = vec4(lightDir, data.v2.w);
+		vec4 shadowCoord = vec4(lightDir, data.positionShadowMapIndex.w);
 		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
@@ -536,9 +546,6 @@ void main()
 			//Append to total light.
 			totalDiffuseLight += (intensity * lightColor);
 		}
-
-		//Increment offset into light buffer.
-        ++offset;
     }
 	//ENDIF SHADOWS
 #endif
@@ -546,32 +553,29 @@ void main()
     //Directional lights.
     for(int i = 0; i < inData.numLights.z; ++i)
     {
-		LightData data = lightData[offset];
+		DirectionalLightData data = dirLightData[i];
 
-		vec3 lightDir = data.v2.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
+		vec3 lightDir = data.directionShadowMapIndex.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
 
 		//Intensity for dir lights has no dropoff because there's no position.
 		intensity = max(-dot(surfaceNormal, lightDir), 0.0);
 
 		//Append to total light.
         totalDiffuseLight += (intensity * lightColor);
-
-		//Increment offset into light buffer.
-        ++offset;
     }
 
 #ifdef USE_DIR_SHADOWS_DEFINE
     //Directional lights with shadows.
     for(int i = 0; i < inData.numShadows.z; ++i)
     {
-		LightData data = lightData[offset];
+		DirectionalLightData data = dirLightData[int(inData.numLights.z) + i];
 
-		vec3 lightDir = data.v2.xyz;
-		vec3 lightColor = data.v1.xyz;
-		float intensity = data.v1.w;
-		int shadowMapIndex = int(data.v2.w);
+		vec3 lightDir = data.directionShadowMapIndex.xyz;
+		vec3 lightColor = data.colorIntensity.xyz;
+		float intensity = data.colorIntensity.w;
+		int shadowMapIndex = int(data.directionShadowMapIndex.w);
 		int numShadowCascades = int(inData.numShadowCascades);
 
 		//Calculate the index of the current cascade in the shadow array based on distance from the camera.
@@ -613,7 +617,6 @@ void main()
 			visibility = texture(shadowSampler2D, shadowCoords); 
 		}
 
-		//
 		if(visibility > 0.0)
 		{
 			//Intensity for dir lights has no dropoff because there's no position.
@@ -621,9 +624,6 @@ void main()
 
 			//Append to total light.
 			totalDiffuseLight += (intensity * lightColor);
-
-			//Increment offset into light buffer.
-			++offset;
 		}
     }
 	//ENDIF SHADOWS

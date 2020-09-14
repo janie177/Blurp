@@ -9,7 +9,7 @@ namespace blurp
     /*
      * RenderResource is an interface that describes something used for rendering that needs special setup and destruction.
      */
-    class RenderResource
+    class RenderResource : public std::enable_shared_from_this<RenderResource>
     {
         friend class RenderResourceManager;
         friend class RenderDevice;

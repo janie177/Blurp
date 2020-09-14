@@ -3,13 +3,33 @@
 
 namespace blurp
 {
+    struct DirectionalLightData
+    {
+        glm::vec4 colorIntensity;
+        glm::vec4 directionShadowMapIndex;
+    };
+
+    struct SpotLightData
+    {
+        glm::vec4 colorIntensity;
+        glm::vec4 directionAngle;
+        glm::vec4 positionShadowMapIndex;
+    };
+
+    struct PointLightData
+    {
+        glm::vec4 colorIntensity;
+        glm::vec4 positionShadowMapIndex;
+    };
+
     /*
      * Normal ambient light.
      */
     class Light : public RenderResource
     {
     public:
-        Light(const LightSettings& a_Settings) : m_Settings(a_Settings), m_Color(m_Settings.color), m_Intensity(m_Settings.intensity){}
+        Light(const LightSettings& a_Settings) : m_Settings(a_Settings) {}
+        virtual ~Light() = default;
 
         /*
          * Get the type of this light.
@@ -19,22 +39,40 @@ namespace blurp
         /*
          * Get the color of this light.
          */
-        glm::vec3 GetColor() const;
+        virtual glm::vec3 GetColor() const = 0;
 
         /*
          * Set the color of the light.
          */
-        void SetColor(const glm::vec3& a_Color);
+        virtual void SetColor(const glm::vec3& a_Color) = 0;
 
         /*
          * Get the intensity of the light.
          */
-        float GetIntensity() const;
+        virtual float GetIntensity() const = 0;
 
         /*
          * Set the intensity of the light.
          */
-        void SetIntensity(float a_Intensity);
+        virtual void SetIntensity(float a_Intensity) = 0;
+
+        /*
+         * Get the index of the shadowmap for this light.
+         * When -1, no shadows are cast.
+         *
+         * Shadowmap indices are separate for positional and directional lights.
+         * This means that a directional and spotlight can both use the index 0, as they refer to different shadow map arrays.
+         */
+        virtual std::int32_t GetShadowMapIndex() const = 0;
+
+        /*
+         * Set the index of the shadowmap that this light uses.
+         * Set to -1 to not cast shadows.
+         *
+         * Shadowmap indices are separate for positional and directional lights.
+         * This means that a directional and spotlight can both use the index 0, as they refer to different shadow map arrays.
+         */
+        virtual void SetShadowMapIndex(std::int32_t a_ShadowMapIndex) = 0;
 
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
@@ -42,8 +80,27 @@ namespace blurp
 
     protected:
         LightSettings m_Settings;
+    };
+
+    class AmbientLight : public Light
+    {
+    public:
+        explicit AmbientLight(const LightSettings& a_Settings)
+            : Light(a_Settings), m_Intensity(1.f), m_Color(0.f)
+        {
+        }
+
+        glm::vec3 GetColor() const override;
+        void SetColor(const glm::vec3& a_Color) override;
+        float GetIntensity() const override;
+        void SetIntensity(float a_Intensity) override;
+        std::int32_t GetShadowMapIndex() const override;
+        void SetShadowMapIndex(std::int32_t a_ShadowMapIndex) override;
+
+    private:
         glm::vec3 m_Color;
         float m_Intensity;
+        
     };
 
     /*
@@ -53,10 +110,10 @@ namespace blurp
     {
     public:
         DirectionalLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Direction(a_Settings.directionalLight.direction)
+            : Light(a_Settings), m_Data({ { a_Settings.color, a_Settings.intensity}, {a_Settings.directionalLight.direction, a_Settings.shadowMapIndex}})
         {
             //Ensure that the direction is normalized.
-            assert(fabs(glm::length(m_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
+            assert(fabs(glm::length(glm::vec3(m_Data.directionShadowMapIndex)) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
         }
 
         /*
@@ -70,8 +127,17 @@ namespace blurp
          */
         void SetDirection(const glm::vec3& a_Direction);
 
+        glm::vec3 GetColor() const override;
+        void SetColor(const glm::vec3& a_Color) override;
+        float GetIntensity() const override;
+        void SetIntensity(float a_Intensity) override;
+        std::int32_t GetShadowMapIndex() const override;
+        void SetShadowMapIndex(std::int32_t a_ShadowMapIndex) override;
+
+        DirectionalLightData GetData() const;
+
     private:
-        glm::vec3 m_Direction;
+        DirectionalLightData m_Data;
     };
 
     /*
@@ -81,10 +147,10 @@ namespace blurp
     {
     public:
         SpotLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Position(a_Settings.spotLight.position), m_Direction(a_Settings.spotLight.direction), m_Angle(a_Settings.spotLight.angle)
+            : Light(a_Settings), m_Data({ {a_Settings.color, a_Settings.intensity}, {a_Settings.spotLight.direction, a_Settings.spotLight.angle}, {a_Settings.spotLight.position, a_Settings.shadowMapIndex}})
         {
             //Direction has to be normalized.
-            assert(fabs(glm::length(m_Direction) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
+            assert(fabs(glm::length(glm::vec3(m_Data.directionAngle)) - 1.f) <= std::numeric_limits<float>::epsilon() * 3.f);
         }
 
         /*
@@ -120,10 +186,17 @@ namespace blurp
          */
         glm::vec3 GetDirection() const;
 
+        glm::vec3 GetColor() const override;
+        void SetColor(const glm::vec3& a_Color) override;
+        float GetIntensity() const override;
+        void SetIntensity(float a_Intensity) override;
+        std::int32_t GetShadowMapIndex() const override;
+        void SetShadowMapIndex(std::int32_t a_ShadowMapIndex) override;
+
+        SpotLightData GetData() const;
+
     private:
-        glm::vec3 m_Position;
-        glm::vec3 m_Direction;
-        float m_Angle;
+        SpotLightData m_Data;
     };
 
     /*
@@ -133,7 +206,7 @@ namespace blurp
     {
     public:
         PointLight(const LightSettings& a_Settings)
-            : Light(a_Settings), m_Position(a_Settings.pointLight.position) {}
+            : Light(a_Settings), m_Data({ { a_Settings.color, a_Settings.intensity},  {a_Settings.pointLight.position, a_Settings.shadowMapIndex}}) {}
 
         /*
          * Get the light position.
@@ -145,7 +218,16 @@ namespace blurp
          */
         glm::vec3 GetPosition() const;
 
+        glm::vec3 GetColor() const override;
+        void SetColor(const glm::vec3& a_Color) override;
+        float GetIntensity() const override;
+        void SetIntensity(float a_Intensity) override;
+        std::int32_t GetShadowMapIndex() const override;
+        void SetShadowMapIndex(std::int32_t a_ShadowMapIndex) override;
+
+        PointLightData GetData() const;
+
     private:
-        glm::vec3 m_Position;
+        PointLightData m_Data;
     };
 }

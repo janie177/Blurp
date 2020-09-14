@@ -13,11 +13,11 @@ namespace blurp
 {
     struct StaticData
     {
-        glm::mat4 pv;
-        glm::vec4 camPosFarPlane;   //XYZ = camera position. W = far plane distance.
+        glm::mat4 pv;                            //Projection * View matrix for the camera.
+        glm::vec4 camPosFarPlane;               //XYZ = camera position. W = far plane distance.
         glm::vec4 numLightsNumCascades;        //X = numPointLight. Y = numSpotLights. Z = numDirectionalLights.    W = number of dir shadow cascades.
-        glm::vec4 numShadows;       //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.
-        glm::vec4 ambientLight;     //The ambient light RGB.
+        glm::vec4 numShadows;                 //X = numPointShadows. Y = numSpotShadows. Z = numDirectionalShadows.
+        glm::vec4 ambientLight;              //The ambient light RGB.
     };
 
     /*

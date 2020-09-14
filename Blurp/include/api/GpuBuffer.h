@@ -25,6 +25,34 @@ namespace blurp
         GpuBufferView WriteData(std::uintptr_t a_Offset, std::uint32_t a_Count, std::uint32_t a_LargestMemberSize, const T* a_Data);
 
         /*
+         * Write data to this GpuBuffer.
+         * The data will be extracted from the pointers provided in a_UploadData.
+         * References to the GpuBufferView and this buffer will then be stored in the DrawData object inside the a_UploadData.
+         *
+         * Use this function to upload data that goes per instance inside a draw call.
+         * Examples are transforms, normal matrices and color modifications.
+         */
+        virtual GpuBufferView WriteData(std::uint32_t a_Offset, const PerInstanceUploadData& a_UploadData) = 0;
+
+        /*
+         * Write data to this GpuBuffer.
+         * The data will be extracted from the pointers provided in a_UploadData.
+         * References to the GpuBufferView and this buffer will then be stored in the DrawData object inside the a_UploadData.
+         *
+         * Use this function to upload data once that is reused by all instances drawn in a single instanced draw call.
+         */
+        virtual GpuBufferView WriteData(std::uint32_t a_Offset, const GlobalUploadData& a_UploadData) = 0;
+
+        /*
+         * Write data to this GpuBuffer.
+         * The data will be extracted from the pointers provided in a_UploadData.
+         * References to the GpuBufferView and this buffer will then be stored in the DrawData object inside the a_UploadData.
+         *
+         * Use this function to upload light data to the GPU to be used in render passes.
+         */
+        virtual GpuBufferView WriteData(std::uint32_t a_Offset, const LightUploadData& a_UploadData) = 0;
+
+        /*
          * Get the size in bytes of this GPU Buffer.
          */
         std::uint32_t GetSize() const;

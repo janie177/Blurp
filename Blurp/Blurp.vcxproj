@@ -169,6 +169,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
   <ItemGroup>
     <ClInclude Include="include\api\BlurpEngine.h" />
     <ClInclude Include="include\api\Camera.h" />
+    <ClInclude Include="include\api\Data.h" />
     <ClInclude Include="include\api\GpuBuffer.h" />
     <ClInclude Include="include\api\GpuBufferView.h" />
     <ClInclude Include="include\api\InputQueue.h" />
@@ -179,6 +180,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\Material.h" />
     <ClInclude Include="include\api\MaterialBatch.h" />
     <ClInclude Include="include\api\Mesh.h" />
+    <ClInclude Include="include\api\RenderPass_2D.h" />
     <ClInclude Include="include\api\RenderPass_Clear.h" />
     <ClInclude Include="include\api\RenderPass_ShadowMap.h" />
     <ClInclude Include="include\api\RenderPass_Skybox.h" />

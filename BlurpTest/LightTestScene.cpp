@@ -371,32 +371,42 @@ void LightTestScene::Update()
     {
         m_LightMeshTransform.SetTranslation(l->GetPosition());
         lightTransforms.emplace_back(m_LightMeshTransform.GetTransformation());
-        m_ForwardPass->AddLight(l);
     }
 
     for (auto& l : m_SpotLights)
     {
         m_LightMeshTransform.SetTranslation(l->GetPosition());
         lightTransforms.emplace_back(m_LightMeshTransform.GetTransformation());
-        m_ForwardPass->AddLight(l);
     }
 
-    for (auto& l : m_DirectionalLights)
-    {
-        m_ForwardPass->AddLight(l);
-    }
+    LightData lData;
+    lData.ambient = m_AmbientLight->GetColor();
+
+    LightUploadData lud;
+    lud.lightData = &lData;
+
+    lud.directional.count = m_DirectionalLights.size();
+    lud.directional.lights = &m_DirectionalLights[0];
+    lud.point.count = m_PointLights.size();
+    lud.point.lights = &m_PointLights[0];
+    lud.spot.count = m_SpotLights.size();
+    lud.spot.lights = &m_SpotLights[0];
+
+
 
     if(!lightTransforms.empty())
     {
         m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, lightTransforms.size(), 16, &lightTransforms[0]);
     }
 
+    m_TransformBuffer->WriteData(m_LightMeshDrawData.transformData.dataRange.end, lud);
+
     //Update the instance count for the lights.
     m_LightMeshDrawData.instanceCount = lightTransforms.size();
 
     //Queue for draw.
     std::vector<DrawData> drawDatas = {m_LightMeshDrawData, m_PlaneDrawData};
-    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
+    m_ForwardPass->SetDrawData({ &drawDatas[0], static_cast<std::uint32_t>(drawDatas.size()) });
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

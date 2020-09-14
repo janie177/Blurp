@@ -15,7 +15,7 @@
 #define MESH_SCALE 5000.f
 #define LIGHT_BOUND 200.f
 
-#define NUM_SHADOW_POS_LIGHTS 6
+#define NUM_SHADOW_POS_LIGHTS 24
 #define NUM_SHADOW_DIR_LIGHTS 1
 
 #define NEAR_PLANE 0.1f
@@ -172,9 +172,14 @@ void ShadowTestScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    //Use shadow mapping. m_DirLightMatView is passed by reference and stored as a pointer. This m
-    m_ForwardPass->SetPointSpotShadowMaps(m_PosShadowArray);
-    m_ForwardPass->SetDirectionalShadowMaps(m_DirShadowArray, NUM_CASCADES, m_TransformBuffer, m_DirLightMatView);
+    //Set up shadow data that contains all information about the shadow mapping used. Pass it to the forward pass.
+    ShadowData shadowData;
+    shadowData.directional.shadowMaps = m_DirShadowArray;
+    shadowData.directional.numCascades = NUM_CASCADES;
+    shadowData.directional.dataBuffer = m_TransformBuffer;
+    shadowData.directional.dataRange = m_DirLightMatView;
+    shadowData.positional.shadowMaps = m_PosShadowArray;
+    m_ForwardPass->SetShadowData(shadowData);
 
     std::vector<float> cascadeDistances;
     cascadeDistances.resize(NUM_CASCADES);
@@ -280,6 +285,7 @@ void ShadowTestScene::Init()
         pointSettings.intensity = 250.f;
         pointSettings.pointLight.position = position;
         pointSettings.type = LightType::LIGHT_POINT;
+        pointSettings.shadowMapIndex = pl;
         m_PointLights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(pointSettings)));
     }
 
@@ -302,6 +308,7 @@ void ShadowTestScene::Init()
         dirSettings.intensity = 1.f / (static_cast<float>(NUM_SHADOW_DIR_LIGHTS) * 6.f);
         dirSettings.directionalLight.direction = glm::normalize(direction);
         dirSettings.type = LightType::LIGHT_DIRECTIONAL;
+        dirSettings.shadowMapIndex = dl;
         m_DirLights.push_back(std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(dirSettings)));
     }
 
@@ -585,21 +592,6 @@ void ShadowTestScene::Update()
     m_LightMeshDrawData.transformData.dataRange = m_TransformBuffer->WriteData<glm::mat4>(m_PlaneDrawData.transformData.dataRange.end, NUM_SHADOW_POS_LIGHTS, 16, &shadowPosTransforms[0]);
     m_LightMeshDrawData.instanceCount = shadowPosTransforms.size();
 
-    //Pos lights
-    for(int i = 0; i < NUM_SHADOW_POS_LIGHTS; ++i)
-    {
-        m_ForwardPass->AddLight(m_PointLights[i], i);
-    }
-
-    //Dir lights
-    for (int i = 0; i < NUM_SHADOW_DIR_LIGHTS; ++i)
-    {
-        m_ForwardPass->AddLight(m_DirLights[i], i);
-    }
-
-    //Ambient
-    m_ForwardPass->AddLight(m_AmbientLight);
-
     std::vector<DrawData> drawDatas = {m_PlaneDrawData};
 
 
@@ -655,11 +647,28 @@ void ShadowTestScene::Update()
 
     m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 
+    //Upload light data.
+    LightUploadData lud;
+    lud.point.lights = &m_PointLights[0];
+    lud.point.count = m_PointLights.size();
+
+    lud.directional.lights = &m_DirLights[0];
+    lud.directional.count = m_DirLights.size();
+
+    LightData lData;
+    lData.ambient = m_AmbientLight->GetColor();
+    lud.lightData = &lData;
+
+    auto v = m_TransformBuffer->WriteData(m_DrawData.transformData.dataRange.end, lud);
+
     //Update the shadow generation view pointer data. This means the light matrices will be appended to the end.
-    *m_DirLightDataOffsetView = m_DrawData.transformData.dataRange;
+    *m_DirLightDataOffsetView = v;
 
     //Queue for draw.
-    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
+    DrawDataSet drawSet{ &drawDatas[0], static_cast<std::uint32_t>(drawDatas.size())};
+    m_ForwardPass->SetDrawData(drawSet);
+
+    m_ForwardPass->SetLights(lData);
 
 
     //Update the rendering pipeline.

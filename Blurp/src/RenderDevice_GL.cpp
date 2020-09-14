@@ -57,7 +57,7 @@ namespace blurp
         switch (a_Settings.type)
         {
         case LightType::LIGHT_AMBIENT:
-            return std::make_shared<Light>(a_Settings);
+            return std::make_shared<AmbientLight>(a_Settings);
         case LightType::LIGHT_DIRECTIONAL:
             return std::make_shared<DirectionalLight>(a_Settings);
         case LightType::LIGHT_POINT:

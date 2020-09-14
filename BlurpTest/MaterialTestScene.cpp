@@ -485,10 +485,19 @@ void MaterialTestScene::Update()
 
     //Queue for draw.
     std::vector<DrawData> drawDatas = { m_QueueData, m_LightQueueData };
-    m_ForwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
+    m_ForwardPass->SetDrawData({ &drawDatas[0], static_cast<std::uint32_t>(drawDatas.size()) });
+
+    LightData lData;
+    LightUploadData lud;
+    lud.lightData = &lData;
+
+    lud.point.count = 1;
+    lud.point.lights = &m_Light;
+
+    m_TransformBuffer->WriteData(m_LightQueueData.transformData.dataRange.end, lud);
 
     //Add the light to the scene.
-    m_ForwardPass->AddLight(m_Light);
+    m_ForwardPass->SetLights(lData);
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();

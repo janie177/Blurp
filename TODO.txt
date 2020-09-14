@@ -1,5 +1,8 @@
 TODO list:
-	Required:			
+	Required:	
+	
+		[ ] Move most data from render passes into settings objects. Clean up function parameters. Move data out of classes for lights to let user sort it themselves. Pointers and sizes.
+		
 		[ ] Make the shader registry static global for forward pass in OpenGL. Always the same for all GL shaders. Same for other shader caches.
 		[ ] Copy RenderPass: Copy texture to texture. Provide source and destination rectangle including depth.
 		[ ] RenderPass2D: Allow the drawing of 2D shapes in 3D space. Also text.
@@ -14,7 +17,6 @@ TODO list:
 		[ ] Gpu particle system.
 		[ ] Gaussian blur: RenderPass to blur a texture by a set amount.
 		[ ] DOF: RenderPass to apply blur depending on depth value difference with focus point.
-		[ ] Move ShadowMapping parameters to their own settings object in the Settings header.
 		[ ]	Look into settings like anti aliasing. See where I can add these (RenderState maybe?). What about multisampling?
 		[ ] Implement RenderState object with settings for culling, cullmode, cullface, topology etc. Support for different topology in shaders (geometry especially for shadows).
 		[ ] Implement variance shadowmaps for directional shadows to get softer shadows.

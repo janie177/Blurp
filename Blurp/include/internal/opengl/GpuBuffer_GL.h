@@ -23,6 +23,9 @@ namespace blurp
     public:
 
         bool Resize(std::uint32_t a_Size, bool a_CopyData = true) override;
+        GpuBufferView WriteData(std::uint32_t a_Offset, const PerInstanceUploadData& a_UploadData) override;
+        GpuBufferView WriteData(std::uint32_t a_Offset, const GlobalUploadData& a_UploadData) override;
+        GpuBufferView WriteData(std::uint32_t a_Offset, const LightUploadData& a_UploadData) override;
     private:
         GLuint m_Ssbo;
     };

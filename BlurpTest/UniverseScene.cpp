@@ -422,7 +422,20 @@ void UniverseScene::Update()
 
     //Queue for draw.
     std::vector<DrawData> drawDatas = { data, iData, sunData};
-    forwardPass->SetDrawData(&drawDatas[0], drawDatas.size());
+    forwardPass->SetDrawData({ &drawDatas[0], static_cast<std::uint32_t>(drawDatas.size()) });
+
+    LightData lData;
+    LightUploadData lud;
+    lud.lightData = &lData;
+
+    lud.point.count = 1;
+    //lud.point.lights = ;
+    //TODO this is completely broken rn.
+
+    gpuBuffer->WriteData(sunData.transformData.dataRange.end, lud);
+
+    //Add the light to the scene.
+    forwardPass->SetLights(lData);
 
     //Update the rendering pipeline.
     pipeline->Execute();
