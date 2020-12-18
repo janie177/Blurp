@@ -43,9 +43,9 @@ int main()
 
     //Load one of the scenes.
     //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();
 
     /*
