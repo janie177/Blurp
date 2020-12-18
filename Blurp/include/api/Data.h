@@ -659,6 +659,8 @@ namespace blurp
      */
     struct LightData
     {
+        LightData() : ambient(0.f) {}
+
         /*
          * Information regarding point lights without shadows.
          */
