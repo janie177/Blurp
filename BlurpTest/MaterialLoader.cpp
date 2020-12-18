@@ -37,6 +37,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 		matSettings.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
 		matSettings.SetDiffuseTexture(texture);
 		stbi_image_free(image);
+
+		std::cout << "Diffuse loaded! : " << reinterpret_cast<std::uintptr_t>(image) << std::endl;
 	}
 
 	//NORMAL
@@ -55,6 +57,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 		matSettings.EnableAttribute(MaterialAttribute::NORMAL_TEXTURE);
 		matSettings.SetNormalTexture(texture);
 		stbi_image_free(image);
+
+		std::cout << "Normal loaded! : " << reinterpret_cast<std::uintptr_t>(image) << std::endl;
 	}
 
 	//EMISSIVE
@@ -73,6 +77,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 		matSettings.EnableAttribute(MaterialAttribute::EMISSIVE_TEXTURE);
 		matSettings.SetEmissiveTexture(texture);
 		stbi_image_free(image);
+
+		std::cout << "Emissive loaded! : " << reinterpret_cast<std::uintptr_t>(image) << std::endl;
 	}
 
 	//METAL/ROUGHNESS/ALPHA
@@ -146,6 +152,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 		{
 			stbi_image_free(alpha);
 		}
+
+		std::cout << "PBR/Alpha loaded!" << std::endl;
 	}
 
 	//AMBIENT_OCCLUSION/HEIGHT
@@ -208,6 +216,8 @@ std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Ma
 		{
 			stbi_image_free(heightMap);
 		}
+
+		std::cout << "AO/height loaded! : " << std::endl;
 	}
 
 	return a_Manager.CreateMaterial(matSettings);

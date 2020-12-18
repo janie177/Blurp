@@ -275,7 +275,6 @@ void MaterialTestScene::Init()
     //Texture scrolling.
     m_UvModifierBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
     m_QueueData.uvModifierData.dataBuffer = m_UvModifierBuffer;
-
 }
 
 void MaterialTestScene::Update()
@@ -307,93 +306,93 @@ void MaterialTestScene::Update()
         }
     }
 
-    MaterialAttribute attribute = static_cast<MaterialAttribute>(0);
+    //MaterialAttribute attribute = static_cast<MaterialAttribute>(0);
 
-    //Buttons pressed:
-    if (input.getKeyState(KEY_0) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::DIFFUSE_TEXTURE;
-    }
-    if (input.getKeyState(KEY_1) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::NORMAL_TEXTURE;
-    }
-    if (input.getKeyState(KEY_2) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::EMISSIVE_TEXTURE;
-    }
-    if (input.getKeyState(KEY_3) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::METALLIC_TEXTURE;
-    }
-    if (input.getKeyState(KEY_4) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::ROUGHNESS_TEXTURE;
-    }
-    if (input.getKeyState(KEY_5) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::ALPHA_TEXTURE;
-    }
-    if (input.getKeyState(KEY_6) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::OCCLUSION_TEXTURE;
-    }
-    if (input.getKeyState(KEY_7) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::HEIGHT_TEXTURE;
-    }
-    if (input.getKeyState(KEY_8) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::DIFFUSE_CONSTANT_VALUE;
-    }
-    if (input.getKeyState(KEY_9) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::EMISSIVE_CONSTANT_VALUE;
-    }
-    if (input.getKeyState(KEY_Q) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::METALLIC_CONSTANT_VALUE;
-    }
-    if (input.getKeyState(KEY_W) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::ROUGHNESS_CONSTANT_VALUE;
-    }
-    if (input.getKeyState(KEY_E) == ButtonState::FIRST_PRESSED)
-    {
-        attribute = MaterialAttribute::ALPHA_CONSTANT_VALUE;
-    }
+    ////Buttons pressed:
+    //if (input.getKeyState(KEY_0) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::DIFFUSE_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_1) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::NORMAL_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_2) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::EMISSIVE_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_3) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::METALLIC_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_4) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::ROUGHNESS_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_5) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::ALPHA_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_6) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::OCCLUSION_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_7) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::HEIGHT_TEXTURE;
+    //}
+    //if (input.getKeyState(KEY_8) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::DIFFUSE_CONSTANT_VALUE;
+    //}
+    //if (input.getKeyState(KEY_9) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::EMISSIVE_CONSTANT_VALUE;
+    //}
+    //if (input.getKeyState(KEY_Q) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::METALLIC_CONSTANT_VALUE;
+    //}
+    //if (input.getKeyState(KEY_W) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::ROUGHNESS_CONSTANT_VALUE;
+    //}
+    //if (input.getKeyState(KEY_E) == ButtonState::FIRST_PRESSED)
+    //{
+    //    attribute = MaterialAttribute::ALPHA_CONSTANT_VALUE;
+    //}
 
-    //Move the light.
-    const static float MOVE_SPEED = 0.05f;
-    if(input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{MOVE_SPEED, 0.f, 0.f});
-    }
-    if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ -MOVE_SPEED, 0.f, 0.f });
-    }
-    if (input.getKeyState(KEY_UP) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, MOVE_SPEED, 0.f });
-    }
-    if (input.getKeyState(KEY_DOWN) != ButtonState::NOT_PRESSED)
-    {
-        m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, -MOVE_SPEED, 0.f });
-    }
+    ////Move the light.
+    //const static float MOVE_SPEED = 0.05f;
+    //if(input.getKeyState(KEY_RIGHT) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{MOVE_SPEED, 0.f, 0.f});
+    //}
+    //if (input.getKeyState(KEY_LEFT) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ -MOVE_SPEED, 0.f, 0.f });
+    //}
+    //if (input.getKeyState(KEY_UP) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, MOVE_SPEED, 0.f });
+    //}
+    //if (input.getKeyState(KEY_DOWN) != ButtonState::NOT_PRESSED)
+    //{
+    //    m_Light->SetPosition(m_Light->GetPosition() + glm::vec3{ 0.f, -MOVE_SPEED, 0.f });
+    //}
 
-    //If a switch was made, toggle it.
-    if (static_cast<std::uint32_t>(attribute) != 0)
-    {
-        if (m_Material->GetSettings().IsAttributeEnabled(attribute))
-        {
-            m_Material->GetSettings().DisableAttribute(attribute);
-        }
-        else
-        {
-            m_Material->GetSettings().EnableAttribute(attribute);
-        }
-    }
+    ////If a switch was made, toggle it.
+    //if (static_cast<std::uint32_t>(attribute) != 0)
+    //{
+    //    if (m_Material->GetSettings().IsAttributeEnabled(attribute))
+    //    {
+    //        m_Material->GetSettings().DisableAttribute(attribute);
+    //    }
+    //    else
+    //    {
+    //        m_Material->GetSettings().EnableAttribute(attribute);
+    //    }
+    //}
 
 
     const static float MOVE_SENSITIVITY = 0.001f;

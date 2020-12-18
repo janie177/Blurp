@@ -682,12 +682,14 @@ namespace blurp
 
     /*
      * Structure containing information about the shadow casting used in the scene.
+     * This is passed to render passes and shadow generation passes.
      */
     struct ShadowData
     {
         ShadowData()
         {
             directional.numCascades = 1;
+            directional.cascadeDistances = { 1.f };
         }
 
         //Shadowmaps for point and spot lights.
@@ -701,9 +703,12 @@ namespace blurp
         struct
         {
             std::shared_ptr<Texture> shadowMaps;            //The shadow map texture. Has to be a Texture_2D_Array.
-            std::shared_ptr<GpuBuffer> dataBuffer;           //The buffer containing the transformation matrices for the lights and all the 
+            std::shared_ptr<GpuBuffer> dataBuffer;          //The buffer containing the transformation matrices for the lights and all the 
             std::shared_ptr<GpuBufferView> dataRange;       //The view into above buffer to where the matrices are stored.
+            std::shared_ptr<GpuBufferView> startOffset;     //The offset at which the shadow generation will start writing data.
+
             std::uint32_t numCascades;                      //The amount of cascades used with directional shadows.
+            std::vector<float> cascadeDistances;            //The distance between each cascade. Needs to contain at least n = numCascades floats.
         } directional;
     };
 

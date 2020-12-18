@@ -35,8 +35,7 @@ namespace blurp
     {
     public:
         RenderPass_ShadowMap(RenderPipeline& a_Pipeline)
-            : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_LightIndices(nullptr), m_DrawDataCount(0),
-              m_NumDirectionalCascades(0), m_DirShadowTransformView(nullptr), m_DirShadowTransformOffset(0)
+            : RenderPass(a_Pipeline), m_DrawDataPtr(nullptr), m_LightIndices(nullptr), m_DrawDataCount(0)
         {
         }
 
@@ -64,29 +63,10 @@ namespace blurp
         void SetGeometry(const DrawData* a_DrawData, const LightIndexData* a_LightIndexData, const std::uint32_t a_Count);
 
         /*
-         * Set the output array texture to store the shadow maps in.
-         * This texture is used for all point and spotlights.
-         * Has to be of texture type TextureCubeArray.
-         * PixelFormat has to be Depth.
+         * Set the struct containing output information for this shadow generation pass.
+         * No shadowmaps will be generated if the provided textures for the shadow type are nullptr.
          */
-        void SetOutputPositional(const std::shared_ptr<Texture>& a_Texture);
-
-        /*
-         * Set the output array texture to store the shadow maps in.
-         * This texture is used for all directional lights.
-         * Has to be of texture type Texture2DArray.
-         * PixelFormat has to be Depth.
-         *
-         * NumCascades is the number of cascades generated per directional light map. A minimum of 1 is required.
-         * CascadeDistances is the depth offset from the last cascade. These have to be positive.
-         * The first cascade always starts at 0.f.
-         * The back of the scene will not be lit if the sum of the cascade distances is smaller than far plane distance.
-         *
-         * The GpuBuffer provided will be used to upload light transformation matrices.
-         * The offset into the GpuBuffer is determined by a_Offset's end.
-         * The GpuBufferView a_TransformView is then filled with the relevant information about where the transforms reside on the GPU for later use.
-         */
-        void SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture, const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances, const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::shared_ptr<GpuBufferView>& a_Offset, const std::shared_ptr<GpuBufferView>& a_TransformView);
+        void SetOutput(const ShadowData& a_Data);
 
         RenderPassType GetType() override;
 
@@ -98,13 +78,11 @@ namespace blurp
 
     protected:
 
-        //Collection of lights with a position. and the texture to store the shadow maps in.
+        //Collection of lights with a position.
         std::vector<LightShadowData> m_PositionalLights;
-        std::shared_ptr<Texture> m_ShadowMapsPositional;
 
-        //Collection of lights with a direction and the texture to store the shadow maps in.
+        //Collection of lights with a direction.
         std::vector<LightShadowData> m_DirectionalLights;
-        std::shared_ptr<Texture> m_ShadowMapsDirectional;
 
         //Pointers to the draw data, which lights affect each piece of geometry and the size of both arrays.
         const DrawData* m_DrawDataPtr;
@@ -114,14 +92,8 @@ namespace blurp
         //The camera used to determine directional light positions.
         std::shared_ptr<Camera> m_Camera;
 
-        //How many directional light cascades are used. A vector containing the distance for each cascade.
-        std::uint32_t m_NumDirectionalCascades;
-        std::vector<std::float_t> m_DirectionalCascadeDistances;
-
-        //Buffer and view used to upload directional light transformation matrices.
-        std::shared_ptr<GpuBuffer> m_DirShadowTransformBuffer;
-        std::shared_ptr<GpuBufferView> m_DirShadowTransformView;
-        std::shared_ptr<GpuBufferView> m_DirShadowTransformOffset;
+        //Object containing information about shadow generation.
+        ShadowData m_ShadowData;
 
     };
 }

@@ -157,8 +157,6 @@ void ShadowTestScene::Init()
     posShadowClear.clearValue.floats[0] = 1.f;
     m_ClearPass->AddTexture(m_PosShadowArray, posShadowClear);
 
-    //Add the shadow data to the shadow pass.
-    m_ShadowGenerationPass->SetOutputPositional(m_PosShadowArray);
 
     //Create a forward renderpass that draws directly to the screen.
     m_ForwardPass = m_Pipeline->AppendRenderPass<RenderPass_Forward>(RenderPassType::RP_FORWARD);
@@ -171,15 +169,6 @@ void ShadowTestScene::Init()
     gpuBufferSettings.resizeWhenFull = true;
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
-
-    //Set up shadow data that contains all information about the shadow mapping used. Pass it to the forward pass.
-    ShadowData shadowData;
-    shadowData.directional.shadowMaps = m_DirShadowArray;
-    shadowData.directional.numCascades = NUM_CASCADES;
-    shadowData.directional.dataBuffer = m_TransformBuffer;
-    shadowData.directional.dataRange = m_DirLightMatView;
-    shadowData.positional.shadowMaps = m_PosShadowArray;
-    m_ForwardPass->SetShadowData(shadowData);
 
     std::vector<float> cascadeDistances;
     cascadeDistances.resize(NUM_CASCADES);
@@ -324,9 +313,23 @@ void ShadowTestScene::Init()
     m_DrawData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX);
     m_DrawData.transformData.dataBuffer = m_TransformBuffer;
 
-    //Set dir shadow buffer info etc.
-    m_ShadowGenerationPass->SetOutputDirectional(m_DirShadowArray, NUM_CASCADES, cascadeDistances, m_TransformBuffer, m_DirLightDataOffsetView, m_DirLightMatView);
+    //Set up shadow data that contains all information about the shadow mapping used.
+    //Some of these datatypes are in shared_ptr format so that they can be modified during pipeline execution (offsets into buffers).
+    //This is needed because shadow map generation generates data that is required on the GPU.
+    ShadowData shadowData;
+    shadowData.directional.shadowMaps = m_DirShadowArray;
+    shadowData.directional.numCascades = NUM_CASCADES;
+    shadowData.directional.dataBuffer = m_TransformBuffer;
+    shadowData.directional.dataRange = m_DirLightMatView;
+    shadowData.positional.shadowMaps = m_PosShadowArray;
 
+    //Set information required for shadow map generation specifically.
+    shadowData.directional.cascadeDistances = cascadeDistances;
+    shadowData.directional.startOffset = m_DirLightDataOffsetView;
+
+    //Pass the shadow data to the forward and shadow generation passes.
+    m_ShadowGenerationPass->SetOutput(shadowData);
+    m_ForwardPass->SetShadowData(shadowData);
 
     //Add the actual transforms.
     {

@@ -131,15 +131,15 @@ namespace blurp
          * PointLights.
          */
 
-        if(!m_PositionalLights.empty() && m_ShadowMapsPositional != nullptr)
+        if(!m_PositionalLights.empty() && m_ShadowData.positional.shadowMaps != nullptr)
         {
             //Ensure enough space.
-            assert(m_ShadowMapsPositional->GetDimensions().z >= m_PositionalLights.size() * 6 && "Shadow map array has not enough layers for this many lights!");
+            assert(m_ShadowData.positional.shadowMaps->GetDimensions().z >= m_PositionalLights.size() * 6 && "Shadow map array has not enough layers for this many lights!");
 
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsPositional)->GetTextureId(), 0);
-            const auto dimensions = m_ShadowMapsPositional->GetDimensions();
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowData.positional.shadowMaps)->GetTextureId(), 0);
+            const auto dimensions = m_ShadowData.positional.shadowMaps->GetDimensions();
             glViewport(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
             glScissor(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
 
@@ -285,26 +285,26 @@ namespace blurp
          * Directional lights.
          */
 
-        if (!m_DirectionalLights.empty() && m_ShadowMapsDirectional != nullptr)
+        if (!m_DirectionalLights.empty() && m_ShadowData.directional.shadowMaps != nullptr)
         {
             //Ensure there's enough space in the texture.
-            assert(m_ShadowMapsDirectional->GetDimensions().z >= m_DirectionalLights.size() * m_NumDirectionalCascades && "Shadow map array has not enough layers for this many lights!");
+            assert(m_ShadowData.directional.shadowMaps->GetDimensions().z >= m_DirectionalLights.size() * m_ShadowData.directional.numCascades && "Shadow map array has not enough layers for this many lights!");
 
             //Max dir lights is determined by the cascades, which is a runtime value.
-            const int dirComponentsPerLight = 3 * static_cast<int>(m_NumDirectionalCascades) * (4 + 1); //3 vertices * cascades * (pos + layer)
+            const int dirComponentsPerLight = 3 * static_cast<int>(m_ShadowData.directional.numCascades) * (4 + 1); //3 vertices * cascades * (pos + layer)
             m_MaxDirLightsPerCall = std::min(m_MaxComponents / dirComponentsPerLight, m_MaxTriangles);
 
             //Bind the FBO and attach the depth texture to it.
             glBindFramebuffer(GL_FRAMEBUFFER, m_Fbo);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowMapsDirectional)->GetTextureId(), 0);
-            const auto dimensions = m_ShadowMapsDirectional->GetDimensions();
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, std::static_pointer_cast<Texture_GL>(m_ShadowData.directional.shadowMaps)->GetTextureId(), 0);
+            const auto dimensions = m_ShadowData.directional.shadowMaps->GetDimensions();
             glViewport(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
             glScissor(0, 0, static_cast<GLsizei>(dimensions.x), static_cast<GLsizei>(dimensions.y));
 
             //Vector containing the padded data to be uploaded to the GPU.
             //Format: NumCascades(vec4), CamPosCascadeDistance(vec4)
             DirLightData data;
-            data.numCascades.x = m_NumDirectionalCascades;
+            data.numCascades.x = m_ShadowData.directional.numCascades;
             int lIndex = 0;
             for(auto& dirLight : m_DirectionalLights)
             {
@@ -317,7 +317,7 @@ namespace blurp
 
             //Iterate over all directional lights and set up their matrices.
             std::vector<DirCascade> cascades;
-            cascades.reserve(m_NumDirectionalCascades * m_DirectionalLights.size());
+            cascades.reserve(m_ShadowData.directional.numCascades * m_DirectionalLights.size());
 
             //Matrix used to convert a point from camera space to world space.
             glm::mat4 camToWorld = m_Camera->GetTransform().GetTransformation();
@@ -345,13 +345,13 @@ namespace blurp
 
                 float lastFar = 0.f;
 
-                for (std::uint32_t cascade = 0; cascade < m_NumDirectionalCascades; ++cascade)
+                for (std::uint32_t cascade = 0; cascade < m_ShadowData.directional.numCascades; ++cascade)
                 {
                     glm::vec4 cameraFrustumCorners[8];      //The 8 corners of the frustum.
 
                     //Calculate the far and near Z positions of this cascade. The last cascade is goes all the way to the far plane.
                     float nearZ = lastFar;
-                    float farZ = nearZ + m_DirectionalCascadeDistances[cascade];
+                    float farZ = nearZ + m_ShadowData.directional.cascadeDistances[cascade];
                     lastFar = farZ;
 
                     //Calculate near and far X using some trigonometry.
@@ -468,8 +468,8 @@ namespace blurp
 
 
             //Upload the directional matrices for each light and cascade. Store the result in the view that was provided. Bind to the right shader slot and range.
-            (*m_DirShadowTransformView) = m_DirShadowTransformBuffer->WriteData<DirCascade>(m_DirShadowTransformOffset->end, static_cast<std::uint32_t>(cascades.size()), 16, &cascades[0]);
-            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, static_cast<GpuBuffer_GL*>(m_DirShadowTransformBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_DirShadowTransformView->start), m_DirShadowTransformView->totalSize);
+            (*m_ShadowData.directional.dataRange) = m_ShadowData.directional.dataBuffer->WriteData<DirCascade>(m_ShadowData.directional.startOffset->end, static_cast<std::uint32_t>(cascades.size()), 16, &cascades[0]);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, static_cast<GpuBuffer_GL*>(m_ShadowData.directional.dataBuffer.get())->GetBufferId(), static_cast<GLintptr>(m_ShadowData.directional.dataRange->start), m_ShadowData.directional.dataRange->totalSize);
 
 
             /*

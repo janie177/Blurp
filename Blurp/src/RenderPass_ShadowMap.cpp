@@ -37,46 +37,30 @@ namespace blurp
         m_LightIndices = a_LightIndexData;
     }
 
-    void RenderPass_ShadowMap::SetOutputPositional(const std::shared_ptr<Texture>& a_Texture)
+    void RenderPass_ShadowMap::SetOutput(const ShadowData& a_Data)
     {
-        assert(a_Texture->GetTextureType() == TextureType::TEXTURE_CUBEMAP_ARRAY && "Positional light shadows require a Cubemap Texture Array.");
-        assert(a_Texture->GetPixelFormat() == PixelFormat::DEPTH && "Shadowmaps only need a depth channel.");
-        m_ShadowMapsPositional = a_Texture;
-    }
+        //Ensure positional shadows are correctly set up. No shadow maps are generated if the textures provided are null.
+        assert((a_Data.positional.shadowMaps == nullptr || a_Data.positional.shadowMaps->GetTextureType() == TextureType::TEXTURE_CUBEMAP_ARRAY) && "Positional light shadows require a Cubemap Texture Array.");
+        assert((a_Data.positional.shadowMaps == nullptr || a_Data.positional.shadowMaps->GetPixelFormat() == PixelFormat::DEPTH) && "Shadowmaps only need a depth channel.");
 
-    void RenderPass_ShadowMap::SetOutputDirectional(const std::shared_ptr<Texture>& a_Texture,
-        const std::uint32_t a_NumCascades, const std::vector<float>& a_CascadeDistances,
-        const std::shared_ptr<GpuBuffer>& a_TransformBuffer, const std::shared_ptr<GpuBufferView>& a_Offset,
-        const std::shared_ptr<GpuBufferView>& a_TransformView)
-    {
         //Ensure that cascading is set up correctly.
-        assert(a_Offset != nullptr && "Offset buffer cannot be empty!");
-        assert(a_TransformView != nullptr && "The GpuBuffer to store information in cannot be empty!");
-        assert(a_CascadeDistances.size() == a_NumCascades && "The amount of shadow cascade distances has to be equal to the amount of cascades!");
-        assert(a_NumCascades >= 1u && "A minimum of 1 shadow cascade is required.");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.startOffset != nullptr) && "Offset buffer cannot be empty!");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.dataBuffer != nullptr) && "The GpuBuffer to store information in cannot be empty!");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.cascadeDistances.size() == a_Data.directional.numCascades) && "The amount of shadow cascade distances has to be equal to the amount of cascades!");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.numCascades >= 1u) && "A minimum of 1 shadow cascade is required.");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.shadowMaps->GetTextureType() == TextureType::TEXTURE_2D_ARRAY) && "Directional light shadows require a 2D Texture Array.");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.shadowMaps->GetPixelFormat() == PixelFormat::DEPTH) && "Shadowmaps only need a depth channel.");
+        assert((a_Data.directional.shadowMaps == nullptr || a_Data.directional.dataBuffer != nullptr) && "Directional shadow transform buffer cannot be nullptr!");
 
 #ifndef NDEBUG
-        for (auto& f : a_CascadeDistances)
+        for (auto& f : a_Data.directional.cascadeDistances)
         {
             assert(f >= 0.f && "Cascade distances have to be positive!");
         }
 #endif
-        //Ensure that all distances are positive.
 
-
-        m_NumDirectionalCascades = a_NumCascades;
-        m_DirectionalCascadeDistances = a_CascadeDistances;
-
-        //Ensure the texture provided is the right format.
-        assert(a_Texture->GetTextureType() == TextureType::TEXTURE_2D_ARRAY && "Directional light shadows require a 2D Texture Array.");
-        assert(a_Texture->GetPixelFormat() == PixelFormat::DEPTH && "Shadowmaps only need a depth channel.");
-        m_ShadowMapsDirectional = a_Texture;
-
-        //Store the buffer and view with required offset to store transforms in for each light cascade.
-        assert(a_TransformBuffer != nullptr && "Directional shadow transform buffer cannot be nullptr!");
-        m_DirShadowTransformBuffer = a_TransformBuffer;
-        m_DirShadowTransformView = a_TransformView;
-        m_DirShadowTransformOffset = a_Offset;
+        //Finally store the data struct if everything is in order.
+        m_ShadowData = a_Data;
     }
 
     RenderPassType RenderPass_ShadowMap::GetType()
@@ -94,16 +78,19 @@ namespace blurp
 
     bool RenderPass_ShadowMap::IsStateValid()
     {
-        if(!m_DirectionalLights.empty() && (!m_ShadowMapsDirectional || !m_DirShadowTransformBuffer || m_DirShadowTransformView == nullptr))
+        //A directional light is queued for shadow generation, but there's no directional shadow map.
+        if(!m_DirectionalLights.empty() && !m_ShadowData.directional.shadowMaps)
         {
             return false;
         }
 
-        if (!m_PositionalLights.empty() && !m_ShadowMapsPositional)
+        //A positional light is queued, but there is no shadow texture specified.
+        if (!m_PositionalLights.empty() && !m_ShadowData.positional.shadowMaps)
         {
             return false;
         }
 
+        //There is no camera specified for the scene.
         if(m_Camera == nullptr)
         {
             return false;
