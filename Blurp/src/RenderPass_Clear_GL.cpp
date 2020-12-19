@@ -1,6 +1,9 @@
 #pragma once
 
 #include "opengl/RenderPass_Clear_GL.h"
+
+#include <iostream>
+
 #include "opengl/GLUtils.h"
 #include "opengl/RenderTarget_GL.h"
 #include "opengl/Texture_GL.h"
@@ -39,7 +42,7 @@ namespace blurp
             glTarget->Bind();
 
             GLenum clearBit = 0;
-            if(glTarget->GetNumColorAttachments() != 0)
+            if(glTarget->HasColorAttachment() != 0)
             {
                 clearBit = GL_COLOR_BUFFER_BIT;
             }

@@ -704,8 +704,6 @@ namespace blurp
 
         MaterialBatchSettings()
         {
-            m_Mask = static_cast<MaterialAttribute>(0);
-
             textureData = nullptr;
 
             constantData.diffuseConstantData = nullptr;
@@ -739,6 +737,11 @@ namespace blurp
          * Returns true if the provided attribute is enabled.
          */
         bool IsAttributeEnabled(MaterialAttribute a_Attribute) const;
+
+        /*
+         * Set the mask for this material batch.
+         */
+        void SetMask(std::uint16_t a_Mask);
 
         /*
          * Get the unsigned 16 bit int mask of all enabled attributes.
@@ -809,7 +812,7 @@ namespace blurp
 
 
     private:
-        MaterialAttribute m_Mask;
+        MaterialMask m_Mask;
     };
 
     /*

@@ -276,94 +276,26 @@ namespace blurp
 
     void MaterialBatchSettings::EnableAttribute(MaterialAttribute a_Attribute)
     {
-        //Ensure that no bitmasking was performed.
-        assert(static_cast<int>(a_Attribute) && !(static_cast<int>(a_Attribute) & (static_cast<int>(a_Attribute) - 1)) && "Only a single attribute can be enabled at a time! No masking allowed.");
-
-        switch (a_Attribute)
-        {
-        case MaterialAttribute::DIFFUSE_TEXTURE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::DIFFUSE_CONSTANT_VALUE);
-        }
-        break;
-        case MaterialAttribute::EMISSIVE_TEXTURE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
-        }
-        break;
-        case MaterialAttribute::METALLIC_TEXTURE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::METALLIC_CONSTANT_VALUE);
-        }
-        break;
-        case MaterialAttribute::ROUGHNESS_TEXTURE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::ROUGHNESS_CONSTANT_VALUE);
-        }
-        break;
-        case MaterialAttribute::ALPHA_TEXTURE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::ALPHA_CONSTANT_VALUE);
-        }
-        break;
-        case MaterialAttribute::DIFFUSE_CONSTANT_VALUE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
-        }
-        break;
-        case MaterialAttribute::EMISSIVE_CONSTANT_VALUE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::EMISSIVE_TEXTURE);
-        }
-        break;
-        case MaterialAttribute::METALLIC_CONSTANT_VALUE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::METALLIC_TEXTURE);
-        }
-        break;
-        case MaterialAttribute::ROUGHNESS_CONSTANT_VALUE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::ROUGHNESS_TEXTURE);
-        }
-        break;
-        case MaterialAttribute::ALPHA_CONSTANT_VALUE:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-            DisableAttribute(MaterialAttribute::ALPHA_TEXTURE);
-        }
-        break;
-
-        //No special action needed.
-        default:
-        {
-            m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) | static_cast<std::uint16_t>(a_Attribute));
-        }
-        break;
-        }
+        m_Mask.EnableAttribute(a_Attribute);
     }
 
     void MaterialBatchSettings::DisableAttribute(MaterialAttribute a_Attribute)
     {
-        m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) & ~static_cast<std::uint16_t>(a_Attribute));
+        m_Mask.DisableAttribute(a_Attribute);
     }
 
     bool MaterialBatchSettings::IsAttributeEnabled(MaterialAttribute a_Attribute) const
     {
-        const auto cast = static_cast<std::uint16_t>(a_Attribute);
-        return (static_cast<std::uint16_t>(m_Mask) & cast) == cast;
+        return m_Mask.IsAttributeEnabled(a_Attribute);
+    }
+
+    void MaterialBatchSettings::SetMask(std::uint16_t a_Mask)
+    {
+        m_Mask.SetMask(a_Mask);
     }
 
     std::uint16_t MaterialBatchSettings::GetMask() const
     {
-        return static_cast<std::uint16_t>(m_Mask);
+        return m_Mask.GetMask();
     }
 }

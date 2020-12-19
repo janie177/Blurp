@@ -140,6 +140,11 @@ namespace blurp
         glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, textureType, std::reinterpret_pointer_cast<Texture_GL>(a_Added)->GetTextureId(), 0);
     }
 
+    bool RenderTarget_GL::HasColorAttachment() const
+    {
+        return m_HasDefaultColor || m_NumColorAttachments != 0;
+    }
+
     bool RenderTarget_GL::HasDepthAttachment() const
     {
         //Overridden because OpenGL has the default depth attachment.

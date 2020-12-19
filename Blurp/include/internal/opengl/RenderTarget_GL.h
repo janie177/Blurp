@@ -14,10 +14,11 @@ namespace blurp
          * Create a OpenGL Render Target.
          * When a_DefaultFrameBuffer is set to true, this acts as a dummy object that binds to default frame buffer created
          * by OpenGL itself.
+         * Since everything is hard built into this framebuffer, I can't query it for attachments. That's why the bools here are passed.
          */
-        RenderTarget_GL(const RenderTargetSettings& a_Settings, bool a_DefaultFrameBuffer, bool a_HasDepth, bool a_HasStencil) : RenderTarget(a_Settings),
+        RenderTarget_GL(const RenderTargetSettings& a_Settings, bool a_DefaultFrameBuffer, bool a_HasDepth, bool a_HasStencil, bool a_HasColor) : RenderTarget(a_Settings),
                                                                                             m_Fbo(0),
-                                                                                            m_IsDefault(a_DefaultFrameBuffer), m_HasDefaultDepth(a_HasDepth), m_HasDefaultStencil(a_HasStencil)
+                                                                                            m_IsDefault(a_DefaultFrameBuffer), m_HasDefaultColor(a_HasColor), m_HasDefaultDepth(a_HasDepth), m_HasDefaultStencil(a_HasStencil)
         {
 
         }
@@ -56,7 +57,7 @@ namespace blurp
         void OnDepthStencilAttachmentBound(const std::shared_ptr<Texture>& a_Added) override;
 
         //Overridden because OpenGL has the default framebuffer.
-
+        bool HasColorAttachment() const override;
         bool HasDepthAttachment() const override;
         bool HasStencilAttachment() const override;
     private:
@@ -64,6 +65,7 @@ namespace blurp
 
         //The following only applies to the default OpenGL framebuffer.
         bool m_IsDefault;
+        bool m_HasDefaultColor;
         bool m_HasDefaultDepth;
         bool m_HasDefaultStencil;
 

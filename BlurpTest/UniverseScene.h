@@ -1,4 +1,5 @@
 #pragma once
+#include "RenderPass_Clear.h"
 #include "Transform.h"
 #include "Scene.h"
 #include "RenderPass_Forward.h"
@@ -20,6 +21,7 @@ private:
     blurp::Transform iMTransform;
     glm::mat4 m;
     std::shared_ptr<blurp::RenderPass_Forward> forwardPass;
+    std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
     int numSpasmCubes;
     std::vector<glm::mat4> transforms;
     std::shared_ptr<blurp::Camera> camera;
@@ -29,4 +31,6 @@ private:
     blurp::DrawData sunData;
 
     std::shared_ptr<blurp::GpuBuffer> gpuBuffer;
+
+    std::shared_ptr<blurp::PointLight> m_Sun;
 };

@@ -20,6 +20,7 @@ using namespace blurp;
 const static std::float_t CUBE_DATA[]
 {
 //      X    Y     Z            NORMAL              UV              Color             
+//      X    Y     Z            NORMAL              UV              Color             
     	-0.5f, -0.5f, 0.5f,     0.f, 0.f, 1.f,      0.f, 1.f,       1.f, 1.f, 1.f,
         -0.5f, 0.5f, 0.5f,      0.f, 0.f, 1.f,      0.f, 0.f,       1.f, 1.f, 1.f,
         0.5f, -0.5f, 0.5f,      0.f, 0.f, 1.f,      1.f, 1.f,       1.f, 1.f, 1.f,

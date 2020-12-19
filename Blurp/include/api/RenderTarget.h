@@ -37,7 +37,7 @@ namespace blurp
         /*
          * Returns true when this RenderTarget has at least one color attachment.
          */
-        bool HasColorAttachment() const;
+        virtual bool HasColorAttachment() const;
 
         /*
          * Returns true when this RenderTarget has a depth attachment.

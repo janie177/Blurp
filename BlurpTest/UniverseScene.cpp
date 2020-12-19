@@ -13,8 +13,9 @@
 #include <RenderPass_HelloTriangle.h>
 #include <RenderTarget.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <MaterialFile.h>
+//#include "MaterialLoader.h"
 
-#include "MaterialLoader.h"
 #include "Sphere.h"
 
 using namespace blurp;
@@ -72,34 +73,21 @@ void UniverseScene::Init()
     colorAttachment.pixelFormat = PixelFormat::RGBA;
     colorAttachment.dataType = DataType::UBYTE;
 
-    RenderTargetSettings renderTargetSettings;
-    renderTargetSettings.viewPort = { 0, 0, m_Window->GetDimensions() };
-    auto colorAttachmentTex = m_Engine.GetResourceManager().CreateTexture(colorAttachment);
-
-    renderTargetSettings.defaultColorAttachment = colorAttachmentTex;
-
-    auto renderTarget = m_Engine.GetResourceManager().CreateRenderTarget(renderTargetSettings);
 
     //Set up a pipeline that draws a triangle onto a texture. Then it draws a triangle with the first texture on it on the 2nd triangle on the screen.
     PipelineSettings pSettings;
     pSettings.waitForGpu = true;
     pipeline = m_Engine.GetResourceManager().CreatePipeline(pSettings);
 
-    //Draw a triangle in the render target.
-    auto triangleRenderPass = pipeline->AppendRenderPass<RenderPass_HelloTriangle>(RenderPassType::RP_HELLOTRIANGLE);
-    triangleRenderPass->SetColor({ 1.f, 1.f, 1.f, 1.f });
-    renderTarget->SetClearColor({ 0.f, 0.f, 1.f, 1.f });
-    triangleRenderPass->SetTarget(renderTarget);
+    //Add a clear pass first.
+    m_ClearPass = pipeline->AppendRenderPass<RenderPass_Clear>(RenderPassType::RP_CLEAR);
 
-    //Draw a triangle on the screen. Texture the triangle with the previously rendered texture.
-    auto triangleRenderPass2 = pipeline->AppendRenderPass<RenderPass_HelloTriangle>(RenderPassType::RP_HELLOTRIANGLE);
-    m_Window->GetRenderTarget()->SetClearColor({ 0.f, 0.1f, 0.1f,1.f });
-    triangleRenderPass2->SetTarget(m_Window->GetRenderTarget());
-    triangleRenderPass2->SetColor({ 1.f, 0.6f, 0.2f, 1.f });
+    //Set the clear color.
+    auto renderTarget = m_Window->GetRenderTarget();
+    renderTarget->SetClearColor({ 0.f, 0.1f, 0.1f, 1.f });
 
-
-    triangleRenderPass->SetEnabled(false);
-    triangleRenderPass2->SetEnabled(false);
+    //Mark the render target for clearing at the start of each pass.
+    m_ClearPass->AddRenderTarget(renderTarget);
 
     CameraSettings camSettings;
     camSettings.width = m_Window->GetDimensions().x;
@@ -137,14 +125,10 @@ void UniverseScene::Init()
         transforms.emplace_back(transform.GetTransformation());
     }
 
-
-
-
-
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 10000;
+    const int numinstances = 1000000;
     const float maxDistance = 10000.f;
     const float maxRotation = 6.28f;
     const float maxScale = 20.f;
@@ -243,8 +227,8 @@ void UniverseScene::Init()
     iData.instanceCount = 1;
     iData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_BATCH);
     iData.transformData.dataBuffer = gpuBuffer;
-    iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager());
-
+    iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager(), "materials/Batch/MaterialBatch");
+    //iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager());
 
     //Draw many instances of the single cubes that spasm around.
     data.mesh = mesh;
@@ -258,12 +242,22 @@ void UniverseScene::Init()
     sunData.instanceCount = 1;
 
 
-    MaterialSettings sunSettings;
-    sunSettings.SetEmissiveConstant({ 1.f, 1.f, 0.05f });
-    sunSettings.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
-    sunData.materialData.material = m_Engine.GetResourceManager().CreateMaterial(sunSettings);
-    sunData.transformData.dataBuffer = gpuBuffer;
-    sunData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
+    {
+        MaterialSettings sunSettings;
+        sunSettings.SetEmissiveConstant({ 1.f, 1.f, 0.05f });
+        sunSettings.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
+        sunData.materialData.material = m_Engine.GetResourceManager().CreateMaterial(sunSettings);
+        sunData.transformData.dataBuffer = gpuBuffer;
+        sunData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_SINGLE);
+    }
+
+    {
+        LightSettings sunSettings;
+        sunSettings.type = LightType::LIGHT_POINT;
+        sunSettings.color = glm::vec3(0.9f, 0.9f, 0.4f);
+        sunSettings.intensity = 100000.f;
+        m_Sun = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(sunSettings));
+    }
 }
 
 void UniverseScene::Update()
@@ -396,10 +390,6 @@ void UniverseScene::Update()
         }
     }
 
-    //Update the rotation of the instanced mesh.
-    iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
-    m = iMTransform.GetTransformation();
-
     /*
      * Upload the updated matrix data to the GPU.
      */
@@ -408,6 +398,7 @@ void UniverseScene::Update()
     forwardPass->Reset();
 
     //Update the single transform for the 20 million cubes.
+    iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
     m = iMTransform.GetTransformation();
 
     //Update the sun
@@ -429,8 +420,7 @@ void UniverseScene::Update()
     lud.lightData = &lData;
 
     lud.point.count = 1;
-    //lud.point.lights = ;
-    //TODO this is completely broken rn.
+    lud.point.lights = &m_Sun;
 
     gpuBuffer->WriteData(sunData.transformData.dataRange.end, lud);
 

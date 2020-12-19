@@ -63,9 +63,6 @@ int main()
     info.metallic.textureName = "metallic.jpg";
     info.roughness.textureName = "roughness.jpg";
     info.emissive.textureName = "emissive.jpg"; //Disabled because it's not present for all textures.
-    
-
-    
     std::vector<std::string> toBeCompiled
     {
         "stone",
@@ -76,7 +73,28 @@ int main()
         "grass"
     };
 
+
+
+    //Material batch settings.
+    MaterialBatchInfo batch;
+    batch.path = "materials/Batch/";
+    batch.mask.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
+    batch.mask.EnableAttribute(MaterialAttribute::OCCLUSION_TEXTURE);
+    batch.mask.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
+
+    //Batch dimensions.
+    batch.dimensions.width = 64;
+    batch.dimensions.height = 64;
+    batch.dimensions.numMaterials = 3;
+
+    //The textures for each material and the constant data per material.
+    batch.diffuse.textureNames = {"testmat1/diffuse.jpg", "testmat2/diffuse.jpg", "testmat3/diffuse.jpg" };
+    batch.ao.textureNames = { "testmat1/ao.jpg", "testmat2/ao.jpg", "testmat3/ao.jpg" };
+    batch.emissive.constantData = { glm::vec3(0.1f, 0.2f, 0.1f), glm::vec3(0.5f, 0.3f, 0.f), glm::vec3(0.f, 0.f, 0.f) };
+    
+
     constexpr bool rebuild = false;
+    constexpr bool rebuildBatch = true;
 
     if(rebuild)
     {
@@ -100,13 +118,33 @@ int main()
         std::cout << "Time to convert " << toBeCompiled.size() << " materials: " << ms << " milliseconds." << std::endl;
     }
 
+    if(rebuildBatch)
+    {
+        auto timepoint = std::chrono::high_resolution_clock::now();
+
+        const std::string fullPath = batch.path + "MaterialBatch";
+        bool sucess = CreateMaterialBatchFile(batch, fullPath);
+        if (!sucess)
+        {
+            std::cout << "Sad :(" << std::endl;
+        }
+        else
+        {
+            std::cout << "Yay Good!" << std::endl;
+        }
+        
+        auto end = std::chrono::high_resolution_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - timepoint).count();
+        std::cout << "Time to compile material batch: " << ms << " milliseconds." << std::endl;
+    }
+
 
     //RENDERING
 
 
     //Load one of the scenes.
-    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();

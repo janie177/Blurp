@@ -15,11 +15,11 @@ std::shared_ptr<blurp::MaterialBatch> LoadMaterialBatch(blurp::RenderResourceMan
 	batchSettings.textureCount = 2;
 
 	MaterialData d1 = baseData;
-	d1.path = "materials/testmat1/";
+	d1.path = "materials/Batch/testmat1/";
 	MaterialData d2 = baseData;
-	d2.path = "materials/testmat2/";
+	d2.path = "materials/Batch/testmat2/";
 	MaterialData d3 = baseData;
-	d3.path = "materials/testmat3/";
+	d3.path = "materials/Batch/testmat3/";
 
 	std::vector<glm::vec3> emissiveValues
 	{

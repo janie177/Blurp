@@ -635,6 +635,7 @@ namespace blurp
         LightDataInfo()
         {
             count = 0;
+            shadowCount = 0;
         }
 
         LightDataInfo(std::uint32_t a_Count, const GpuBufferView& a_DataRange, const std::shared_ptr<GpuBuffer>& a_DataBuffer) : count(a_Count), dataRange(a_DataRange), dataBuffer(a_DataBuffer)
