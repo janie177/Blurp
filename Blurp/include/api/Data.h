@@ -172,6 +172,8 @@ namespace blurp
      */
     bool IsSigned(DataType a_Type);
 
+    size_t SizeOf(DataType a_Type);
+
     enum class WindowFlags : std::uint16_t
     {
         OPEN_FULLSCREEN = 1 << 0,

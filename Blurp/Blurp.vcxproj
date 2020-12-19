@@ -183,6 +183,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\MaterialBatch.h" />
     <ClInclude Include="include\api\MaterialFile.h" />
     <ClInclude Include="include\api\Mesh.h" />
+    <ClInclude Include="include\api\MeshFile.h" />
     <ClInclude Include="include\api\RenderPass_2D.h" />
     <ClInclude Include="include\api\RenderPass_Clear.h" />
     <ClInclude Include="include\api\RenderPass_ShadowMap.h" />
@@ -236,6 +237,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\Lockable.cpp" />
     <ClCompile Include="src\MaterialBatch_GL.cpp" />
     <ClCompile Include="src\MaterialFile.cpp" />
+    <ClCompile Include="src\MeshFile.cpp" />
     <ClCompile Include="src\Mesh_GL.cpp" />
     <ClCompile Include="src\Mouse.cpp" />
     <ClCompile Include="src\RenderDevice.cpp" />

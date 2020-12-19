@@ -263,7 +263,7 @@ namespace blurp
 	 * Create a material file from the given material settings.
 	 * This will save the material file with the given file name and path.
 	 */
-	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_FileName);
+	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
 
 	/*
 	 * Load a material from the given file name.
@@ -274,7 +274,7 @@ namespace blurp
 	 * Create a material batch file from the given material settings.
 	 * This will save the material file with the given file name and path.
 	 */
-	bool CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_FileName);
+	bool CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
 
 	/*
 	 * Load a material batch from the given file.

@@ -16,6 +16,7 @@
 #include <MaterialFile.h>
 //#include "MaterialLoader.h"
 
+#include "MeshFile.h"
 #include "Sphere.h"
 
 using namespace blurp;
@@ -98,6 +99,19 @@ void UniverseScene::Init()
     forwardPass->SetCamera(camera);
     forwardPass->SetTarget(m_Window->GetRenderTarget());
 
+    //Resize callback.
+    m_Window->SetResizeCallback([&](int w, int h)
+    {
+        //Update camera.
+        CameraSettings camS;
+        camS.width = w;
+        camS.height = h;
+        camS.fov = 90.f;
+        camS.nearPlane = 0.1f;
+        camS.farPlane = 9000.f;
+        camera->UpdateSettings(camS);
+    });
+
     //Scene graph with a mesh and transforms.
     MeshSettings meshSettings;
     meshSettings.indexData = &CUBE_INDICES;
@@ -112,7 +126,19 @@ void UniverseScene::Init()
     meshSettings.vertexSettings.EnableAttribute(VertexAttribute::UV_COORDS, 24, 44, 0);
     meshSettings.vertexSettings.EnableAttribute(VertexAttribute::COLOR, 32, 44, 0);
 
-    std::shared_ptr<Mesh> mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
+    /*
+     * Mesh file testing here
+     */
+    std::cout << "Creating mesh file Cube1." << std::endl;
+    bool created = CreateMeshFile(meshSettings, "meshes/", "Cube1");
+    std::cout << (created ? "Success!" : "Failed.") << std::endl;
+
+    std::cout << "Loading mesh file Cube1." << std::endl;
+    std::shared_ptr<Mesh> mesh = LoadMeshFile(m_Engine.GetResourceManager(), "meshes/Cube1");
+    //------------------------
+
+    //std::shared_ptr<Mesh> mesh = m_Engine.GetResourceManager().CreateMesh(meshSettings);
+    
 
     Transform transform;
     transform.SetTranslation({ 0, 0, 0.f });

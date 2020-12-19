@@ -102,8 +102,7 @@ int main()
         for (auto& path : toBeCompiled)
         {
             info.path = "materials/" + path + "/";
-            const std::string fullPath = info.path + fileName;
-            bool sucess = CreateMaterialFile(info, fullPath);
+            bool sucess = CreateMaterialFile(info, info.path, fileName);
             if(!sucess)
             {
                 std::cout << "Sad :(" << std::endl;
@@ -122,8 +121,7 @@ int main()
     {
         auto timepoint = std::chrono::high_resolution_clock::now();
 
-        const std::string fullPath = batch.path + "MaterialBatch";
-        bool sucess = CreateMaterialBatchFile(batch, fullPath);
+        bool sucess = CreateMaterialBatchFile(batch, batch.path, "MaterialBatch");
         if (!sucess)
         {
             std::cout << "Sad :(" << std::endl;

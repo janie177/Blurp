@@ -9,6 +9,29 @@ namespace blurp
         return a_Type < DataType::UINT;
     }
 
+    size_t SizeOf(DataType a_Type)
+    {
+        switch (a_Type)
+        {
+        case DataType::FLOAT:
+            return sizeof(float);
+            break;
+        case DataType::UINT:
+        case DataType::INT:
+            return sizeof(int);
+            break;
+        case DataType::UBYTE:
+        case DataType::BYTE:
+            return sizeof(char);
+            break;
+        case DataType::USHORT:
+        case DataType::SHORT:
+            return sizeof(short);
+            break;
+        }
+        return -1;
+    }
+
     DrawAttributeMask& DrawAttributeMask::EnableAttribute(DrawAttribute a_Attribute)
     {
         m_Mask = static_cast<DrawAttribute>(static_cast<std::uint32_t>(m_Mask) | static_cast<std::uint32_t>(a_Attribute));

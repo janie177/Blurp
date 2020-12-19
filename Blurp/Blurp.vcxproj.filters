@@ -195,6 +195,9 @@
     <ClInclude Include="include\api\lz4hc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\api\MeshFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
@@ -318,6 +321,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\api\lz4hc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

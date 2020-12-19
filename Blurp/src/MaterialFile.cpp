@@ -1,4 +1,7 @@
 #include "MaterialFile.h"
+
+#include <filesystem>
+
 #include "Material.h"
 #include "api/stb_image.h"
 #include "Data.h"
@@ -12,7 +15,7 @@
 #include "lz4.h"
 #include "lz4hc.h"
 
-bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_FileName)
+bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName)
 {
 	//Header part of the file, containing most information.
 	MaterialHeader header;
@@ -311,8 +314,11 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 		throw std::exception("A 0 or negative result from LZ4_compress_default() indicates a failure trying to compress the data. ");
 	}
 
+	//Create the path if not exist.
+	std::filesystem::create_directories(a_Path);
+
 	//Write to file.
-	std::string finalName = a_FileName + MATERIAL_FILE_EXTENSION;
+	std::string finalName = a_Path + a_FileName + MATERIAL_FILE_EXTENSION;
 	std::ofstream file(finalName, std::ios::out | std::ios::binary);
 
 	//Write some info needed for decompression.
@@ -459,7 +465,7 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 	return mat;
 }
 
-bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_FileName)
+bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName)
 {
 	//Ensure that positive dimensions are specified.
 	if(a_MaterialInfo.dimensions.numMaterials <= 0 || a_MaterialInfo.dimensions.width <= 0 || a_MaterialInfo.dimensions.height <= 0)
@@ -885,8 +891,11 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 		throw std::exception("A 0 or negative result from LZ4_compress_default() indicates a failure trying to compress the data. ");
 	}
 
+	//Create the path if not exist.
+	std::filesystem::create_directories(a_Path);
+
 	//Write to file.
-	std::string finalName = a_FileName + MATERIAL_BATCH_FILE_EXTENSION;
+	std::string finalName = a_Path + a_FileName + MATERIAL_BATCH_FILE_EXTENSION;
 	std::ofstream file(finalName, std::ios::out | std::ios::binary);
 
 	//Write some info needed for decompression.

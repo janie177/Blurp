@@ -14,6 +14,9 @@
 *.blurpmat
 *.blurpmatx
 
+#mesh files
+*.blurpmesh
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
