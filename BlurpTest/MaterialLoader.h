@@ -32,7 +32,7 @@ struct CubeMapSettings
  * Load a material from the given texture paths.
  * This automatically compresses them in the right format.
  */
-std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Manager, const MaterialData& a_Data);
+//std::shared_ptr<blurp::Material> LoadMaterial(blurp::RenderResourceManager& a_Manager, const MaterialData& a_Data);
 
 /*
  * Load a material batch containing three materials for testing.

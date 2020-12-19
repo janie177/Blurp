@@ -2,6 +2,8 @@
 #include <BlurpEngine.h>
 #include <KeyCodes.h>
 #include <RenderResourceManager.h>
+
+#include "MaterialFile.h"
 #include "GpuBuffer.h"
 #include "MaterialLoader.h"
 #include "Sphere.h"
@@ -123,16 +125,11 @@ void LightTestScene::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    //Load the material for the plane.
-    MaterialData materialData;
-    materialData.path = "materials/stone/";
-    materialData.diffuseTextureName = "diffuse.jpg";
-    materialData.normalTextureName = "normal.jpg";
-    materialData.metallicTextureName = "metallic.jpg";
-    materialData.roughnessTextureName = "roughness.jpg";
-    materialData.aoTextureName = "ao.jpg";
-    //materialData.heightTextureName = "height.jpg";
-    m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), materialData);
+    MaterialSettings ms;
+    ms.EnableAttribute(MaterialAttribute::DIFFUSE_CONSTANT_VALUE);
+    ms.SetDiffuseConstant(glm::vec3(1.f, 0.8f, 0.8f));
+
+    m_PlaneMaterial = m_Engine.GetResourceManager().CreateMaterial(ms);
     auto s = m_PlaneMaterial->GetSettings();
     s.EnableAttribute(MaterialAttribute::DIFFUSE_CONSTANT_VALUE);
     s.SetDiffuseConstant(glm::vec3(0.5f, 0.5f, 0.5f));

@@ -475,6 +475,44 @@ namespace blurp
         } directionalLight;
     };
 
+    struct MaterialMask
+    {
+    public:
+        MaterialMask()
+        {
+            m_Mask = static_cast<MaterialAttribute>(0);
+        }
+
+        /*
+         * Enable specific attributes for this material.
+         */
+        void EnableAttribute(MaterialAttribute a_Attribute);
+
+        /*
+         * Disable a specific attribute for this material.
+         */
+        void DisableAttribute(MaterialAttribute a_Attribute);
+
+        /*
+         * Set the bitmask for this materials enabled attributes.
+         */
+        void SetMask(std::uint16_t a_Mask);
+
+        /*
+         * Returns true if the provided attribute is enabled.
+         */
+        bool IsAttributeEnabled(MaterialAttribute a_Attribute) const;
+
+        /*
+         * Get the unsigned 16 bit int mask of all enabled attributes.
+         */
+        std::uint16_t GetMask() const;
+
+    private:
+        //Mask of enabled attributes.
+        MaterialAttribute m_Mask;
+    };
+
     /*
      * Object used to construct a Material.
      * To use, set constant values or textures.
@@ -487,8 +525,6 @@ namespace blurp
     public:
         MaterialSettings()
         {
-            m_Mask = static_cast<MaterialAttribute>(0);
-
             //Raw data stored in this material.
             m_DiffuseValue = {1.f, 1.f, 1.f};
             m_EmissiveValue = {0.8f, 0.3f, 0.9f};
@@ -511,6 +547,11 @@ namespace blurp
          * Returns true if the provided attribute is enabled.
          */
         bool IsAttributeEnabled(MaterialAttribute a_Attribute) const;
+
+        /*
+         * Set the bitmask for enabled attributes.
+         */
+        void SetMask(std::uint16_t a_Mask);
 
         /*
          * Get the unsigned 16 bit int mask of all enabled attributes.
@@ -635,8 +676,7 @@ namespace blurp
         
 
     private:
-        //Mask of enabled attributes.
-        MaterialAttribute m_Mask;
+        MaterialMask m_Mask;
 
         //Textures stored in this material. Each texture is RGB format.
         std::shared_ptr<Texture> m_DiffuseTexture;

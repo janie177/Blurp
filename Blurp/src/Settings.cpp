@@ -31,7 +31,7 @@ namespace blurp
         return static_cast<std::uint32_t>(m_Mask);
     }
 
-    void MaterialSettings::EnableAttribute(MaterialAttribute a_Attribute)
+    void MaterialMask::EnableAttribute(MaterialAttribute a_Attribute)
     {
         //Ensure that no bitmasking was performed.
         assert(static_cast<int>(a_Attribute) && !(static_cast<int>(a_Attribute) & (static_cast<int>(a_Attribute) - 1)) && "Only a single attribute can be enabled at a time! No masking allowed.");
@@ -108,20 +108,50 @@ namespace blurp
         }
     }
 
-    void MaterialSettings::DisableAttribute(MaterialAttribute a_Attribute)
+    void MaterialMask::DisableAttribute(MaterialAttribute a_Attribute)
     {
         m_Mask = static_cast<MaterialAttribute>(static_cast<std::uint16_t>(m_Mask) & ~static_cast<std::uint16_t>(a_Attribute));
     }
 
-    bool MaterialSettings::IsAttributeEnabled(MaterialAttribute a_Attribute) const
+    void MaterialMask::SetMask(std::uint16_t a_Mask)
+    {
+        m_Mask = static_cast<MaterialAttribute>(a_Mask);
+    }
+
+    bool MaterialMask::IsAttributeEnabled(MaterialAttribute a_Attribute) const
     {
         const auto cast = static_cast<std::uint16_t>(a_Attribute);
         return (static_cast<std::uint16_t>(m_Mask) & cast) == cast;
     }
 
-    std::uint16_t MaterialSettings::GetMask() const
+    std::uint16_t MaterialMask::GetMask() const
     {
         return static_cast<std::uint16_t>(m_Mask);
+    }
+
+    void MaterialSettings::EnableAttribute(MaterialAttribute a_Attribute)
+    {
+        m_Mask.EnableAttribute(a_Attribute);
+    }
+
+    void MaterialSettings::DisableAttribute(MaterialAttribute a_Attribute)
+    {
+        m_Mask.DisableAttribute(a_Attribute);
+    }
+
+    bool MaterialSettings::IsAttributeEnabled(MaterialAttribute a_Attribute) const
+    {
+        return m_Mask.IsAttributeEnabled(a_Attribute);
+    }
+
+    void MaterialSettings::SetMask(std::uint16_t a_Mask)
+    {
+        m_Mask.SetMask(a_Mask);
+    }
+
+    std::uint16_t MaterialSettings::GetMask() const
+    {
+        return m_Mask.GetMask();
     }
 
     void MaterialSettings::SetDiffuseTexture(const std::shared_ptr<Texture>& a_Texture)

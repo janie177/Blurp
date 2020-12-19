@@ -6,6 +6,8 @@
 #include <Texture.h>
 
 #include <RenderPass_Clear.h>
+
+#include "MaterialFile.h"
 #include "GpuBuffer.h"
 #include "MaterialLoader.h"
 #include "Sphere.h"
@@ -198,17 +200,26 @@ void ShadowTestScene::Init()
         m_Camera->UpdateSettings(camS);
     });
 
-    //Load the material for the plane.
-    MaterialData materialData;
-    materialData.path = "materials/stone/";
-    materialData.diffuseTextureName = "diffuse.jpg";
-    materialData.normalTextureName = "normal.jpg";
-    materialData.metallicTextureName = "metallic.jpg";
-    materialData.roughnessTextureName = "roughness.jpg";
-    materialData.aoTextureName = "ao.jpg";
+    std::string fileName = "AsMaterialFile";
 
-    //materialData.heightTextureName = "height.jpg";
-    m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), materialData);
+    MaterialInfo info;
+    info.path = "materials/stone/";
+    info.mask.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::NORMAL_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::METALLIC_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::ROUGHNESS_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::OCCLUSION_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::HEIGHT_TEXTURE);
+    info.diffuse.textureName = "diffuse.jpg";
+    info.ao.textureName = "ao.jpg";
+    info.height.textureName = "height.jpg";
+    info.normal.textureName = "normal.jpg";
+    info.metallic.textureName = "metallic.jpg";
+    info.roughness.textureName = "roughness.jpg";
+
+    const std::string fullPath = info.path + fileName;
+    CreateMaterialFile(info, fullPath);
+    m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
 
     //Transform the plane and set up the drawing for it.
     m_PlaneTransform.Scale({ MESH_SCALE / 2.f, 1.f, MESH_SCALE / 2.f });

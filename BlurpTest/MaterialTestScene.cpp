@@ -7,6 +7,7 @@
 #include <RenderPass_Forward.h>
 #include <RenderResourceManager.h>
 #include <GpuBuffer.h>
+#include <MaterialFile.h>
 #include <RenderPass_Skybox.h>
 
 
@@ -226,16 +227,39 @@ void MaterialTestScene::Init()
     /*
      * Set up the material from the given paths.
      */
-    MaterialData materialData;
-    materialData.path = "materials/eggs/";
-    materialData.diffuseTextureName = "diffuse.jpg";
-    materialData.normalTextureName = "normal.jpg";
-    materialData.metallicTextureName = "metallic.jpg";
-    materialData.roughnessTextureName = "roughness.jpg";
-    materialData.aoTextureName = "ao.jpg";
-    materialData.emissiveTextureName = "emissive.jpg";
-    materialData.heightTextureName = "height.jpg";
-    m_Material = LoadMaterial(m_Engine.GetResourceManager(), materialData);
+    //MaterialData materialData;
+    //materialData.path = "materials/eggs/";
+    //materialData.diffuseTextureName = "diffuse.jpg";
+    //materialData.normalTextureName = "normal.jpg";
+    //materialData.metallicTextureName = "metallic.jpg";
+    //materialData.roughnessTextureName = "roughness.jpg";
+    //materialData.aoTextureName = "ao.jpg";
+    //materialData.emissiveTextureName = "emissive.jpg";
+    //materialData.heightTextureName = "height.jpg";
+
+    //Create a material file and then load it.
+    std::string fileName = "EggMaterialFile";
+
+    MaterialInfo info;
+    info.path = "materials/eggs/";
+    info.mask.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::EMISSIVE_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::NORMAL_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::METALLIC_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::ROUGHNESS_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::OCCLUSION_TEXTURE);
+    info.mask.EnableAttribute(MaterialAttribute::HEIGHT_TEXTURE);
+    info.emissive.textureName = "emissive.jpg";
+    info.diffuse.textureName = "diffuse.jpg";
+    info.ao.textureName = "ao.jpg";
+    info.height.textureName = "height.jpg";
+    info.normal.textureName = "normal.jpg";
+    info.metallic.textureName = "metallic.jpg";
+    info.roughness.textureName = "roughness.jpg";
+
+    const std::string fullPath = info.path + fileName;
+    CreateMaterialFile(info, fullPath);
+    m_Material = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
 
 
     //Set the camera away from the mesh and looking at it.

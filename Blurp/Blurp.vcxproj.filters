@@ -180,6 +180,21 @@
     <ClInclude Include="include\api\Data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\api\MaterialFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\lz4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\api\lz4hc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
@@ -291,6 +306,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RenderPass_ShadowMap_GL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MaterialFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stb_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\api\lz4.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\api\lz4hc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

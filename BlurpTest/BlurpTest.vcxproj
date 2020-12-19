@@ -153,7 +153,6 @@
     <ClCompile Include="MaterialTestScene.cpp" />
     <ClCompile Include="ShadowTestScene.cpp" />
     <ClCompile Include="Sphere.cpp" />
-    <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="UniverseScene.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,8 +163,6 @@
     <ClInclude Include="Scene.h" />
     <ClInclude Include="ShadowTestScene.h" />
     <ClInclude Include="Sphere.h" />
-    <ClInclude Include="stb_image.h" />
-    <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="UniverseScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -177,8 +177,11 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\Light.h" />
     <ClInclude Include="include\api\Lockable.h" />
     <ClInclude Include="include\api\LockType.h" />
+    <ClInclude Include="include\api\lz4.h" />
+    <ClInclude Include="include\api\lz4hc.h" />
     <ClInclude Include="include\api\Material.h" />
     <ClInclude Include="include\api\MaterialBatch.h" />
+    <ClInclude Include="include\api\MaterialFile.h" />
     <ClInclude Include="include\api\Mesh.h" />
     <ClInclude Include="include\api\RenderPass_2D.h" />
     <ClInclude Include="include\api\RenderPass_Clear.h" />
@@ -196,6 +199,8 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\RenderTarget.h" />
     <ClInclude Include="include\api\Settings.h" />
     <ClInclude Include="include\api\Shader.h" />
+    <ClInclude Include="include\api\stb_image.h" />
+    <ClInclude Include="include\api\stb_image_write.h" />
     <ClInclude Include="include\api\SwapChain.h" />
     <ClInclude Include="include\api\Texture.h" />
     <ClInclude Include="include\api\Transform.h" />
@@ -220,6 +225,8 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\internal\Window_Win32.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="include\api\lz4.cpp" />
+    <ClCompile Include="include\api\lz4hc.cpp" />
     <ClCompile Include="src\BlurpEngine.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\FileReader.cpp" />
@@ -228,6 +235,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\Lockable.cpp" />
     <ClCompile Include="src\MaterialBatch_GL.cpp" />
+    <ClCompile Include="src\MaterialFile.cpp" />
     <ClCompile Include="src\Mesh_GL.cpp" />
     <ClCompile Include="src\Mouse.cpp" />
     <ClCompile Include="src\RenderDevice.cpp" />
@@ -251,6 +259,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\Settings.cpp" />
     <ClCompile Include="src\RenderPass_ShadowMap_GL.cpp" />
     <ClCompile Include="src\Shader_GL.cpp" />
+    <ClCompile Include="src\stb_image.cpp" />
     <ClCompile Include="src\SwapChain_GL_Win32.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\Texture_GL.cpp" />
