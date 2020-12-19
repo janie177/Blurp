@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+# Material files
+*.blurpmat
+*.blurpmatx
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

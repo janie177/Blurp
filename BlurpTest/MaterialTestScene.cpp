@@ -238,27 +238,7 @@ void MaterialTestScene::Init()
     //materialData.heightTextureName = "height.jpg";
 
     //Create a material file and then load it.
-    std::string fileName = "EggMaterialFile";
-
-    MaterialInfo info;
-    info.path = "materials/eggs/";
-    info.mask.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::EMISSIVE_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::NORMAL_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::METALLIC_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::ROUGHNESS_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::OCCLUSION_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::HEIGHT_TEXTURE);
-    info.emissive.textureName = "emissive.jpg";
-    info.diffuse.textureName = "diffuse.jpg";
-    info.ao.textureName = "ao.jpg";
-    info.height.textureName = "height.jpg";
-    info.normal.textureName = "normal.jpg";
-    info.metallic.textureName = "metallic.jpg";
-    info.roughness.textureName = "roughness.jpg";
-
-    const std::string fullPath = info.path + fileName;
-    CreateMaterialFile(info, fullPath);
+    const std::string fullPath = "materials/eggs/Material";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
 
 

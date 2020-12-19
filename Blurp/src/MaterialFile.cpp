@@ -5,8 +5,9 @@
 #include "Settings.h"
 #include <RenderResourceManager.h>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
+
 
 #include "lz4.h"
 #include "lz4hc.h"
@@ -33,7 +34,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	header.emissive.constantData = a_MaterialInfo.emissive.constant;
 
 	//DIFFUSE
-	if (!a_MaterialInfo.diffuse.textureName.empty())
+	if (!a_MaterialInfo.diffuse.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
 	{
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(true);
@@ -42,7 +43,12 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			&height,
 			&channels,
 			3);
-		assert(image != nullptr && "Could not find specified texture file!");
+		
+		if(image == nullptr)
+		{
+			std::cout << "Could not find texture provided." << std::endl;
+			return false;
+		}
 
 		//Amount of bytes in this image.
 		const long size = width * height * 3;
@@ -58,7 +64,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	}
 
 	//NORMAL
-	if (!a_MaterialInfo.normal.textureName.empty())
+	if (!a_MaterialInfo.normal.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::NORMAL_TEXTURE))
 	{
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(true);
@@ -67,7 +73,12 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			&height,
 			&channels,
 			3);
-		assert(image != nullptr && "Could not find specified texture file!");
+
+		if (image == nullptr)
+		{
+			std::cout << "Could not find texture provided." << std::endl;
+			return false;
+		}
 
 		//Amount of bytes in this image.
 		const long size = width * height * 3;
@@ -83,7 +94,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	}
 
 	//EMISSIVE
-	if (!a_MaterialInfo.emissive.textureName.empty())
+	if (!a_MaterialInfo.emissive.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::EMISSIVE_TEXTURE))
 	{
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(true);
@@ -93,7 +104,11 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			&channels,
 			3);
 
-		assert(image != nullptr && "Could not find specified texture file!");
+		if (image == nullptr)
+		{
+			std::cout << "Could not find texture provided." << std::endl;
+			return false;
+		}
 
 		//Amount of bytes in this image.
 		const long size = width * height * 3;
@@ -109,7 +124,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	}
 
 	//METAL/ROUGHNESS/ALPHA
-	if (!a_MaterialInfo.metallic.textureName.empty() || !a_MaterialInfo.roughness.textureName.empty() || !a_MaterialInfo.alpha.textureName.empty())
+	if ((!a_MaterialInfo.metallic.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::METALLIC_TEXTURE)) || (!a_MaterialInfo.roughness.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::ROUGHNESS_TEXTURE)) || (!a_MaterialInfo.alpha.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::ALPHA_TEXTURE)))
 	{
 		int w = 0, h = 0;
 		stbi_set_flip_vertically_on_load(true);
@@ -120,33 +135,48 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 
 		//NOTE all textures need to be the same dimensions.
 
-		if (!a_MaterialInfo.metallic.textureName.empty())
+		if (!a_MaterialInfo.metallic.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::METALLIC_TEXTURE))
 		{
 			int width, height, channels;
 			metal = stbi_load((a_MaterialInfo.path + a_MaterialInfo.metallic.textureName).c_str(), &width, &height, &channels, STBI_grey);
-			assert(w == 0 || w == width && "Metal/roughness/alpha all need the same dimensions!");
-			assert(h == 0 || h == height && "Metal/roughness/alpha all need the same dimensions!");
-			assert(metal != nullptr && "Could not find specified texture file!");
+
+			//Width and height have to be the same for each one. 
+			if (metal == nullptr || (w != 0 && w != width) || (h != 0 && h != height))
+			{
+				std::cout << "Malformed texture found passed to material compilation." << std::endl;
+				return false;
+			}
+
 			w = width;
 			h = height;
 		}
-		if (!a_MaterialInfo.roughness.textureName.empty())
+		if (!a_MaterialInfo.roughness.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::ROUGHNESS_TEXTURE))
 		{
 			int width, height, channels;
 			rough = stbi_load((a_MaterialInfo.path + a_MaterialInfo.roughness.textureName).c_str(), &width, &height, &channels, STBI_grey);
-			assert(w == 0 || w == width && "Metal/roughness/alpha all need the same dimensions!");
-			assert(h == 0 || h == height && "Metal/roughness/alpha all need the same dimensions!");
-			assert(rough != nullptr && "Could not find specified texture file!");
+
+			//Width and height have to be the same for each one. 
+			if (rough == nullptr || (w != 0 && w != width) || (h != 0 && h != height))
+			{
+				std::cout << "Malformed texture found passed to material compilation." << std::endl;
+				return false;
+			}
+
 			w = width;
 			h = height;
 		}
-		if (!a_MaterialInfo.alpha.textureName.empty())
+		if (!a_MaterialInfo.alpha.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::ALPHA_TEXTURE))
 		{
 			int width, height, channels;
 			alpha = stbi_load((a_MaterialInfo.path + a_MaterialInfo.alpha.textureName).c_str(), &width, &height, &channels, STBI_grey);
-			assert(w == 0 || w == width && "Metal/roughness/alpha all need the same dimensions!");
-			assert(h == 0 || h == height && "Metal/roughness/alpha all need the same dimensions!");
-			assert(alpha != nullptr && "Could not find specified texture file!");
+
+			//Width and height have to be the same for each one. 
+			if (alpha == nullptr || (w != 0 && w != width) || (h != 0 && h != height))
+			{
+				std::cout << "Malformed texture found passed to material compilation." << std::endl;
+				return false;
+			}
+
 			w = width;
 			h = height;
 		}
@@ -186,7 +216,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	}
 
 	//AMBIENT_OCCLUSION/HEIGHT
-	if (!a_MaterialInfo.height.textureName.empty() || !a_MaterialInfo.ao.textureName.empty())
+	if ((!a_MaterialInfo.height.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::HEIGHT_TEXTURE)) || (!a_MaterialInfo.ao.textureName.empty() && a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::OCCLUSION_TEXTURE)))
 	{
 		int w = 0, h = 0;
 		stbi_set_flip_vertically_on_load(true);
@@ -200,9 +230,14 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 		{
 			int width, height, channels;
 			ao = stbi_load((a_MaterialInfo.path + a_MaterialInfo.ao.textureName).c_str(), &width, &height, &channels, STBI_grey);
-			assert(w == 0 || w == width && "AO/Height all need the same dimensions!");
-			assert(h == 0 || h == height && "AO/Height all need the same dimensions!");
-			assert(ao != nullptr && "Could not find specified texture file!");
+
+			//Width and height have to be the same for each one. 
+			if (ao == nullptr || (w != 0 && w != width) || (h != 0 && h != height))
+			{
+				std::cout << "Malformed texture found passed to material compilation." << std::endl;
+				return false;
+			}
+
 			w = width;
 			h = height;
 		}
@@ -210,9 +245,14 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 		{
 			int width, height, channels;
 			heightMap = stbi_load((a_MaterialInfo.path + a_MaterialInfo.height.textureName).c_str(), &width, &height, &channels, STBI_grey);
-			assert(w == 0 || w == width && "AO/Height all need the same dimensions!");
-			assert(h == 0 || h == height && "AO/Height all need the same dimensions!");
-			assert(heightMap != nullptr && "Could not find specified texture file!");
+
+			//Width and height have to be the same for each one. 
+			if (heightMap == nullptr || (w != 0 && w != width) || (h != 0 && h != height))
+			{
+				std::cout << "Malformed texture found passed to material compilation." << std::endl;
+				return false;
+			}
+
 			w = width;
 			h = height;
 		}

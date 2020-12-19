@@ -13,6 +13,7 @@
 #include "Sphere.h"
 
 #include "ImageUtil.h"
+#include <iostream>
 
 #define MESH_SCALE 5000.f
 #define LIGHT_BOUND 200.f
@@ -74,6 +75,8 @@ const static std::uint16_t CUBE_INDICES[]
 void ShadowTestScene::Init()
 {
     using namespace blurp;
+
+    srand(439844L);
 
     //Create empty GpuBufferViews.
     m_DirLightMatView = GpuBufferView::MakeShared();
@@ -200,26 +203,8 @@ void ShadowTestScene::Init()
         m_Camera->UpdateSettings(camS);
     });
 
-    std::string fileName = "AsMaterialFile";
-
-    MaterialInfo info;
-    info.path = "materials/stone/";
-    info.mask.EnableAttribute(MaterialAttribute::DIFFUSE_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::NORMAL_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::METALLIC_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::ROUGHNESS_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::OCCLUSION_TEXTURE);
-    info.mask.EnableAttribute(MaterialAttribute::HEIGHT_TEXTURE);
-    info.diffuse.textureName = "diffuse.jpg";
-    info.ao.textureName = "ao.jpg";
-    info.height.textureName = "height.jpg";
-    info.normal.textureName = "normal.jpg";
-    info.metallic.textureName = "metallic.jpg";
-    info.roughness.textureName = "roughness.jpg";
-
-    const std::string fullPath = info.path + fileName;
-    CreateMaterialFile(info, fullPath);
-    m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
+    std::string fileName = "materials/barrels/Material";
+    m_PlaneMaterial = LoadMaterial(m_Engine.GetResourceManager(), fileName);
 
     //Transform the plane and set up the drawing for it.
     m_PlaneTransform.Scale({ MESH_SCALE / 2.f, 1.f, MESH_SCALE / 2.f });
