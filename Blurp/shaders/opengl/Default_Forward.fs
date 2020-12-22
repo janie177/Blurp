@@ -197,13 +197,9 @@ void main()
 	vec3 surfaceNormal = inData.normal;
 	#endif
 
-	//Metallic is used.
-	#if defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_METALLIC_CONSTANT_DEFINE)
+	//Metallic or roughness are used. If one of the two is active, then the other needs a default value as well.
+	#if defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_METALLIC_CONSTANT_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_CONSTANT_DEFINE)
 	float metallic = 0;
-	#endif
-
-	//Roughness is used.
-	#if defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_CONSTANT_DEFINE)
 	float roughness = 0;
 	#endif
 
