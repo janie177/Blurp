@@ -165,8 +165,8 @@ void Game::Init()
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Load GLTF mesh.
-    m_Scene = LoadMesh(MeshLoaderSettings{"Fox.gltf", "meshes/Fox/", 0, nullptr}, m_Engine.GetResourceManager());
-    //m_Scene = LoadMesh(MeshLoaderSettings{"meshes/town/scene.gltf", 0, nullptr}, m_Engine.GetResourceManager());
+    //m_Scene = LoadMesh(MeshLoaderSettings{"Fox.gltf", "meshes/Fox/", 0, nullptr}, m_Engine.GetResourceManager());
+    m_Scene = LoadMesh(MeshLoaderSettings{"scene.gltf", "meshes/town/", 0, nullptr}, m_Engine.GetResourceManager());
 
     //Upload matrices for each object, appending to the end of the buffer.
     //Remember the end of the buffer as a global variable so that I don't accidentally overwrite it.
@@ -305,7 +305,7 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
         }
         if (input.getKeyState(KEY_3) != ButtonState::NOT_PRESSED)
         {
-            m_Sun->SetDirection(m_Camera->GetTransform().GetBack());
+            m_Sun->SetDirection(glm::normalize(m_Camera->GetTransform().GetBack()));
         }
     }
 
@@ -360,6 +360,7 @@ void Game::Render()
 
     //Upload light data
     blurp::LightData lData;
+    lData.ambient = { 0.03f, 0.03f, 0.03f };
     blurp::LightUploadData lud;
     lud.lightData = &lData;
     lud.point.count = m_Lights.size();

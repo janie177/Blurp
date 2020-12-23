@@ -55,7 +55,39 @@ bool hasEnding(std::string const& fullString, std::string const& ending);
  *
  * If multiple meshes are inside the model, then multiple DrawData objects are created.
  */
-GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager);
+GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager, bool a_RecompileMaterials = false);
 
 //Interally resolve a GLTF node.
 void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex, glm::mat4 a_ParentTransform);
+
+
+
+struct LoadedImageInformation
+{
+    std::uint8_t* data = nullptr;
+    int w = 0;
+    int h = 0;
+    int channels = 0;
+};
+
+//Load texture data from the GLTF file.
+LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path);
+
+/*
+ * Returns true if the array contains non-zero elements.
+ */
+template<typename T, size_t N>
+bool NotEmpty(std::array<T, N> a_Array)
+{
+    for(int i = 0; i < N; ++i)
+    {
+        if (a_Array[i] != 0) return true;
+    }
+    return false;
+}
+
+blurp::WrapMode WrapFromGL(int glEnum);
+
+blurp::MagFilterType MagFromGL(int glEnum);
+
+blurp::MinFilterType MinFromGL(int glEnum);

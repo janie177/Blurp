@@ -98,9 +98,9 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			size_t size = static_cast<size_t>(a_MaterialInfo.settings.diffuse.dimensions.x) * static_cast<size_t>(a_MaterialInfo.settings.diffuse.dimensions.y) * 3L;
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.diffuse.data);
+			header.diffuse.start = data.size();
 			data.insert(data.end(), asChar, asChar + size);
 			header.diffuse.size = size;
-			header.diffuse.start = data.size();
 			header.diffuse.settings = a_MaterialInfo.settings.diffuse;
 		}
 	}
@@ -145,9 +145,9 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			size_t size = static_cast<size_t>(a_MaterialInfo.settings.normal.dimensions.x)* static_cast<size_t>(a_MaterialInfo.settings.normal.dimensions.y) * 3L;
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.normal.data);
+			header.normal.start = data.size();
 			data.insert(data.end(), asChar, asChar + size);
 			header.normal.size = size;
-			header.normal.start = data.size();
 			header.normal.settings = a_MaterialInfo.settings.normal;
 		}
 	}
@@ -191,9 +191,9 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			size_t size = static_cast<size_t>(a_MaterialInfo.settings.emissive.dimensions.x)* static_cast<size_t>(a_MaterialInfo.settings.emissive.dimensions.y) * 3L;
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.emissive.data);
+			header.emissive.start = data.size();
 			data.insert(data.end(), asChar, asChar + size);
 			header.emissive.size = size;
-			header.emissive.start = data.size();
 			header.emissive.settings = a_MaterialInfo.settings.emissive;
 		}
 	}
@@ -472,15 +472,12 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	const int src_size = static_cast<int>(data.size());
 	const int max_dst_size = LZ4_compressBound(src_size);
 	char* compressed_data = static_cast<char*>(malloc(static_cast<size_t>(max_dst_size)));
-	if (compressed_data == NULL)
-	{
-		throw std::exception("Could not allocate compression memory!");
-	}
+
+	assert(compressed_data != nullptr && "Could not allocate memory.");
+
 	const int compressed_data_size = LZ4_compress_HC(&data[0], compressed_data, src_size, max_dst_size, LZ4HC_CLEVEL_MAX);
-	if (compressed_data_size <= 0)
-	{
-		throw std::exception("A 0 or negative result from LZ4_compress_default() indicates a failure trying to compress the data. ");
-	}
+
+	assert(compressed_data_size > 0 && "Data could not be compressed!");
 
 	//Create the path if not exist.
 	std::filesystem::create_directories(a_Path);
@@ -498,6 +495,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 	//Write the compressed data.
 	file.write(reinterpret_cast<char*>(&compressionInfo), sizeof(CompressionHeader));
 	file.write(compressed_data, compressed_data_size);
+	assert(file.good());
 	file.close();
 
 	//Free memory
@@ -513,19 +511,17 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 
 	CompressionHeader header;
 
-	if (!file.eof() && !file.fail())
-	{
-		file.seekg(0, std::ios_base::end);
-		auto fileSize = file.tellg();
-		data.resize(fileSize);
+	assert(!file.eof() && !file.fail() && "File could not be loaded. Very sad indeed.");
 
-		file.seekg(0, std::ios_base::beg);
-		file.read(&data[0], fileSize);
-	}
-	else
-	{
-		throw std::exception("Could not load material file!");
-	}
+	file.seekg(0, std::ios_base::end);
+	auto fileSize = file.tellg();
+	data.resize(fileSize);
+
+	file.seekg(0, std::ios_base::beg);
+	file.read(&data[0], fileSize);
+
+	assert(!data.empty() && "No data was loaded.");
+
 
 	header = *reinterpret_cast<CompressionHeader*>(&data[0]);
 
