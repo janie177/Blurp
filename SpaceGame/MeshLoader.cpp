@@ -25,7 +25,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     {
         try
         {
-            file = fx::gltf::LoadFromText((a_Settings.fileName));
+            file = fx::gltf::LoadFromText((a_Settings.path + a_Settings.fileName));
         }
         catch (std::exception e)
         {
@@ -37,7 +37,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     {
         try
         {
-            file = fx::gltf::LoadFromBinary((a_Settings.fileName));
+            file = fx::gltf::LoadFromBinary((a_Settings.path + a_Settings.fileName));
         }
         catch (std::exception e)
         {
@@ -47,8 +47,29 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     }
 
     //TODO:
-    //- Sponza won't load because of a fx-gltf error. Why?
-    //- GLTF files contain transform information to keep the scene organized. This cannot be thrown out. Bake them into the vertices? Pass as output?
+    //- Sponza won't load because of a fx-gltf error. I think it's the mesh being crooked but gotta check just in case.
+    //  The Sponza mesh from the GLTF 2 repo does work according to fx-gltf, but I can't download that one rn for some reason.
+
+    //Keep track of the textures and materials that are reused.
+    std::vector<std::shared_ptr<blurp::Material>> materials;
+    std::vector<std::shared_ptr<blurp::Texture>> textures;
+
+    //Load all textures first.
+    for(int texId = 0; texId < file.textures.size(); ++texId)
+    {
+        auto& texture = file.textures[texId];
+        blurp::TextureSettings textureSettings;
+
+        //If a sampler is specified, set it in the texture settings.
+        if(texture.sampler > -1)
+        {
+            auto& sampler = file.samplers[texture.sampler];
+
+            //TODO set sampler settings in texturesettings. Convert from GLEnum to blurp.
+        }
+
+        
+    }
 
     for (size_t meshId = 0; meshId < file.meshes.size(); ++meshId)
     {
@@ -78,9 +99,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             blurp::MaterialSettings blurpMaterial;
 
             assert(primitive.mode == fx::gltf::Primitive::Mode::Triangles && "Triangle list is the only supported format now.");
-            assert(primitive.indices >= 0 && "Only index buffer meshes are supported currently.");
 
-            BufferInfo indexBuffer = GLTFUtil::ReadBufferData(file, primitive.indices);
             BufferInfo bufferInfo[4];
             blurp::VertexAttribute attribs[4]{ blurp::VertexAttribute::POSITION_3D, blurp::VertexAttribute::NORMAL, blurp::VertexAttribute::TANGENT, blurp::VertexAttribute::UV_COORDS };
 
@@ -119,6 +138,29 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
 
             //Reserve enough memory. Divide by four because the total size is measured in bytes, and a float is four bytes.
             data.resize(totalSize / 4);
+
+            BufferInfo indexBuffer;
+
+            //Generate indices if not given.
+            std::vector<int> srcIndices;
+            if (primitive.indices < 0)
+            {
+                assert(bufferInfo[0].numElements > 0 && "Positions are required to generate missing indices.");
+                for(int i = 0; i < bufferInfo[0].numElements; ++i)
+                {
+                    srcIndices.push_back(i);
+                }
+
+                indexBuffer.dataSize = sizeof(int);
+                indexBuffer.numElements = srcIndices.size();
+                indexBuffer.totalSize = indexBuffer.numElements * indexBuffer.dataSize;
+                indexBuffer.data = reinterpret_cast<std::uint8_t*>(&srcIndices[0]);
+            }
+            else
+            {
+                indexBuffer = GLTFUtil::ReadBufferData(file, primitive.indices);
+            }
+
 
             //Note: Currently tangents are not calculated if absent.
             //If model makers are lazy and not including them for meshes that require them, implement generation.
@@ -210,6 +252,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             drawData.attributes.EnableAttribute(blurp::DrawAttribute::TRANSFORMATION_MATRIX);
 
             //TODO enable material and dynamic attributes.
+
+            /*
+             * Load material for this draw data object.
+             */
 
 
             //Add to set.

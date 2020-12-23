@@ -694,6 +694,34 @@ namespace blurp
     };
 
     /*
+     * Struct containing texture settings that apply to a material batch.
+     */
+    struct MaterialBatchTextureSettings
+    {
+        //The dimensions of this texture.
+        glm::vec<2, std::uint32_t> dimensions = { 0, 0 };
+
+        //The data type for this texture. This determines the size of each channel in the pixel format.
+        DataType dataType = DataType::UBYTE;
+
+        //Whether to generate mip maps or not.
+        bool generateMipMaps = true;
+
+        //The amount of mipmaps to generate.
+        //Leave this 0 to automatically determine.
+        std::uint16_t numMipMaps = 0;
+
+        //How should this texture behave when scaled down?
+        MinFilterType minFilter = MinFilterType::MIPMAP_NEAREST;
+
+        //How should this texture behave when scaled up?
+        MagFilterType magFilter = MagFilterType::LINEAR;
+
+        //How should this texture behave when sampled outside of the 0-1 UVW coordinate range.
+        WrapMode wrapMode = WrapMode::REPEAT;
+    };
+
+    /*
      * Object used to construct a material batch.
      * Attributes for the materials can be enabled or disabled for all materials. Each material requires the same attributes.
      * All textures of all materials need to be the same dimensions and format.
@@ -758,30 +786,7 @@ namespace blurp
         /*
          * The texture settings for this material batch.
          */
-        struct
-        {
-            //The dimensions of this texture.
-            glm::vec<2, std::uint32_t> dimensions;
-
-            //The data type for this texture. This determines the size of each channel in the pixel format.
-            DataType dataType;
-
-            //Whether to generate mip maps or not.
-            bool generateMipMaps;
-
-            //The amount of mipmaps to generate.
-            //Leave this 0 to automatically determine.
-            std::uint16_t numMipMaps;
-
-            //How should this texture behave when scaled down?
-            MinFilterType minFilter;
-
-            //How should this texture behave when scaled up?
-            MagFilterType magFilter;
-
-            //How should this texture behave when sampled outside of the 0-1 UVW coordinate range.
-            WrapMode wrapMode;
-        } textureSettings;
+        MaterialBatchTextureSettings textureSettings;
 
         /*
          * A pointer to the start of the texture data in the correct format.

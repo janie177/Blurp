@@ -14,6 +14,9 @@ std::shared_ptr<blurp::Texture> LoadCubeMap(blurp::RenderResourceManager& a_Mana
 	assert(!a_Settings.up.empty());
 	assert(!a_Settings.down.empty());
 
+	//Disable flipping.
+	stbi_set_flip_vertically_on_load(false);
+
 	int w = 0, h = 0;
 	TextureSettings tS;
 

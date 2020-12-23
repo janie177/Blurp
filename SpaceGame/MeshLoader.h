@@ -35,6 +35,9 @@ struct MeshLoaderSettings
     //The GLTF file to load.
     std::string fileName;
 
+    //The folder where the mesh file is located.
+    std::string path;
+
     //If larger than 0, multiple transforms will be inserted in the vertex buffer for more instance drawing.
     std::uint32_t numVertexInstances;
 

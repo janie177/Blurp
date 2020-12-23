@@ -63,6 +63,7 @@ int main()
     info.metallic.textureName = "metallic.jpg";
     info.roughness.textureName = "roughness.jpg";
     info.emissive.textureName = "emissive.jpg"; //Disabled because it's not present for all textures.
+
     std::vector<std::string> toBeCompiled
     {
         "stone",
@@ -83,9 +84,9 @@ int main()
     batch.mask.EnableAttribute(MaterialAttribute::EMISSIVE_CONSTANT_VALUE);
 
     //Batch dimensions.
-    batch.dimensions.width = 64;
-    batch.dimensions.height = 64;
-    batch.dimensions.numMaterials = 3;
+    batch.textureSettings.dimensions.x = 64;
+    batch.textureSettings.dimensions.y = 64;
+    batch.materialCount = 3;
 
     //The textures for each material and the constant data per material.
     batch.diffuse.textureNames = {"testmat1/diffuse.jpg", "testmat2/diffuse.jpg", "testmat3/diffuse.jpg" };
@@ -94,13 +95,14 @@ int main()
     
 
     constexpr bool rebuild = false;
-    constexpr bool rebuildBatch = true;
+    constexpr bool rebuildBatch = false;
 
     if(rebuild)
     {
         auto timepoint = std::chrono::high_resolution_clock::now();
         for (auto& path : toBeCompiled)
         {
+            std::cout << "Creating file at " << path << fileName << std::endl;
             info.path = "materials/" + path + "/";
             bool sucess = CreateMaterialFile(info, info.path, fileName);
             if(!sucess)
@@ -141,8 +143,8 @@ int main()
 
 
     //Load one of the scenes.
-    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();

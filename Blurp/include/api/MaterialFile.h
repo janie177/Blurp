@@ -15,15 +15,30 @@ namespace blurp
 	struct MaterialSettings;
 	class RenderResourceManager;
 
+
 	/*
 	 * Structure with information about a material on disk.
 	 * Contains paths to each specific texture and/or value.
 	 *
 	 * This data is used to construct a material file.
 	 * Enable attributes in the mask and specify data for those attributes.
+	 *
+	 * Instead of file names, raw data can also be provided.
+	 *
+	 * A TextureSettings object is provided for each texture.
 	 */
 	struct MaterialInfo
 	{
+		MaterialInfo()
+		{
+			TextureSettings s;
+			s.textureType = TextureType::TEXTURE_2D;
+			s.pixelFormat = PixelFormat::RGB;
+			s.dataType = DataType::UBYTE;
+
+			settings = { s, s, s, s, s };
+		}
+
 		//Path where the files are found.
 		std::string path;
 
@@ -35,46 +50,67 @@ namespace blurp
 		{
 			std::string textureName;
 			glm::vec3 constant{0.f};
+			void* data = nullptr;
 		} diffuse;
 
 		struct
 		{
 			std::string textureName;
 			glm::vec3 constant{ 0.f };
+			void* data = nullptr;
 		} emissive;
 
 		struct
 		{
 			std::string textureName;
+			void* data = nullptr;
 		} normal;
 
 		struct
 		{
 			std::string textureName;
+			void* data = nullptr;
 		} ao;
 
 		struct
 		{
 			std::string textureName;
+			void* data = nullptr;
 		} height;
 
 		struct
 		{
 			std::string textureName;
 			float constant = 0.f;
+			void* data = nullptr;
 		} metallic;
 		
 		struct
 		{
 			std::string textureName;
 			float constant = 0.f;
+			void* data = nullptr;
 		} roughness;
 
 		struct
 		{
 			std::string textureName;
 			float constant = 0.f;
+			void* data = nullptr;
+
 		} alpha;
+
+		/*
+		 * Texture settings for each texture type.
+		 */
+		struct
+		{
+			TextureSettings metalRoughAlpha;
+			TextureSettings ambientOcclusionHeight;
+			TextureSettings diffuse;
+			TextureSettings normal;
+			TextureSettings emissive;
+		} settings;
 	};
 
     /*
@@ -82,16 +118,15 @@ namespace blurp
 	 */
 	struct MaterialFileAttribute
 	{
-		MaterialFileAttribute() : start(0), size(0), width(0), height(0), constantData(0.f)
+		MaterialFileAttribute() : start(0), size(0), constantData(0.f)
 		{
 		    
 		}
 
 		long long start;
 		long long size;
-		int width;
-		int height;
 		glm::vec3 constantData;
+		TextureSettings settings;
 	};
 
 	/*
@@ -125,10 +160,9 @@ namespace blurp
 		size_t compressedSize;
 	};
 
-
 	struct MaterialBatchHeader
 	{
-		MaterialBatchHeader() : version(1), batchData({0, 0, 0, 0})
+		MaterialBatchHeader() : version(1), batchData({0, 0, 0})
 		{
 		    
 		}
@@ -138,12 +172,11 @@ namespace blurp
 		//General info that affects the entire batch.
 		struct
 		{
-			std::uint16_t width;
-			std::uint16_t height;
-			std::uint16_t materialCount;
-			std::uint16_t numTextures;
+			std::int16_t materialCount;
+			std::int16_t numTextures;
 
 			std::uint16_t mask;
+			MaterialBatchTextureSettings settings;
 		} batchData;
 
 		//Raw texture data.
@@ -189,28 +222,17 @@ namespace blurp
 	 */
 	struct MaterialBatchInfo
 	{
-		MaterialBatchInfo() : dimensions({0, 0, 0})
-		{
-		    
-		}
-
 		//Path where the files are found.
 		std::string path;
 
 		//The mask that determines the enabled material attributes.
 		MaterialMask mask;
 
-		//Width of each texture.
-		struct
-		{
-			std::uint16_t width;
+		//The amount of materials in this batch.
+		std::int32_t materialCount;
 
-			//Height of each texture.
-			std::uint16_t height;
-
-			//The amount of materials in this batch.
-			std::uint16_t numMaterials;
-		} dimensions;
+		//The settings that will apply to this material batch. The settings apply to every texture in the batch.
+		MaterialBatchTextureSettings textureSettings;
 
 		struct
 		{
@@ -262,6 +284,11 @@ namespace blurp
 	/*
 	 * Create a material file from the given material settings.
 	 * This will save the material file with the given file name and path.
+	 */
+	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
+
+	/*
+	 *
 	 */
 	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
 

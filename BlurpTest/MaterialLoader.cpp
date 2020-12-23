@@ -14,6 +14,9 @@ std::shared_ptr<blurp::Texture> LoadCubeMap(blurp::RenderResourceManager& a_Mana
 	assert(!a_Settings.up.empty());
 	assert(!a_Settings.down.empty());
 
+	//Don't flip or the cubemap looks wrong.
+	stbi_set_flip_vertically_on_load(false);
+
 	int w = 0, h = 0;
 	TextureSettings tS;
 
@@ -21,7 +24,6 @@ std::shared_ptr<blurp::Texture> LoadCubeMap(blurp::RenderResourceManager& a_Mana
 
 	{
 		int width, height, channels;
-		//stbi_set_flip_vertically_on_load(true);
 		unsigned char* image = stbi_load((a_Settings.path + a_Settings.right).c_str(), &width, &height, &channels, STBI_rgb);
 		assert(w == 0 || w == width);
 		assert(h == 0 || h == width);

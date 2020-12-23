@@ -165,8 +165,8 @@ void Game::Init()
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Load GLTF mesh.
-    //m_Drawables = LoadMesh(MeshLoaderSettings{"meshes/Duck/Duck.gltf", 0, nullptr}, m_Engine.GetResourceManager());
-    m_Scene = LoadMesh(MeshLoaderSettings{"meshes/town/scene.gltf", 0, nullptr}, m_Engine.GetResourceManager());
+    m_Scene = LoadMesh(MeshLoaderSettings{"Fox.gltf", "meshes/Fox/", 0, nullptr}, m_Engine.GetResourceManager());
+    //m_Scene = LoadMesh(MeshLoaderSettings{"meshes/town/scene.gltf", 0, nullptr}, m_Engine.GetResourceManager());
 
     //Upload matrices for each object, appending to the end of the buffer.
     //Remember the end of the buffer as a global variable so that I don't accidentally overwrite it.
