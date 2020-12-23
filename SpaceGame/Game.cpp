@@ -9,6 +9,12 @@
 #include "CubeMapLoader.h"
 #include "MeshLoader.h"
 
+#define SHADOW_MAP_DIMENSION 2048
+#define NUM_CASCADES 6
+#define FAR_PLANE 1000.f
+#define NEAR_PLANE 0.1f
+
+
 Game::Game(blurp::BlurpEngine& a_RenderEngine) : m_Engine(a_RenderEngine)
 {
 }
@@ -32,10 +38,87 @@ void Game::Init()
     CameraSettings camSettings;
     camSettings.width = window->GetDimensions().x;
     camSettings.height = window->GetDimensions().y;
-    camSettings.fov = 120.f;
-    camSettings.nearPlane = 0.1f;
-    camSettings.farPlane = 1000.f;
+    camSettings.fov = 90.f;
+    camSettings.nearPlane = NEAR_PLANE;
+    camSettings.farPlane = FAR_PLANE;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
+
+    //Create some lights and the sun.
+    LightSettings lSettings;
+    lSettings.type = LightType::LIGHT_POINT;
+    lSettings.intensity = 5.f;
+    lSettings.color = { 0.2f, 1.f, 0.7f };
+    lSettings.pointLight.position = { 0.f, 40.f, 10.f };
+    lSettings.shadowMapIndex = 0;
+    m_Lights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings)));
+
+    lSettings.pointLight.position = { -50.f, 40.f, 10 };
+    lSettings.intensity = 5.f;
+    lSettings.color = { 0.4f, 0.4f, 0.7f };
+    lSettings.shadowMapIndex = 1;
+    m_Lights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings)));
+
+    lSettings.type = LightType::LIGHT_DIRECTIONAL;
+    lSettings.shadowMapIndex = 0;
+    lSettings.intensity = 0.85f;
+    lSettings.color = { 1.f, 0.8f, 0.3f };
+    lSettings.directionalLight.direction = glm::vec3(1.f, 0.f, 0.f);
+    m_Sun = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
+
+    //Create shadow map generation passes.
+    //Generate shadowmaps before doing the forward rendering.
+    m_ShadowGenerationPass = m_Pipeline->AppendRenderPass<RenderPass_ShadowMap>(RenderPassType::RP_SHADOWMAP);
+    m_ShadowGenerationPass->SetCamera(m_Camera);
+
+    //Positional shadow array.
+    TextureSettings shadowPosSettings;
+    shadowPosSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, m_Lights.size() * 6);
+    shadowPosSettings.generateMipMaps = false;
+    shadowPosSettings.dataType = DataType::FLOAT;
+    shadowPosSettings.pixelFormat = PixelFormat::DEPTH;
+    shadowPosSettings.memoryAccess = AccessMode::READ_WRITE;
+    shadowPosSettings.memoryUsage = MemoryUsage::GPU;
+    shadowPosSettings.textureType = TextureType::TEXTURE_CUBEMAP_ARRAY;
+    m_PosShadowArray = m_Engine.GetResourceManager().CreateTexture(shadowPosSettings);
+
+    //Directional shadow array.
+    TextureSettings shadowDirSettings;
+    shadowDirSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES * 1); //1 directional shadow from the sun.
+    shadowDirSettings.generateMipMaps = false;
+    shadowDirSettings.dataType = DataType::FLOAT;
+    shadowDirSettings.pixelFormat = PixelFormat::DEPTH;
+    shadowDirSettings.memoryAccess = AccessMode::READ_WRITE;
+    shadowDirSettings.memoryUsage = MemoryUsage::GPU;
+    shadowDirSettings.textureType = TextureType::TEXTURE_2D_ARRAY;
+    m_DirShadowArray = m_Engine.GetResourceManager().CreateTexture(shadowDirSettings);
+
+    //Generate cascade distances for the sun shadow.
+    std::vector<float> cascadeDistances;
+    cascadeDistances.resize(NUM_CASCADES);
+    float cd = 2.f;
+    float total = 0.f;
+    for (int c = 0; c < NUM_CASCADES; ++c)
+    {
+        cascadeDistances[c] = cd;
+        total += cd;
+        cd *= 2.f;
+        if (c == NUM_CASCADES - 2)
+        {
+            cd = FAR_PLANE - total;
+        }
+    }
+
+    //Clear the dir shadow buffer.
+    ClearData dirClear;
+    dirClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_CASCADES * 1);
+    dirClear.clearValue.floats[0] = 1.f;
+    m_ClearPass->AddTexture(m_DirShadowArray, dirClear);
+
+    //Clear the shadow textures every frame.
+    ClearData posShadowClear;
+    posShadowClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, m_Lights.size() * 6);
+    posShadowClear.clearValue.floats[0] = 1.f;
+    m_ClearPass->AddTexture(m_PosShadowArray, posShadowClear);
 
     //Load a skybox;
     m_SkyBoxTexture = LoadCubeMap(m_Engine.GetResourceManager(), CubeMapSettings{
@@ -67,9 +150,9 @@ void Game::Init()
         CameraSettings camS;
         camS.width = w;
         camS.height = h;
-        camS.fov = 120.f;
-        camS.nearPlane = 0.1f;
-        camS.farPlane = 1000.f;
+        camS.fov = 90.f;
+        camS.nearPlane = NEAR_PLANE;
+        camS.farPlane = FAR_PLANE;
         m_Camera->UpdateSettings(camS);
 
     });
@@ -81,24 +164,44 @@ void Game::Init()
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
-    //Light
-    LightSettings lSettings;
-    lSettings.type = LightType::LIGHT_POINT;
-    lSettings.intensity = 2000.f;
-    lSettings.color = { 1.f, 1.f, 1.f };
-    lSettings.pointLight.position = { 0.f, 40.f, 10.f };
-    m_Light = std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
-
     //Load GLTF mesh.
-    m_Drawables = LoadMesh(MeshLoaderSettings{"meshes/Duck/Duck.gltf", 0, nullptr}, m_Engine.GetResourceManager());
-    for(auto& drawable : m_Drawables)
+    //m_Drawables = LoadMesh(MeshLoaderSettings{"meshes/Duck/Duck.gltf", 0, nullptr}, m_Engine.GetResourceManager());
+    m_Scene = LoadMesh(MeshLoaderSettings{"meshes/town/scene.gltf", 0, nullptr}, m_Engine.GetResourceManager());
+
+    //Upload matrices for each object, appending to the end of the buffer.
+    //Remember the end of the buffer as a global variable so that I don't accidentally overwrite it.
+    m_TransformEnd = 0;
+    for(auto& mesh : m_Scene.meshes)
     {
-        drawable.instanceCount = 1;
-        drawable.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX);
+        auto view = m_TransformBuffer->WriteData<glm::mat4>(m_TransformEnd, mesh.transforms.size(), 16, &mesh.transforms[0]);
+        m_TransformEnd = view.end;
+        for(auto drawableId : mesh.drawableIds)
+        {
+            auto& drawable = m_Scene.drawDatas[drawableId];
+            drawable.transformData.dataBuffer = m_TransformBuffer;
+            drawable.transformData.dataRange = view;
+        }
     }
 
-    m_ObjectTransform.Translate({ 0.f, 1.f, 1.f });
-    m_ObjectTransform.Scale(0.1f);
+    //Set up shadow map generation for the render passes using the now existing data buffers.
+    //Some of these datatypes are in shared_ptr format so that they can be modified during pipeline execution (offsets into buffers).
+    //This is needed because shadow map generation generates data that is required on the GPU.
+    m_DirLightMatView = GpuBufferView::MakeShared();
+    m_DirLightDataOffsetView = GpuBufferView::MakeShared();
+    ShadowData shadowData;
+    shadowData.directional.shadowMaps = m_DirShadowArray;
+    shadowData.directional.numCascades = NUM_CASCADES;
+    shadowData.directional.dataBuffer = m_TransformBuffer;
+    shadowData.directional.dataRange = m_DirLightMatView;
+    shadowData.positional.shadowMaps = m_PosShadowArray;
+
+    //Set information required for shadow map generation specifically.
+    shadowData.directional.cascadeDistances = cascadeDistances;
+    shadowData.directional.startOffset = m_DirLightDataOffsetView;
+
+    //Pass the shadow data to the forward and shadow generation passes.
+    m_ShadowGenerationPass->SetOutput(shadowData);
+    m_ForwardPass->SetShadowData(shadowData);
 }
 
 void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
@@ -146,8 +249,8 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
         auto& transform = m_Camera->GetTransform();
         bool shift = input.getKeyState(KEY_SHIFT) != ButtonState::NOT_PRESSED;
 
-        const float movespeed = (shift ? 0.1f : 0.02f);
-        const float rotationSpeed = (shift ? 0.005f : 0.001f);
+        const float movespeed = (shift ? 1.0f : 0.2f);
+        const float rotationSpeed = (shift ? 0.05f : 0.01f);
 
         if (input.getKeyState(KEY_W) != ButtonState::NOT_PRESSED)
         {
@@ -182,6 +285,28 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
         {
             transform.Rotate(transform.GetUp(), -rotationSpeed);
         }
+        if (input.getKeyState(KEY_Q) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetForward(), rotationSpeed);
+        }
+        if (input.getKeyState(KEY_E) != ButtonState::NOT_PRESSED)
+        {
+            transform.Rotate(transform.GetForward(), -rotationSpeed);
+        }
+
+
+        if (input.getKeyState(KEY_1) != ButtonState::NOT_PRESSED)
+        {
+            m_Lights[0]->SetPosition(m_Camera->GetTransform().GetTranslation());
+        }
+        if (input.getKeyState(KEY_2) != ButtonState::NOT_PRESSED)
+        {
+            m_Lights[1]->SetPosition(m_Camera->GetTransform().GetTranslation());
+        }
+        if (input.getKeyState(KEY_3) != ButtonState::NOT_PRESSED)
+        {
+            m_Sun->SetDirection(m_Camera->GetTransform().GetBack());
+        }
     }
 
     //Handle alt enter to go fullscreen.
@@ -197,29 +322,62 @@ void Game::UpdateGame()
 
 void Game::Render()
 {
-    //Upload transforms to the GPU and set every mesh to use the transform.
-    glm::mat4 transform = m_ObjectTransform.GetTransformation();
-    auto view = m_TransformBuffer->WriteData<glm::mat4>(0, 1, 16, &transform);
-    for(auto& drawable : m_Drawables)
+    //Reset the passes.
+    m_ForwardPass->Reset();
+    m_ShadowGenerationPass->Reset();
+
+    //Tell the shadow pass to use all geometry as shadow casters.
+    //This looks complex, but all it does is specify an array of lights indexes for every DrawData object.
+    //When drawing that geometry, all lights specified will be considered for shadow generation.
+    
+    //Every light affects every geometry, so make a collection of each index.
+    std::vector<int> dirLightShadowIndices;
+    std::vector<int> posLightShadowIndices;
+
+    //Setup the shadow mapping for this frame. Exclude the last Drawdata which is the light mesh.
+    for (int i = 0; i < m_Lights.size(); ++i)
     {
-        drawable.transformData.dataBuffer = m_TransformBuffer;
-        drawable.transformData.dataRange = view;
+        m_ShadowGenerationPass->AddLight(m_Lights[i], i);
+        posLightShadowIndices.push_back(i);
     }
 
-    //Update the forward pass data.
-    m_ForwardPass->Reset();
+    m_ShadowGenerationPass->AddLight(m_Sun, 0);
+    dirLightShadowIndices.push_back(0);
+
+
+    std::vector<blurp::LightIndexData> lIndexData;
+    lIndexData.reserve(m_Scene.drawDatas.size());
+
+    for (int i = 0; i < static_cast<int>(m_Scene.drawDatas.size()); ++i)
+    {
+        //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
+        lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
+    }
+
+    m_ShadowGenerationPass->SetGeometry(&m_Scene.drawDatas[0], &lIndexData[0], lIndexData.size());
+    
+
+
+    //Upload light data
     blurp::LightData lData;
     blurp::LightUploadData lud;
     lud.lightData = &lData;
-    lud.point.count = 1;
-    lud.point.lights = &m_Light;
-    m_TransformBuffer->WriteData(view.end, lud);
+    lud.point.count = m_Lights.size();
+    lud.point.lights = &m_Lights[0];
+    lud.directional.lights = &m_Sun;
+    lud.directional.count = 1;
+    auto lightView = m_TransformBuffer->WriteData(m_TransformEnd, lud);
+
+    //Set the view used to determine the offset into the buffer to write shadow map matrices.
+    //This means that the shadow generation pass will now append all shadow map matrices behind the uploaded light data in the buffer.
+    *m_DirLightDataOffsetView = lightView;
+
     m_ForwardPass->SetLights(lData);
 
     //Pass a reference to all the meshes to the forward render pass.
     blurp::DrawDataSet drawableSet;
-    drawableSet.drawDataCount = m_Drawables.size();
-    drawableSet.drawDataPtr = &m_Drawables[0];
+    drawableSet.drawDataCount = m_Scene.drawDatas.size();
+    drawableSet.drawDataPtr = &m_Scene.drawDatas[0];
 
     m_ForwardPass->SetDrawData(drawableSet);
 

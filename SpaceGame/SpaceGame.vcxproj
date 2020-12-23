@@ -150,6 +150,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GLTFUtil.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MeshLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CubeMapLoader.h" />

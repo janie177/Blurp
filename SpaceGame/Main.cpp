@@ -35,6 +35,9 @@ int main()
     Game game(engine);
     game.Init();
 
+    //Fps measuring
+    auto timeStamp = std::chrono::high_resolution_clock::now();
+
     /*
      * Main loop. Render as long as the window remains open.
      */
@@ -54,6 +57,13 @@ int main()
 
         //Clear all resources that have gone out of scope.
         engine.GetResourceManager().CleanUpUnused();
+
+        //Print FPS
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - timeStamp);
+        float seconds = 1000000.f / static_cast<float>(duration.count());
+        std::cout << "FPS: " << seconds << std::endl;
+        timeStamp = now;
     }
 
     return 0;

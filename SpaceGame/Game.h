@@ -4,6 +4,8 @@
 #include <RenderPass_Clear.h>
 #include <RenderPass_Forward.h>
 #include <RenderPass_Skybox.h>
+#include <RenderPass_ShadowMap.h>
+#include "MeshLoader.h"
 
 /*
  * This is a game! Games are fun! 
@@ -53,11 +55,21 @@ private:
     std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
     std::shared_ptr<blurp::RenderPass_Skybox> m_SkyboxPass;
 
-    std::shared_ptr<blurp::Texture> m_SkyBoxTexture;
+    //Shadow mapping
+    std::shared_ptr<blurp::RenderPass_ShadowMap> m_ShadowGenerationPass;
+    std::shared_ptr<blurp::Texture> m_PosShadowArray;
+    std::shared_ptr<blurp::Texture> m_DirShadowArray;
+    std::shared_ptr<blurp::GpuBufferView> m_DirLightMatView;
+    std::shared_ptr<blurp::GpuBufferView> m_DirLightDataOffsetView;
 
+    std::shared_ptr<blurp::Texture> m_SkyBoxTexture;
     std::shared_ptr<blurp::Camera> m_Camera;
 
-    std::shared_ptr<blurp::PointLight> m_Light;
+    //Lights
+    std::vector<std::shared_ptr<blurp::PointLight>> m_Lights;
+    std::shared_ptr<blurp::DirectionalLight> m_Sun;
+
     std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
-    std::vector<blurp::DrawData> m_Drawables;
+    float m_TransformEnd;
+    GLTFScene m_Scene;
 };
