@@ -10,6 +10,7 @@
 #include <MaterialFile.h>
 #include <RenderPass_Skybox.h>
 
+#include <stb_image.h>
 
 #include "MaterialLoader.h"
 #include "Sphere.h"
@@ -241,7 +242,6 @@ void MaterialTestScene::Init()
     //Create a material file and then load it.
     const std::string fullPath = "materials/eggs/Material";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
-
 
     //Set the camera away from the mesh and looking at it.
     m_Camera->GetTransform().SetTranslation(m_MeshTransform.GetTranslation() - (m_Camera->GetTransform().GetBack() * 20.f));

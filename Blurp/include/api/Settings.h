@@ -24,7 +24,7 @@ namespace blurp
             pixelFormat = PixelFormat::RGBA;
             dataType = DataType::FLOAT;
             textureType = TextureType::TEXTURE_2D;
-            generateMipMaps = false;
+            generateMipMaps = true;
             minFilter = MinFilterType::LINEAR;
             magFilter = MagFilterType::LINEAR;
             wrapMode = WrapMode::REPEAT;

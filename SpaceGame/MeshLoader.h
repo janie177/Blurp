@@ -71,7 +71,7 @@ struct LoadedImageInformation
 };
 
 //Load texture data from the GLTF file.
-LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path);
+LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path, int numChannels);
 
 /*
  * Returns true if the array contains non-zero elements.

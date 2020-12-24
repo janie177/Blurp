@@ -76,8 +76,17 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         if (!material.pbrMetallicRoughness.baseColorTexture.empty())
         {
             materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::DIFFUSE_TEXTURE);
-            materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::ALPHA_TEXTURE);
-            imagePtrs[0] = LoadTexture(file, material.pbrMetallicRoughness.baseColorTexture.index, a_Settings.path);
+
+            imagePtrs[0] = LoadTexture(file, material.pbrMetallicRoughness.baseColorTexture.index, a_Settings.path, 0);
+
+            auto& p = imagePtrs[0];
+            assert(p.channels == 3 || p.channels == 4);
+
+            //Enable alpha if an A channel is provided.
+            if(imagePtrs[0].channels == 4)
+            {
+                materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::ALPHA_TEXTURE);
+            }
 
             auto samplerId = file.textures[material.pbrMetallicRoughness.baseColorTexture.index].sampler;
             if (samplerId > -1)
@@ -86,6 +95,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 materialInfo.settings.diffuse.minFilter = MinFromGL(static_cast<std::uint16_t>(sampler.minFilter));
                 materialInfo.settings.diffuse.magFilter = MagFromGL(static_cast<std::uint16_t>(sampler.magFilter));
                 materialInfo.settings.diffuse.wrapMode = WrapFromGL(static_cast<std::uint16_t>(sampler.wrapS));
+
+                //Enable mipmapping if used for minification.
+                if(materialInfo.settings.diffuse.minFilter == blurp::MinFilterType::MIPMAP_NEAREST || materialInfo.settings.diffuse.minFilter == blurp::MinFilterType::MIPMAP_LINEAR)
+                {
+                    materialInfo.settings.diffuse.generateMipMaps = true;
+                }
+                else
+                {
+                    materialInfo.settings.diffuse.generateMipMaps = false;
+                }
             }
         }
         //diffuse and alpha constant.
@@ -104,7 +123,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         if (!material.normalTexture.empty())
         {
             materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::NORMAL_TEXTURE);
-            imagePtrs[1] = LoadTexture(file, material.normalTexture.index, a_Settings.path);
+            imagePtrs[1] = LoadTexture(file, material.normalTexture.index, a_Settings.path, 0);
+
+            auto& p = imagePtrs[1];
+            assert(p.channels == 3);
 
             auto samplerId = file.textures[material.normalTexture.index].sampler;
             if (samplerId > -1)
@@ -113,6 +135,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 materialInfo.settings.normal.minFilter = MinFromGL(static_cast<std::uint16_t>(sampler.minFilter));
                 materialInfo.settings.normal.magFilter = MagFromGL(static_cast<std::uint16_t>(sampler.magFilter));
                 materialInfo.settings.normal.wrapMode = WrapFromGL(static_cast<std::uint16_t>(sampler.wrapS));
+
+                //Enable mipmapping if used for minification.
+                if (materialInfo.settings.normal.minFilter == blurp::MinFilterType::MIPMAP_NEAREST || materialInfo.settings.normal.minFilter == blurp::MinFilterType::MIPMAP_LINEAR)
+                {
+                    materialInfo.settings.normal.generateMipMaps = true;
+                }
+                else
+                {
+                    materialInfo.settings.normal.generateMipMaps = false;
+                }
             }
         }
 
@@ -120,7 +152,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         if (!material.emissiveTexture.empty())
         {
             materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::EMISSIVE_TEXTURE);
-            imagePtrs[2] = LoadTexture(file, material.emissiveTexture.index, a_Settings.path);
+            imagePtrs[2] = LoadTexture(file, material.emissiveTexture.index, a_Settings.path, 3);
+
+            auto& p = imagePtrs[2];
+            assert(p.channels == 3);
 
             auto samplerId = file.textures[material.emissiveTexture.index].sampler;
             if (samplerId > -1)
@@ -129,6 +164,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 materialInfo.settings.emissive.minFilter = MinFromGL(static_cast<std::uint16_t>(sampler.minFilter));
                 materialInfo.settings.emissive.magFilter = MagFromGL(static_cast<std::uint16_t>(sampler.magFilter));
                 materialInfo.settings.emissive.wrapMode = WrapFromGL(static_cast<std::uint16_t>(sampler.wrapS));
+
+                //Enable mipmapping if used for minification.
+                if (materialInfo.settings.emissive.minFilter == blurp::MinFilterType::MIPMAP_NEAREST || materialInfo.settings.emissive.minFilter == blurp::MinFilterType::MIPMAP_LINEAR)
+                {
+                    materialInfo.settings.emissive.generateMipMaps = true;
+                }
+                else
+                {
+                    materialInfo.settings.emissive.generateMipMaps = false;
+                }
             }
         }
         //Emissive constant
@@ -143,7 +188,11 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         {
             materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::METALLIC_TEXTURE);
             materialInfo.mask.EnableAttribute(blurp::MaterialAttribute::ROUGHNESS_TEXTURE);
-            imagePtrs[3] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path);
+
+            imagePtrs[3] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path, 0);
+
+            auto& p = imagePtrs[3];
+            assert(p.channels == 3);
 
             auto samplerId = file.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].sampler;
             if (samplerId > -1)
@@ -152,6 +201,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 materialInfo.settings.metalRoughAlpha.minFilter = MinFromGL(static_cast<std::uint16_t>(sampler.minFilter));
                 materialInfo.settings.metalRoughAlpha.magFilter = MagFromGL(static_cast<std::uint16_t>(sampler.magFilter));
                 materialInfo.settings.metalRoughAlpha.wrapMode = WrapFromGL(static_cast<std::uint16_t>(sampler.wrapS));
+
+                //Enable mipmapping if used for minification.
+                if (materialInfo.settings.metalRoughAlpha.minFilter == blurp::MinFilterType::MIPMAP_NEAREST || materialInfo.settings.metalRoughAlpha.minFilter == blurp::MinFilterType::MIPMAP_LINEAR)
+                {
+                    materialInfo.settings.metalRoughAlpha.generateMipMaps = true;
+                }
+                else
+                {
+                    materialInfo.settings.metalRoughAlpha.generateMipMaps = false;
+                }
             }
         }
         else if (material.pbrMetallicRoughness.metallicFactor != 1 || material.pbrMetallicRoughness.roughnessFactor != 1)
@@ -165,7 +224,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         //Occlusion
         if(!material.occlusionTexture.empty())
         {
-            imagePtrs[4] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path);
+            imagePtrs[4] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path, 0);
 
             auto samplerId = file.textures[material.occlusionTexture.index].sampler;
             if (samplerId > -1)
@@ -174,6 +233,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 materialInfo.settings.ambientOcclusionHeight.minFilter = MinFromGL(static_cast<std::uint16_t>(sampler.minFilter));
                 materialInfo.settings.ambientOcclusionHeight.magFilter = MagFromGL(static_cast<std::uint16_t>(sampler.magFilter));
                 materialInfo.settings.ambientOcclusionHeight.wrapMode = WrapFromGL(static_cast<std::uint16_t>(sampler.wrapS));
+
+                //Enable mipmapping if used for minification.
+                if (materialInfo.settings.ambientOcclusionHeight.minFilter == blurp::MinFilterType::MIPMAP_NEAREST || materialInfo.settings.ambientOcclusionHeight.minFilter == blurp::MinFilterType::MIPMAP_LINEAR)
+                {
+                    materialInfo.settings.ambientOcclusionHeight.generateMipMaps = true;
+                }
+                else
+                {
+                    materialInfo.settings.ambientOcclusionHeight.generateMipMaps = false;
+                }
             }
         }
 
@@ -202,10 +271,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             }
 
             materialInfo.diffuse.data = &diffuse[0];
+
             materialInfo.settings.diffuse.textureType = blurp::TextureType::TEXTURE_2D;
             materialInfo.settings.diffuse.dataType = blurp::DataType::UBYTE;
             materialInfo.settings.diffuse.pixelFormat = blurp::PixelFormat::RGB;
-            materialInfo.settings.diffuse.dimensions = { data.w, data.h, 1 };
             materialInfo.settings.diffuse.dimensions = { data.w, data.h, 1 };
         }
 
@@ -229,7 +298,6 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             materialInfo.settings.normal.dataType = blurp::DataType::UBYTE;
             materialInfo.settings.normal.pixelFormat = blurp::PixelFormat::RGB;
             materialInfo.settings.normal.dimensions = { data.w, data.h, 1 };
-            materialInfo.settings.normal.dimensions = { data.w, data.h, 1 };
         }
 
         //Emissive
@@ -252,7 +320,6 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             materialInfo.settings.emissive.dataType = blurp::DataType::UBYTE;
             materialInfo.settings.emissive.pixelFormat = blurp::PixelFormat::RGB;
             materialInfo.settings.emissive.dimensions = { data.w, data.h, 1 };
-            materialInfo.settings.emissive.dimensions = { data.w, data.h, 1 };
         }
 
         //MRA
@@ -263,33 +330,42 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             const int srcSize = data.w * data.h * data.channels;
             metal.reserve(size);
             roughness.reserve(size);
-            alpha.reserve(size);
 
             for (int i = 0; i < srcSize; i += data.channels)
             {
                 metal.push_back(data.data[i + 0]);
                 roughness.push_back(data.data[i + 1]);
-                alpha.push_back(0);
-            }
-
-            //Add alpha component as well if present
-            if(imagePtrs[0].data != nullptr)
-            {
-                for(int i = 0; i < data.w * data.h; ++i)
-                {
-                    auto& alphaData = imagePtrs[0];
-                    alpha[i] = alphaData.data[alphaData.channels * i + 3];
-                }
-                materialInfo.alpha.data = &alpha[0];
             }
 
             materialInfo.metallic.data = &metal[0];
             materialInfo.roughness.data = &roughness[0];
-
             materialInfo.settings.metalRoughAlpha.textureType = blurp::TextureType::TEXTURE_2D;
             materialInfo.settings.metalRoughAlpha.dataType = blurp::DataType::UBYTE;
             materialInfo.settings.metalRoughAlpha.pixelFormat = blurp::PixelFormat::RGB;
             materialInfo.settings.metalRoughAlpha.dimensions = { data.w, data.h, 1 };
+        }
+
+        //Add alpha component as well if present
+        if (imagePtrs[0].data != nullptr && imagePtrs[0].channels == 4)
+        {
+            auto& data = imagePtrs[0];
+            const int size = data.w * data.h;
+            alpha.reserve(size);
+            for (int i = 0; i < size; ++i)
+            {
+                alpha.push_back(data.data[data.channels * i + 3]);
+            }
+
+            if(imagePtrs[3].data != nullptr)
+            {
+                auto& p = imagePtrs[3];
+                assert(p.w == data.w && p.h == data.h && "Metal Roughness and Alpha all need the same dimensions.");
+            }
+
+            materialInfo.alpha.data = &alpha[0];
+            materialInfo.settings.metalRoughAlpha.textureType = blurp::TextureType::TEXTURE_2D;
+            materialInfo.settings.metalRoughAlpha.dataType = blurp::DataType::UBYTE;
+            materialInfo.settings.metalRoughAlpha.pixelFormat = blurp::PixelFormat::RGB;
             materialInfo.settings.metalRoughAlpha.dimensions = { data.w, data.h, 1 };
         }
 
@@ -314,25 +390,25 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             materialInfo.settings.ambientOcclusionHeight.dataType = blurp::DataType::UBYTE;
             materialInfo.settings.ambientOcclusionHeight.pixelFormat = blurp::PixelFormat::RGB;
             materialInfo.settings.ambientOcclusionHeight.dimensions = { data.w, data.h, 1 };
-            materialInfo.settings.ambientOcclusionHeight.dimensions = { data.w, data.h, 1 };
         }
 
-        //Clean up STB.
-        for(auto& img : imagePtrs)
-        {
-            if(img.data != nullptr)
-            {
-                stbi_image_free(img.data);
-            }
-        }
+        materialInfo.path = a_Settings.path;
 
         //Create the material at the right index.
         bool saved = blurp::CreateMaterialFile(materialInfo, a_Settings.path, materialFileName);
-
         assert(saved && "Could not export material for some reason.");
 
         auto blurpMat = blurp::LoadMaterial(a_ResourceManager, materialFileFullPath);
         materials.push_back(blurpMat);
+
+        //Clean up STB.
+        for (auto& img : imagePtrs)
+        {
+            if (img.data != nullptr)
+            {
+                stbi_image_free(img.data);
+            }
+        }
     }
 
     for (size_t meshId = 0; meshId < file.meshes.size(); ++meshId)
@@ -516,9 +592,9 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             drawData.attributes.EnableAttribute(blurp::DrawAttribute::TRANSFORMATION_MATRIX);
 
             /*
-             * Load material for this draw data object.
+             * Set the material to use and enable it.
              */
-            if(primitive.material > 0)
+            if(primitive.material >= 0)
             {
                 drawData.materialData.material = materials[primitive.material];
                 drawData.attributes.EnableAttribute(blurp::DrawAttribute::MATERIAL_SINGLE);
@@ -579,11 +655,8 @@ void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex
     }
 }
 
-LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path)
+LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path, int numChannels)
 {
-    int imageId = a_File.textures[a_TextureId].source;
-    auto& image = a_File.images[imageId];
-
     std::uint8_t* imgData = nullptr;
     int w = 0;
     int h = 0;
@@ -592,17 +665,25 @@ LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, 
 
     ImageData data(a_File, a_TextureId, a_Path);
     auto info = data.Info();
+
+    stbi_set_flip_vertically_on_load(false);
     if (info.IsBinary())
     {
         //Load from raw
-        imgData = stbi_load_from_memory(info.BinaryData, info.BinarySize, &w, &h, &channels, 0);
+        imgData = stbi_load_from_memory(info.BinaryData, info.BinarySize, &w, &h, &channels, numChannels);
     }
     else
     {
         //Load from file.
-        imgData = stbi_load(info.FileName.c_str(), &w, &h, &channels, 0);
+        imgData = stbi_load(info.FileName.c_str(), &w, &h, &channels, numChannels);
     }
+    assert(imgData != nullptr && "Could not load and decode image for some reason.");
 
+    //If a specific number of channels was requested, overwrite the "would have been" channels count.
+    if (numChannels != 0)
+    {
+        channels = numChannels;
+    }
     return LoadedImageInformation{ imgData, w, h, channels };
 }
 

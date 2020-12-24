@@ -60,7 +60,7 @@ void Game::Init()
 
     lSettings.type = LightType::LIGHT_DIRECTIONAL;
     lSettings.shadowMapIndex = 0;
-    lSettings.intensity = 0.85f;
+    lSettings.intensity = 1.7f;
     lSettings.color = { 1.f, 0.8f, 0.3f };
     lSettings.directionalLight.direction = glm::vec3(1.f, 0.f, 0.f);
     m_Sun = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
@@ -165,8 +165,8 @@ void Game::Init()
     m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Load GLTF mesh.
-    //m_Scene = LoadMesh(MeshLoaderSettings{"Fox.gltf", "meshes/Fox/", 0, nullptr}, m_Engine.GetResourceManager());
-    m_Scene = LoadMesh(MeshLoaderSettings{"scene.gltf", "meshes/town/", 0, nullptr}, m_Engine.GetResourceManager());
+    //m_Scene = LoadMesh(MeshLoaderSettings{"Duck.gltf", "meshes/Duck/", 0, nullptr}, m_Engine.GetResourceManager(), true);
+    m_Scene = LoadMesh(MeshLoaderSettings{"scene.gltf", "meshes/town/", 0, nullptr}, m_Engine.GetResourceManager(), true);
 
     //Upload matrices for each object, appending to the end of the buffer.
     //Remember the end of the buffer as a global variable so that I don't accidentally overwrite it.

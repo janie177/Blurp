@@ -99,6 +99,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.diffuse.data);
 			header.diffuse.start = data.size();
+
 			data.insert(data.end(), asChar, asChar + size);
 			header.diffuse.size = size;
 			header.diffuse.settings = a_MaterialInfo.settings.diffuse;
@@ -570,6 +571,11 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 	{
 		texSettings = materialHeader->diffuse.settings;
 		texSettings.texture2D.data = regen_buffer + materialHeader->diffuse.start;
+
+		unsigned char value1 = ((unsigned char*)texSettings.texture2D.data)[300];
+		unsigned char value2 = ((unsigned char*)texSettings.texture2D.data)[301];
+		unsigned char value3 = ((unsigned char*)texSettings.texture2D.data)[302];
+
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetDiffuseTexture(texture);
 	}
