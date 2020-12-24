@@ -3,6 +3,13 @@
 #define MAX_MATERIAL_BATCH_SIZE 512
 #define MAX_LIGHTS 580
 
+//Functions for PBR shading.
+vec3 LightReflected(vec3 toLightDir, vec3 toCameraDir, vec3 surfaceNormal, vec3 f0, vec3 lightColor, float lightDistance, float metallic, float roughness, vec3 diffuse);
+float DistributionGGX(vec3 surfaceNormal, vec3 h, float roughness);
+float GeometrySchlickGGX(float sNormalToCamDot, float roughness);
+float GeometrySmith(vec3 surfaceNormal, vec3 toCameraDir, vec3 toLightDir, float roughness);
+vec3 FresnelSchlick(float cosTheta, vec3 f0);
+
 in VERTEX_OUT
 {
     //Vertex position in world space without the projection applied.
@@ -172,8 +179,8 @@ layout(location = 5) uniform float alphaConstant;
 
 void main()
 {
-	vec4 outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	vec3 viewDirection = normalize(inData.camPos - inData.fragPos);
+	vec4 diffuse = vec4(1.0, 1.0, 1.0, 1.0);
+	vec3 toCameraDir = normalize(inData.camPos - inData.fragPos);
 
 	//Texture coordinates that can be updated by the parallax mapping.
 	#ifdef VA_UVCOORD_DEF
@@ -188,20 +195,17 @@ void main()
 	float aoModifier = 1.0;
 	#endif
 
-	#if defined(MAT_ALPHA_TEXTURE_DEFINE) || defined(MAT_ALPHA_CONSTANT_DEFINE)
+	//Alpha modifier default.
 	float alphaModifier = 1.0;
-	#endif
 
 	//Normals are used, but no normalmapping is enabled.
 	#if defined(VA_NORMAL_DEF) && !(defined(VA_TANGENT_DEF) && defined(MAT_NORMAL_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF))
 	vec3 surfaceNormal = inData.normal;
 	#endif
 
-	//Metallic or roughness are used. If one of the two is active, then the other needs a default value as well.
-	#if defined(MAT_METALLIC_TEXTURE_DEFINE) || defined(MAT_METALLIC_CONSTANT_DEFINE) || defined(MAT_ROUGHNESS_TEXTURE_DEFINE) || defined(MAT_ROUGHNESS_CONSTANT_DEFINE)
-	float metallic = 0;
-	float roughness = 0;
-	#endif
+	//default PBR properties.
+	float metallic = 0.0;
+	float roughness = 1.0;
 
 	//SINGLE MATERIAL
 	#ifdef MAT_SINGLE_DEFINE
@@ -213,7 +217,7 @@ void main()
 				const float numLayers = 50;
 				float layerDepth = 1.0 / numLayers;
 				float currentLayerDepth = 0.0;
-				vec2 P = viewDirection.xy * 0.2;	//SCALE 
+				vec2 P = toCameraDir.xy * 0.2;	//SCALE 
 				vec2 deltaTexCoords = P / numLayers;
 				vec2  currentTexCoords     = texCoords;
 				float currentDepthMapValue = 1.0 - texture(occlusionheightTexture, currentTexCoords).g;
@@ -244,12 +248,12 @@ void main()
 
 		//Diffuse constant
 		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
-			outColor = vec4(diffuseConstant, 1.0);
+			diffuse = vec4(diffuseConstant, 1.0);
 		#endif
 
 		//Diffuse texture
 		#if defined(MAT_DIFFUSE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor = texture2D(diffuseTexture, texCoords);
+			diffuse = texture2D(diffuseTexture, texCoords);
 		#endif
 
 		//Normal texture
@@ -318,7 +322,7 @@ void main()
 				const float numLayers = 10;
 				float layerDepth = 1.0 / numLayers;
 				float currentLayerDepth = 0.0;
-				vec2 P = viewDirection.xy * 0.6; 
+				vec2 P = toCameraDir.xy * 0.6; 
 				vec2 deltaTexCoords = P / numLayers;
 				vec2  currentTexCoords     = texCoords;
 				float currentDepthMapValue = 1.0 - texture(materialArray, vec3(currentTexCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset)).g;
@@ -352,12 +356,12 @@ void main()
 		//Diffuse constant
 		#ifdef MAT_DIFFUSE_CONSTANT_DEFINE
 
-			outColor = constAttribData[inData.materialID].diffuse;
+			diffuse = constAttribData[inData.materialID].diffuse;
 		#endif
 
 		//Diffuse texture
 		#if defined(MAT_DIFFUSE_TEXTURE_DEFINE) && defined(VA_UVCOORD_DEF)
-			outColor = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset));
+			diffuse = texture(materialArray, vec3(texCoords, (numActiveBatchTextures * inData.materialID) + texLayerOffset));
 			++texLayerOffset;
 
 		#endif
@@ -421,32 +425,34 @@ void main()
 	
 	//Modify diffuse with vertex color.
 	#ifdef VA_COLOR_DEF
-		outColor *= vec4(inData.color, 1.0);
+		diffuse *= vec4(inData.color, 1.0);
 	#endif
 
 
 
 //Light calculations
+
 	//Diffuse can always be applied with ambient light.
-	vec3 totalDiffuseLight = inData.ambientLight;
+	vec3 diffuseVec3 = diffuse.xyz;
+	vec3 f0 = vec3(0.04); 
+    f0 = mix(f0, diffuseVec3, metallic);
+
+	//Total reflected light
+    vec3 reflectedLight = vec3(0.0);
+    vec3 ambientColor = inData.ambientLight * diffuseVec3;
 
 #if defined(VA_NORMAL_DEF)
     //Point lights.
     for(int i = 0; i < inData.numLights.x; ++i)
-    {
+    {		
 		PointLightData data = pointLightData[i];
 
-		vec3 lightPos = data.positionShadowMapIndex.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
-		//Get the light direction, distance and normalize.
-		vec3 lightDir = inData.fragPos.xyz - lightPos;
-		float length2 = dot(lightDir, lightDir);
-		lightDir /= sqrt(length2);
-		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		//PBR shading
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = data.positionShadowMapIndex.xyz - inData.fragPos.xyz;
+        float lightDistance = length(toLightDir);
+        toLightDir /= lightDistance;
+        reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
     }
 
 #ifdef USE_POS_SHADOWS_DEFINE
@@ -455,26 +461,20 @@ void main()
     {
 		PointLightData data = pointLightData[int(inData.numLights.x) + i];
 
-		vec3 lightPos = data.positionShadowMapIndex.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
-		//Get the light direction, distance and normalize.
-		vec3 lightDir = inData.fragPos.xyz - lightPos;
-		float length2 = dot(lightDir, lightDir);
-		float lDist = sqrt(length2);
-		lightDir /= lDist;
+		//PBR shading
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = data.positionShadowMapIndex.xyz - inData.fragPos.xyz;
+        float lightDistance = length(toLightDir);
+        toLightDir /= lightDistance;
 
 		//Index into shadow map and check for shadow.
-		vec4 shadowCoord = vec4(lightDir, data.positionShadowMapIndex.w);
-		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
+		vec4 shadowCoord = vec4(-toLightDir, data.positionShadowMapIndex.w);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lightDistance / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
 		if(visibility > 0.0)
 		{
-			//Intensity is equal to the incoming angle multiplied by the inverse square law.
-			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2) * visibility;
-			//Append to total light.
-			totalDiffuseLight += (intensity * lightColor);
+			reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
 		}
     }
 	//ENDIF SHADOWS
@@ -485,26 +485,22 @@ void main()
     {
 		SpotLightData data = spotLightData[i];
 
-		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		//PBR shading
 		vec3 spotLightDirection = data.directionAngle.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
-		//Get the light direction, distance and normalize.
-		vec3 lightDir =  inData.fragPos.xyz - lightPos;
-		float length2 = dot(lightDir, lightDir);
-		lightDir /= sqrt(length2);
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = data.positionShadowMapIndex.xyz - inData.fragPos.xyz;
+        float lightDistance = length(toLightDir);
+        toLightDir /= lightDistance;
+        
 
 		//Ensure that the position is within the angle.
-		float angle = acos(dot(lightDir, spotLightDirection));
+		float angle = acos(dot(-toLightDir, spotLightDirection));
 		if (angle > data.directionAngle.w)
 		{
 			continue;
 		}
 
-		//Intensity is equal to the incoming angle multiplied by the inverse square law.
-		intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2);
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
     }
 
 #ifdef USE_POS_SHADOWS_DEFINE
@@ -513,18 +509,17 @@ void main()
     {
 		SpotLightData data = spotLightData[int(inData.numLights.y) + i];
 
-		vec3 lightPos = data.positionShadowMapIndex.xyz;
+		//PBR shading
 		vec3 spotLightDirection = data.directionAngle.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
-		//Get the light direction, distance and normalize.
-		vec3 lightDir =  inData.fragPos.xyz - lightPos;
-		float length2 = dot(lightDir, lightDir);
-		float lDist = sqrt(length2);
-		lightDir /= lDist;
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = data.positionShadowMapIndex.xyz - inData.fragPos.xyz;
+		vec3 lightDir = -toLightDir;
+        float lightDistance = length(toLightDir);
+        toLightDir /= lightDistance;
+        
 
 		//Ensure that the position is within the angle.
-		float angle = acos(dot(lightDir, spotLightDirection));
+		float angle = acos(dot(-toLightDir, spotLightDirection));
 		if (angle > data.directionAngle.w)
 		{
 			continue;
@@ -532,15 +527,12 @@ void main()
 
 		//Index into shadow map and check for shadow.
 		vec4 shadowCoord = vec4(lightDir, data.positionShadowMapIndex.w);
-		float visibility = texture(shadowSamplerCube, shadowCoord, lDist / inData.farPlane);
+		float visibility = texture(shadowSamplerCube, shadowCoord, lightDistance / inData.farPlane);
 
 		//If nothing is in front of the light for the frag coord, do the lighting.
 		if(visibility > 0.0)
 		{
-			//Intensity is equal to the incoming angle multiplied by the inverse square law.
-			intensity = max(-dot(surfaceNormal, lightDir), 0.0) * (intensity / length2) * visibility;
-			//Append to total light.
-			totalDiffuseLight += (intensity * lightColor);
+			reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
 		}
     }
 	//ENDIF SHADOWS
@@ -551,15 +543,11 @@ void main()
     {
 		DirectionalLightData data = dirLightData[i];
 
-		vec3 lightDir = data.directionShadowMapIndex.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
-
-		//Intensity for dir lights has no dropoff because there's no position.
-		intensity = max(-dot(surfaceNormal, lightDir), 0.0);
-
-		//Append to total light.
-        totalDiffuseLight += (intensity * lightColor);
+		//PBR shading
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = -data.directionShadowMapIndex.xyz;
+        float lightDistance = 1.0;
+        reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
     }
 
 #ifdef USE_DIR_SHADOWS_DEFINE
@@ -568,9 +556,11 @@ void main()
     {
 		DirectionalLightData data = dirLightData[int(inData.numLights.z) + i];
 
-		vec3 lightDir = data.directionShadowMapIndex.xyz;
-		vec3 lightColor = data.colorIntensity.xyz;
-		float intensity = data.colorIntensity.w;
+		//PBR shading
+		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
+		vec3 toLightDir = -data.directionShadowMapIndex.xyz;
+        float lightDistance = 1.0;
+
 		int shadowMapIndex = int(data.directionShadowMapIndex.w);
 		int numShadowCascades = int(inData.numShadowCascades);
 
@@ -615,36 +605,100 @@ void main()
 
 		if(visibility > 0.0)
 		{
-			//Intensity for dir lights has no dropoff because there's no position.
-			intensity = max(-dot(surfaceNormal, lightDir), 0.0);
-
-			//Append to total light.
-			totalDiffuseLight += (intensity * lightColor);
+			reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
 		}
     }
 	//ENDIF SHADOWS
 #endif
 
 #endif
-
-	//Set the output color RGB channels to be within 0 and 1, with all light taken into account.
-	//If normals are not active, this will only contain ambient lights.
-	outColor = vec4(clamp(totalDiffuseLight * outColor.rgb, 0.0, 1.0), 1.0);
-
 	//Apply AO, alpha and emissive.
-
 	#if defined(MAT_OCCLUSION_TEXTURE_DEFINE)
-	outColor *= aoModifier;
+	ambientColor *= aoModifier;
 	#endif
+
+	vec3 outColor = ambientColor + reflectedLight;
 
 	#if defined(MAT_EMISSIVE_CONSTANT_DEFINE) || defined(MAT_EMISSIVE_TEXTURE_DEFINE)
-	outColor += emissiveModifier;
-	#endif
-	
-	#if defined(MAT_ALPHA_TEXTURE_DEFINE) || defined(MAT_ALPHA_CONSTANT_DEFINE)
-	outColor.a = alphaModifier;
+	outColor += emissiveModifier.xyz;
 	#endif
 
-	//Set the final color as the fragment shader output.
-	gl_FragColor = outColor;
+	//Reinhardt tonemapping.
+	outColor = outColor / (outColor + vec3(1.0));
+    outColor = pow(outColor, vec3(1.0/2.2)); 
+
+	//Set output with alpha component.
+	gl_FragColor = vec4(outColor, alphaModifier);
+}
+
+
+
+//PBR function implementations
+vec3 LightReflected(vec3 toLightDir, vec3 toCameraDir, vec3 surfaceNormal, vec3 f0, vec3 lightColor, float lightDistance, float metallic, float roughness, vec3 diffuse)
+{
+	    // calculate per-light radiance
+        
+        vec3 h = normalize(toCameraDir + toLightDir);
+        float attenuation = 1.0 / (lightDistance * lightDistance);
+        vec3 radiance = lightColor * attenuation;        
+        
+        // cook-torrance brdf
+        float ndf = DistributionGGX(surfaceNormal, h, roughness);        
+        float g = GeometrySmith(surfaceNormal, toCameraDir, toLightDir, roughness);      
+        vec3 f = FresnelSchlick(max(dot(h, toCameraDir), 0.0), f0);       
+        
+        vec3 kS = f;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;	  
+        
+        vec3 numerator = ndf * g * f;
+        float denominator = 4.0 * max(dot(surfaceNormal, toCameraDir), 0.0) * max(dot(surfaceNormal, toLightDir), 0.0);
+        vec3 specular = numerator / max(denominator, 0.001);  
+            
+        // add to outgoing radiance Lo
+        float nDotL = max(dot(surfaceNormal, toLightDir), 0.0);                
+        return vec3(kD * diffuse / 3.1415926536 + specular) * radiance * nDotL; 
+}
+
+float DistributionGGX(vec3 surfaceNormal, vec3 h, float roughness)
+{
+    float a      = roughness*roughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(surfaceNormal, h), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.1415926536 * denom * denom;
+	
+    return num / denom;
+}
+
+
+float GeometrySchlickGGX(float sNormalToCamDot, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = sNormalToCamDot;
+    float denom = sNormalToCamDot * (1.0 - k) + k;
+	
+    return num / denom;
+}
+
+
+float GeometrySmith(vec3 surfaceNormal, vec3 toCameraDir, vec3 toLightDir, float roughness)
+{
+    float NdotV = max(dot(surfaceNormal, toCameraDir), 0.0);
+    float NdotL = max(dot(surfaceNormal, toLightDir), 0.0);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+
+vec3 FresnelSchlick(float cosTheta, vec3 f0)
+{
+    return f0 + (1.0 - f0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
 }

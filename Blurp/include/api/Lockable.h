@@ -2,6 +2,8 @@
 #include <mutex>
 #include "LockType.h"
 
+//TODO re-implement lockable at some point. Maybe revisit the entire design. It's not used currently.
+
 namespace blurp
 {
     /*

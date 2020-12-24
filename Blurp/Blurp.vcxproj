@@ -269,6 +269,11 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\Window_Win32.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\opengl\PBR_Functions.fs">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

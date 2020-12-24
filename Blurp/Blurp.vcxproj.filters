@@ -327,4 +327,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\opengl\PBR_Functions.fs" />
+  </ItemGroup>
 </Project>
