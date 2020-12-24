@@ -18,6 +18,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     fx::gltf::Document file;
     GLTFScene output;
 
+    //Allow unlimited file size.
+    std::uint32_t maxUInt = std::numeric_limits<std::uint32_t>::max();
+    fx::gltf::ReadQuotas quotas{ maxUInt, maxUInt, maxUInt };
+
     std::string fileNameLowerCase = a_Settings.fileName;
     std::for_each(fileNameLowerCase.begin(), fileNameLowerCase.end(), [](char& c) {
         c = ::tolower(c);
@@ -27,7 +31,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     {
         try
         {
-            file = fx::gltf::LoadFromText((a_Settings.path + a_Settings.fileName));
+            file = fx::gltf::LoadFromText((a_Settings.path + a_Settings.fileName), quotas);
         }
         catch (std::exception e)
         {
@@ -39,7 +43,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     {
         try
         {
-            file = fx::gltf::LoadFromBinary((a_Settings.path + a_Settings.fileName));
+            file = fx::gltf::LoadFromBinary((a_Settings.path + a_Settings.fileName), quotas);
         }
         catch (std::exception e)
         {
@@ -61,7 +65,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         const std::string materialFileFullPath = a_Settings.path + materialFileName;
 
         //If the file already exits, load it and continue. This prevents regenerating every time.
-        if(!a_RecompileMaterials && std::filesystem::exists(materialFileFullPath))
+        if(!a_RecompileMaterials && std::filesystem::exists((materialFileFullPath + ".blurpmat")))
         {
             materials.push_back(blurp::LoadMaterial(a_ResourceManager, materialFileFullPath));
             continue;
@@ -409,6 +413,8 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 stbi_image_free(img.data);
             }
         }
+
+        std::cout << "Material compiled for GLTF file: " << materialFileName << std::endl;
     }
 
     for (size_t meshId = 0; meshId < file.meshes.size(); ++meshId)
@@ -600,6 +606,8 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 drawData.attributes.EnableAttribute(blurp::DrawAttribute::MATERIAL_SINGLE);
             }
 
+            //Set instance count to 0! Important because it defaults to 1.
+            drawData.instanceCount = 0;
 
             //Add to set.
             output.drawDatas.push_back(drawData);
@@ -608,6 +616,8 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
 
         //Add the indices of the primitives for this mesh.
         output.meshes.push_back(GLTFMesh{ drawableIds });
+
+        std::cout << "Mesh compiled for gltf file: " << meshId << std::endl;
     }
 
     //Iterate over the scene nodes in the scenes to add the correct transformations and instance count to each drawable.

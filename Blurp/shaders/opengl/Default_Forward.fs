@@ -452,7 +452,8 @@ void main()
 		vec3 toLightDir = data.positionShadowMapIndex.xyz - inData.fragPos.xyz;
         float lightDistance = length(toLightDir);
         toLightDir /= lightDistance;
-        reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
+
+		reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
     }
 
 #ifdef USE_POS_SHADOWS_DEFINE
@@ -547,7 +548,9 @@ void main()
 		vec3 lightColor = data.colorIntensity.xyz * data.colorIntensity.w;
 		vec3 toLightDir = -data.directionShadowMapIndex.xyz;
         float lightDistance = 1.0;
-        reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
+
+
+		reflectedLight += LightReflected(toLightDir, toCameraDir, surfaceNormal, f0, lightColor, lightDistance, metallic, roughness, diffuseVec3);
     }
 
 #ifdef USE_DIR_SHADOWS_DEFINE

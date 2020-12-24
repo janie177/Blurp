@@ -11,6 +11,8 @@ int main()
 
     //Window and rendering system setup.
 
+    std::cout << "Starting application" << std::endl;
+
     BlurpEngine engine;
     BlurpSettings blurpSettings;
     blurpSettings.graphicsAPI = GraphicsAPI::OPENGL;
@@ -31,9 +33,13 @@ int main()
     engine.Init(blurpSettings);
     auto window = engine.GetWindow();
 
+    std::cout << "Setting up game." << std::endl;
+
     //Set up the game and main game loop.
     Game game(engine);
     game.Init();
+
+    std::cout << "Game setup completed. Now starting game loop" << std::endl;
 
     //Fps measuring
     auto timeStamp = std::chrono::high_resolution_clock::now();
@@ -59,12 +65,26 @@ int main()
         engine.GetResourceManager().CleanUpUnused();
 
         //Print FPS
+        
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - timeStamp);
         float seconds = 1000000.f / static_cast<float>(duration.count());
-        std::cout << "FPS: " << seconds << std::endl;
+        static float secs = 0;
+        secs += seconds;
+        static int counter = 0;
+        ++counter;
+
+        if(counter > 50)
+        {
+            float fps = secs / (float)counter;
+            counter = 0;
+            std::cout << "FPS: " << fps << std::endl;
+            secs = 0.f;
+            
+        }
         timeStamp = now;
     }
 
+    std::cout << "Closing down." << std::endl;
     return 0;
 }
