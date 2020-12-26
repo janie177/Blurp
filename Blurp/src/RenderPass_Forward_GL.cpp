@@ -13,6 +13,7 @@
 #include "Material.h"
 #include "GpuBuffer.h"
 #include "MaterialBatch.h"
+#include "opengl/GLUtils.h"
 
 
 namespace blurp
@@ -109,6 +110,9 @@ namespace blurp
 
     void RenderPass_Forward_GL::Execute()
     {
+        //Don't run if no data is present.
+        if (m_DrawDataSet.drawDataCount == 0) return;
+
         /*
          * Render state and target preparing.
          */
@@ -118,14 +122,6 @@ namespace blurp
 
         //Bind the render target.
         rtGL->Bind();
-
-        //TODO move this into a RenderState object or something.
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW);
-
 
         /*
          * Global data setup that is used for all draw calls.
@@ -209,6 +205,17 @@ namespace blurp
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_StaticDataUbo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(staticData), static_cast<void*>(&staticData));
 
+        /*
+         * Retrieve the default pipeline state if none is specified for the first element.
+         */
+        PipelineState* pipelineState = m_DrawDataSet.drawDataPtr[1].pipelineState;
+        if(pipelineState == nullptr)
+        {
+            pipelineState = &PipelineState::GetDefault();
+        }
+
+        //Keeps track wheter or not the pipeline state has to be updated.
+        bool setPipelineState = true;
 
         /*
          * Actual drawing.
@@ -218,6 +225,111 @@ namespace blurp
         for(auto i = 0u; i < m_DrawDataSet.drawDataCount; ++i)
         {
             auto& instanceData = m_DrawDataSet.drawDataPtr[i];
+
+            //If a pipeline state object is specified and not the same as the current state, then reapply the pipeline state.
+            if(instanceData.pipelineState != nullptr && instanceData.pipelineState->id != pipelineState->id)
+            {
+                pipelineState = instanceData.pipelineState;
+                setPipelineState = true;
+            }
+
+            //Apply the pipeline state.
+            if (setPipelineState)
+            {
+                //Set depth
+                if (pipelineState->depthStencilData.enableDepth)
+                {
+                    glEnable(GL_DEPTH_TEST);    //Depth testing enabled.
+                    glDepthFunc(ToGL(pipelineState->depthStencilData.depthFunction)); //The depth function
+                    glDepthMask(pipelineState->depthStencilData.depthWrite);    //Enable or disable depth writing.
+                }
+                else
+                {
+                    glDisable(GL_DEPTH_TEST);   //No depth used at all.
+                }
+
+                //Set stencil
+                if (pipelineState->depthStencilData.enableStencil)
+                {
+                    /*
+                     * Note:
+                     * OpenGL and D3D12 have different stencil masking parameters in different places.
+                     * It's a bit vague so idk if this is 100% correct, but I believe it is.
+                     * If it doesn't seem to be working as intended then this is why.
+                     */
+
+                    glEnable(GL_STENCIL_TEST);
+
+                    //Front faces
+                    glStencilFuncSeparate(GL_FRONT,
+                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilFunc),
+                        pipelineState->depthStencilData.stencilRef,
+                        pipelineState->depthStencilData.stencilReadMask);
+
+                    glStencilOpSeparate(GL_FRONT,
+                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilFailOp),
+                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilDepthFailOp),
+                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilPassOp));
+
+                    //Back faces
+                    glStencilFuncSeparate(GL_BACK,
+                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilFunc),
+                        pipelineState->depthStencilData.stencilRef,
+                        pipelineState->depthStencilData.stencilReadMask);
+
+                    glStencilOpSeparate(GL_BACK,
+                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilFailOp),
+                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilDepthFailOp),
+                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilPassOp));
+
+                    //Write mask cannot be separate for different faces in D3D12, so I'm not supporting it in OpenGL either.
+                    glStencilMask(pipelineState->depthStencilData.stencilWriteMask);
+                }
+                else
+                {
+                    glDisable(GL_STENCIL_TEST);
+                }
+
+                //Set culling
+                if (pipelineState->cullMode != CullMode::CULL_NONE)
+                {
+                    glEnable(GL_CULL_FACE);
+                    glCullFace(ToGL(pipelineState->cullMode));
+                    glFrontFace(ToGL(pipelineState->front));
+                }
+                else
+                {
+                    glDisable(GL_CULL_FACE);
+                }
+
+                //Set blending
+                if (pipelineState->blending.blend)
+                {
+                    glEnable(GL_BLEND);
+
+                    glBlendFuncSeparate(
+                        ToGL(pipelineState->blending.srcBlend),
+                        ToGL(pipelineState->blending.dstBlend),
+                        ToGL(pipelineState->blending.srcBlendAlpha),
+                        ToGL(pipelineState->blending.dstBlendAlpha)
+                    );
+
+                    glBlendEquationSeparate(
+                        ToGL(pipelineState->blending.blendOperation),
+                        ToGL(pipelineState->blending.blendOperationAlpha)
+                    );
+                }
+                else
+                {
+                    glDisable(GL_BLEND);
+                }
+
+
+
+                //Mark state as current.
+                setPipelineState = false;
+            }
+
 
             assert(instanceData.mesh != nullptr && "Mesh cannot be nullptr!");
             assert(instanceData.instanceCount > 0 && "Cannot draw 0 instances of mesh!");

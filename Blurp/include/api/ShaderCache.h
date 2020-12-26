@@ -12,7 +12,7 @@ namespace blurp
      * A bitmask can be provided that corresponds to preprocessor definitions.
      * This allows a single shader file to have a lot of different behaviors, inputs and outputs.
      *
-     * T is the mask type. This has to be an integral or enumeration type.
+     * T is the mask type. This has to be an integer or enumeration type.
      * INTERNAL_FORMAT is what the mask will be stored as. This 
      */
     template<typename T, typename INTERNAL_FORMAT>

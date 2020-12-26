@@ -230,6 +230,7 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClCompile Include="include\api\lz4hc.cpp" />
     <ClCompile Include="src\BlurpEngine.cpp" />
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\Data.cpp" />
     <ClCompile Include="src\FileReader.cpp" />
     <ClCompile Include="src\GpuBuffer_GL.cpp" />
     <ClCompile Include="src\InputQueue.cpp" />

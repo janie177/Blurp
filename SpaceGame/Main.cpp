@@ -4,6 +4,7 @@
 #include <Window.h>
 #include <RenderResourceManager.h>
 #include "Game.h"
+#include <iostream>
 
 int main()
 {

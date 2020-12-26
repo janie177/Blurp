@@ -8,6 +8,7 @@
 
 #include "CubeMapLoader.h"
 #include "MeshLoader.h"
+#include <iostream>
 
 #define SHADOW_MAP_DIMENSION 2048
 #define NUM_CASCADES 6
@@ -42,6 +43,8 @@ void Game::Init()
     camSettings.nearPlane = NEAR_PLANE;
     camSettings.farPlane = FAR_PLANE;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
+
+    m_Camera->GetTransform().SetTranslation({-32.0f, 1.3f, 11.0f});
 
     //Create some lights and the sun.
     LightSettings lSettings;
@@ -182,7 +185,21 @@ void Game::Init()
             drawable.transformData.dataBuffer = m_TransformBuffer;
             drawable.transformData.dataRange = view;
         }
+
+        //Transparency.
+        for (auto drawableId : mesh.transparentDrawableIds)
+        {
+            auto& drawable = m_Scene.transparentDrawDatas[drawableId];
+            drawable.transformData.dataBuffer = m_TransformBuffer;
+            drawable.transformData.dataRange = view;
+        }
     }
+
+    //Append all draw data (first solid then transparent). Remember where transparency starts for eventual sorting.
+    drawDatas.reserve(m_Scene.drawDatas.size() + m_Scene.transparentDrawDatas.size());
+    drawDatas.insert(drawDatas.end(), m_Scene.drawDatas.begin(), m_Scene.drawDatas.end());
+    m_TransparentStart = drawDatas.size();
+    drawDatas.insert(drawDatas.end(), m_Scene.transparentDrawDatas.begin(), m_Scene.transparentDrawDatas.end());
 
     //Set up shadow map generation for the render passes using the now existing data buffers.
     //Some of these datatypes are in shared_ptr format so that they can be modified during pipeline execution (offsets into buffers).
@@ -308,6 +325,11 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
         {
             m_Sun->SetDirection(glm::normalize(m_Camera->GetTransform().GetBack()));
         }
+
+        if (input.getKeyState(KEY_C) != ButtonState::NOT_PRESSED)
+        {
+            std::cout << "Cam pos: " << m_Camera->GetTransform().GetTranslation().x << " " << m_Camera->GetTransform().GetTranslation().y << " " << m_Camera->GetTransform().GetTranslation().z << std::endl;
+        }
     }
 
     //Handle alt enter to go fullscreen.
@@ -345,18 +367,17 @@ void Game::Render()
     m_ShadowGenerationPass->AddLight(m_Sun, 0);
     dirLightShadowIndices.push_back(0);
 
-
+    //Only take solid geometry for shadows for now.
     std::vector<blurp::LightIndexData> lIndexData;
-    lIndexData.reserve(m_Scene.drawDatas.size());
+    lIndexData.reserve(m_TransparentStart);
 
-    for (int i = 0; i < static_cast<int>(m_Scene.drawDatas.size()); ++i)
+    for (int i = 0; i < static_cast<int>(m_TransparentStart); ++i)
     {
         //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
         lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
     }
 
-    m_ShadowGenerationPass->SetGeometry(&m_Scene.drawDatas[0], &lIndexData[0], lIndexData.size());
-    
+    m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
 
 
     //Upload light data
@@ -378,8 +399,8 @@ void Game::Render()
 
     //Pass a reference to all the meshes to the forward render pass.
     blurp::DrawDataSet drawableSet;
-    drawableSet.drawDataCount = m_Scene.drawDatas.size();
-    drawableSet.drawDataPtr = &m_Scene.drawDatas[0];
+    drawableSet.drawDataCount = drawDatas.size();
+    drawableSet.drawDataPtr = &drawDatas[0];
 
     m_ForwardPass->SetDrawData(drawableSet);
 

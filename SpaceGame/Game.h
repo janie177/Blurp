@@ -69,7 +69,13 @@ private:
     std::vector<std::shared_ptr<blurp::PointLight>> m_Lights;
     std::shared_ptr<blurp::DirectionalLight> m_Sun;
 
+    //Scene data and buffers
     std::shared_ptr<blurp::GpuBuffer> m_TransformBuffer;
     float m_TransformEnd;
     GLTFScene m_Scene;
+
+    //All draw datas, transparent at the back.
+    std::vector<blurp::DrawData> drawDatas;
+    std::uint32_t m_TransparentStart;
+
 };

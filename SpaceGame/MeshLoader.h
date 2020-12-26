@@ -4,7 +4,6 @@
 #include <Data.h>
 #include <fx/gltf.h>
 #include "GLTFUtil.h"
-#include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 
 /*
@@ -15,6 +14,7 @@ struct GLTFMesh
 {
     //Vector containing the IDs of all drawables for this mesh.
     std::vector<int> drawableIds;
+    std::vector<int> transparentDrawableIds;
 
     //The transforms that apply to each primitive in this mesh.
     std::vector<glm::mat4> transforms;
@@ -26,6 +26,9 @@ struct GLTFMesh
 struct GLTFScene
 {
     std::vector<blurp::DrawData> drawDatas;
+    std::vector<blurp::DrawData> transparentDrawDatas;
+    std::vector<blurp::PipelineState> transparentPipelineStates;
+    std::vector<blurp::PipelineState> pipelineStates;
     std::vector<GLTFMesh> meshes;
 };
 
@@ -91,3 +94,5 @@ blurp::WrapMode WrapFromGL(int glEnum);
 blurp::MagFilterType MagFromGL(int glEnum);
 
 blurp::MinFilterType MinFromGL(int glEnum);
+
+blurp::TopologyType ToBlurp(fx::gltf::Primitive::Mode a_Mode);

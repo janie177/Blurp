@@ -28,6 +28,277 @@ namespace blurp
     class DirectionalLight;
     class PointLight;
 
+    /*
+     * What topology type to render.
+     */
+    enum class TopologyType
+    {
+        POINTS,
+        LINES,
+        TRIANGLES,
+        LINE_STRIP,
+        TRIANGLE_STRIP
+    };
+
+    enum class CullMode
+    {
+        CULL_NONE,
+        CULL_FRONT,
+        CULL_BACK
+    };
+
+    enum class Face
+    {
+        FRONT,
+        BACK
+    };
+
+    enum class WindingOrder
+    {
+        CLOCKWISE,
+        COUNTER_CLOCKWISE
+    };
+
+    enum class ComparisonFunction
+    {
+        COMPARISON_FUNC_NEVER,
+        COMPARISON_FUNC_LESS,
+        COMPARISON_FUNC_EQUAL,
+        COMPARISON_FUNC_LESS_EQUAL,
+        COMPARISON_FUNC_GREATER,
+        COMPARISON_FUNC_NOT_EQUAL,
+        COMPARISON_FUNC_GREATER_EQUAL,
+        COMPARISON_FUNC_ALWAYS
+    };
+
+    enum class StencilOperation
+    {
+        STENCIL_OP_KEEP,
+        STENCIL_OP_ZERO,
+        STENCIL_OP_REPLACE,
+        STENCIL_OP_INCR_SAT,
+        STENCIL_OP_DECR_SAT,
+        STENCIL_OP_INVERT,
+        STENCIL_OP_INCR,
+        STENCIL_OP_DECR
+    };
+
+    /*
+     * Stencil behaviour for a particular face.
+     */
+    struct StencilOperationData
+    {
+        StencilOperationData() : stencilFailOp(StencilOperation::STENCIL_OP_KEEP), stencilDepthFailOp(StencilOperation::STENCIL_OP_KEEP), stencilPassOp(StencilOperation::STENCIL_OP_KEEP), stencilFunc(ComparisonFunction::COMPARISON_FUNC_LESS_EQUAL)
+        {
+            
+        }
+
+        StencilOperation stencilFailOp;
+        StencilOperation stencilDepthFailOp;
+        StencilOperation stencilPassOp;
+        ComparisonFunction stencilFunc;
+    };
+
+    /*
+     * Configure depth and stencil usage.
+     */
+    struct DepthStencilData
+    {
+        DepthStencilData() : enableDepth(false), depthWrite(true), depthFunction(ComparisonFunction::COMPARISON_FUNC_LESS),
+        enableStencil(false), stencilWriteMask(255), stencilReadMask(0), stencilRef(0)
+        {
+            
+        }
+
+        /*
+         * Disables or enables the depth buffer.
+         */
+        bool enableDepth;
+
+        /*
+         * Enable or disable writing to the depth buffer.
+         */
+        bool depthWrite;
+
+        /*
+         * The depth test function used.
+         */
+        ComparisonFunction depthFunction;
+
+        /*
+         * Disables or enables the stencil buffer.
+         */
+        bool enableStencil;
+
+        /*
+         * The write mask for the stencil buffer.
+         */
+        std::uint8_t stencilWriteMask;
+
+        /*
+         * The read mask for the stencil buffer.
+         * This is the mask that is compared to the reference when performing stencil operations.
+         */
+        std::uint8_t stencilReadMask;
+
+        /*
+         * The stencil reference value.
+         * This is used in stencil reading operations.
+         */
+        std::uint8_t stencilRef;
+
+        /*
+         * How the stencil front face should behave.
+         */
+        StencilOperationData stencilFrontFace;
+
+        /*
+         * How the stencil back face should behave.
+         */
+        StencilOperationData stencilBackFace;        
+    };
+
+    //Blend types
+    enum class BlendType
+    {
+        BLEND_ZERO,
+        BLEND_ONE,
+        BLEND_SRC_COLOR,
+        BLEND_INV_SRC_COLOR,
+        BLEND_SRC_ALPHA,
+        BLEND_INV_SRC_ALPHA,
+        BLEND_DEST_ALPHA,
+        BLEND_INV_DEST_ALPHA,
+        BLEND_DEST_COLOR,
+        BLEND_INV_DEST_COLOR,
+        BLEND_SRC_ALPHA_SAT,
+        BLEND_SRC1_COLOR,
+        BLEND_INV_SRC1_COLOR,
+        BLEND_SRC1_ALPHA,
+        BLEND_INV_SRC1_ALPHA
+    };
+
+    /*
+     * Blending operation performed on source and target.
+     */
+    enum class BlendOperation
+    {
+        ADD,    //Add src and dst.
+        SUBTRACT,   //Subtract src from dst.
+        REVERSE_SUBTRACT,   //Subtract dst from src.
+        MIN,    //Pick the minimal value.
+        MAX     //Pick the maximum value.
+    };
+
+    struct BlendData
+    {
+        BlendData() : blend(false), srcBlend(BlendType::BLEND_ONE), dstBlend(BlendType::BLEND_ONE), srcBlendAlpha(BlendType::BLEND_ONE), dstBlendAlpha(BlendType::BLEND_ONE), blendOperation(BlendOperation::ADD), blendOperationAlpha(BlendOperation::ADD)
+        {
+            
+        }
+
+        /*
+         * True if blending is enabled.
+         */
+        bool blend;
+
+        /*
+         * Source RGB blending type.
+         */
+        BlendType srcBlend;
+
+        /*
+         * Destination RGB blending type.
+         */
+        BlendType dstBlend;
+
+        /*
+         * Source alpha blending type.
+         */
+        BlendType srcBlendAlpha;
+
+        /*
+         * Destination alpha blending type.
+         */
+        BlendType dstBlendAlpha;
+
+        /*
+         * Which blend operation to perform for the RGB channel.
+         */
+        BlendOperation blendOperation;
+
+        /*
+         * Which blend operation to perform for the alpha channel.
+         */
+        BlendOperation blendOperationAlpha;
+    };
+
+    /*
+     * PipelineState describes pipeline state for a draw call.
+     * Things like blending and topology are contained within.
+     */
+    struct PipelineState
+    {
+    public:
+        /*
+         * Create an immutable pipeline data object.
+         */
+        static PipelineState Compile(const BlendData& a_BlendData, const TopologyType& a_Topology, const CullMode& a_CullMode, const WindingOrder& a_Winding, const DepthStencilData& a_DepthStencilData);
+
+        /*
+         * Get the default PipelineState object.
+         */
+        static PipelineState& GetDefault();
+
+    private:
+        PipelineState(const BlendData& a_BlendData, const TopologyType& a_Topology, const CullMode& a_CullMode, const WindingOrder& a_Winding, const DepthStencilData& a_DepthStencilData) : blending(a_BlendData), topology(a_Topology), cullMode(a_CullMode), front(a_Winding), depthStencilData(a_DepthStencilData), id(m_IdCounter++)
+        {
+
+        }
+
+        PipelineState() : topology(TopologyType::TRIANGLES), cullMode(CullMode::CULL_BACK), front(WindingOrder::COUNTER_CLOCKWISE), id(-1)
+        {
+
+        }
+        
+    public:
+
+        /*
+         * Blend settings for the pipeline.
+         */
+        const BlendData blending;
+
+        /*
+         * The topology type used by the pipeline.
+         */
+        const TopologyType topology;
+
+        /*
+         * Cull mode and face.
+         */
+        const CullMode cullMode;
+
+        /*
+         * The window order that is considered as front face.
+         */
+        const WindingOrder front;
+
+        /*
+         * How to use the depth and stencil buffer and toggling them on or off.
+         */
+        const DepthStencilData depthStencilData;
+
+        /*
+         * The unique ID of this pipeline state. Used to identify state switches.
+         */
+        const int id;
+    private:
+        static int m_IdCounter;
+    };
+
+    /*
+     * Camera projection mode.
+     */
     enum class ProjectionMode
     {
         ORTHOGRAPHIC,
@@ -537,6 +808,7 @@ namespace blurp
         DrawData()
         {
             instanceCount = 1;
+            pipelineState = nullptr;
         }
 
         /*
@@ -555,6 +827,13 @@ namespace blurp
          * This is used as a mask in the shader to determine which data can be expected in the below buffers.
          */
         DrawAttributeMask attributes;
+
+        /*
+         * The pipeline data for the draw call.
+         * Used to configure culling, blending, topology and depth testing.
+         * Will only be applied if not nullptr or different from the last used one.
+         */
+        PipelineState* pipelineState;
 
         //Materials.
         struct

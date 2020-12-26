@@ -2,6 +2,7 @@
 #include <stb_image.h>
 #include <MaterialFile.h>
 #include <filesystem>
+#include <iostream>
 
 bool hasEnding(std::string const& fullString, std::string const& ending)
 {
@@ -427,7 +428,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
 
         //Remember which indices the drawables are stored at.
         std::vector<int> drawableIds;
-        int startId = output.drawDatas.size();
+        std::vector<int> transparenDrawableIds;
 
         for (size_t primitiveId = 0; primitiveId < mesh.primitives.size(); ++primitiveId)
         {
@@ -443,8 +444,6 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             blurp::DrawData drawData;
             blurp::MeshSettings blurpMesh;
             blurp::MaterialSettings blurpMaterial;
-
-            assert(primitive.mode == fx::gltf::Primitive::Mode::Triangles && "Triangle list is the only supported format now.");
 
             BufferInfo bufferInfo[4];
             blurp::VertexAttribute attribs[4]{ blurp::VertexAttribute::POSITION_3D, blurp::VertexAttribute::NORMAL, blurp::VertexAttribute::TANGENT, blurp::VertexAttribute::UV_COORDS };
@@ -609,13 +608,56 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             //Set instance count to 0! Important because it defaults to 1.
             drawData.instanceCount = 0;
 
-            //Add to set.
-            output.drawDatas.push_back(drawData);
-            drawableIds.push_back(startId + primitiveId);
+            //Compile the pipeline state for this draw call.
+            blurp::BlendData blending;
+            blending.blend = false;
+
+            blurp::DepthStencilData depthData;
+            depthData.enableDepth = true;
+            depthData.depthFunction = blurp::ComparisonFunction::COMPARISON_FUNC_LESS;
+            depthData.enableStencil = false;
+            depthData.depthWrite = true;
+
+            blurp::TopologyType topology = ToBlurp(primitive.mode);
+            blurp::CullMode culling = blurp::CullMode::CULL_BACK;
+            blurp::WindingOrder winding = blurp::WindingOrder::COUNTER_CLOCKWISE;
+
+            //Get the raw material data to extract rendering properties.
+            if (primitive.material >= 0)
+            {
+                auto& material = file.materials[primitive.material];
+
+                if(material.alphaMode == fx::gltf::Material::AlphaMode::Blend)
+                {
+                    blending.blend = true;
+                    blending.blendOperation = blurp::BlendOperation::ADD;
+                    blending.blendOperationAlpha = blurp::BlendOperation::ADD;
+                    blending.srcBlend = blurp::BlendType::BLEND_SRC_ALPHA;
+                    blending.dstBlend = blurp::BlendType::BLEND_INV_SRC_ALPHA;
+                    blending.srcBlendAlpha = blurp::BlendType::BLEND_SRC_ALPHA;
+                    blending.dstBlendAlpha = blurp::BlendType::BLEND_INV_SRC_ALPHA;
+                }
+            }
+
+            blurp::PipelineState pState = blurp::PipelineState::Compile(blending, topology, culling, winding, depthData);
+
+            //Add data to the right set.
+            if(blending.blend)
+            {
+                output.transparentDrawDatas.push_back(drawData);
+                transparenDrawableIds.push_back(output.transparentDrawDatas.size() - 1);
+                output.transparentPipelineStates.push_back(pState);
+            }
+            else
+            {
+                output.drawDatas.push_back(drawData);
+                drawableIds.push_back(output.drawDatas.size() - 1);
+                output.pipelineStates.push_back(pState);
+            }
         }
 
         //Add the indices of the primitives for this mesh.
-        output.meshes.push_back(GLTFMesh{ drawableIds });
+        output.meshes.push_back(GLTFMesh{ drawableIds, transparenDrawableIds});
 
         std::cout << "Mesh compiled for gltf file: " << meshId << std::endl;
     }
@@ -631,6 +673,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             glm::mat4 rootTransform = glm::make_mat4(&rootNode.matrix[0]);
             ResolveNode(output, file, rootNodeId, rootTransform);
         }
+    }
+
+    //Link the correct pipeline state to each draw data object (because resizing that vector causes the memory addresses to change).
+    for(int i = 0; i < output.drawDatas.size(); ++i)
+    {
+        output.drawDatas[i].pipelineState = &output.pipelineStates[i];
+    }
+    for(int i = 0; i < output.transparentDrawDatas.size(); ++i)
+    {
+        output.transparentDrawDatas[i].pipelineState = &output.transparentPipelineStates[i];
     }
 
     return output;
@@ -649,6 +701,12 @@ void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex
         for (auto id : mesh.drawableIds)
         {
             auto& drawable = a_Scene.drawDatas[id];
+            //Add one more instance.
+            ++drawable.instanceCount;
+        }
+        for (auto id : mesh.transparentDrawableIds)
+        {
+            auto& drawable = a_Scene.transparentDrawDatas[id];
             //Add one more instance.
             ++drawable.instanceCount;
         }
@@ -743,5 +801,30 @@ blurp::MinFilterType MinFromGL(int glEnum)
         return blurp::MinFilterType::MIPMAP_LINEAR;
     default:
         return blurp::MinFilterType::LINEAR;
+    }
+}
+
+blurp::TopologyType ToBlurp(fx::gltf::Primitive::Mode a_Mode)
+{
+    switch (a_Mode)
+    {
+    case fx::gltf::Primitive::Mode::Points:
+        return blurp::TopologyType::POINTS;
+
+    case fx::gltf::Primitive::Mode::Lines:
+        return blurp::TopologyType::LINES;
+
+    case fx::gltf::Primitive::Mode::Triangles:
+        return blurp::TopologyType::TRIANGLES;
+
+    case fx::gltf::Primitive::Mode::LineStrip:
+        return blurp::TopologyType::LINE_STRIP;
+
+    case fx::gltf::Primitive::Mode::TriangleStrip:
+        return blurp::TopologyType::TRIANGLE_STRIP;
+
+    default:
+        assert(0 && "Unsupported topology type.");
+        return blurp::TopologyType::TRIANGLES;
     }
 }
