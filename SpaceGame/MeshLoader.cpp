@@ -197,7 +197,6 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             imagePtrs[3] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path, 0);
 
             auto& p = imagePtrs[3];
-            assert(p.channels == 3);
 
             auto samplerId = file.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].sampler;
             if (samplerId > -1)
@@ -338,7 +337,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
 
             for (int i = 0; i < srcSize; i += data.channels)
             {
-                metal.push_back(data.data[i + 0]);
+                metal.push_back(data.data[i + 2]);
                 roughness.push_back(data.data[i + 1]);
             }
 
@@ -481,13 +480,10 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 }
             }
 
-            //Reserve enough memory. Divide by four because the total size is measured in bytes, and a float is four bytes.
-            data.resize(totalSize / 4);
-
             BufferInfo indexBuffer;
 
             //Generate indices if not given.
-            std::vector<int> srcIndices;
+            std::vector<unsigned int> srcIndices;
             if (primitive.indices < 0)
             {
                 assert(bufferInfo[0].numElements > 0 && "Positions are required to generate missing indices.");
@@ -496,7 +492,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                     srcIndices.push_back(i);
                 }
 
-                indexBuffer.dataSize = sizeof(int);
+                indexBuffer.dataSize = sizeof(unsigned int);
                 indexBuffer.numElements = srcIndices.size();
                 indexBuffer.totalSize = indexBuffer.numElements * indexBuffer.dataSize;
                 indexBuffer.data = reinterpret_cast<std::uint8_t*>(&srcIndices[0]);
@@ -506,6 +502,66 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 indexBuffer = GLTFUtil::ReadBufferData(file, primitive.indices);
             }
 
+            //If the primitive uses a material with normal mapping enabled, and normals are provided but not tangents, calculate them.
+            std::vector<glm::vec3> generatedTangents;
+            if (primitive.material >= 0 && !file.materials[primitive.material].normalTexture.empty() && bufferInfo[1].HasData() && !bufferInfo[2].HasData() && bufferInfo[3].HasData())
+            {
+                if (primitive.mode != fx::gltf::Primitive::Mode::Triangles)
+                {
+                    std::cout << "Warning: Loading a mesh with normal mapping without tangents. The mesh does not use a triangle list so tangents could not be calculated because I am lazy." << std::endl;
+                }
+
+                generatedTangents.resize(bufferInfo[0].numElements);
+                for (auto index = 0u; index < indexBuffer.numElements; index += 3)
+                {
+                    unsigned int index1;
+                    unsigned int index2;
+                    unsigned int index3;
+                    if(indexBuffer.dataSize == 2)
+                    {
+                        index1 = *indexBuffer.GetElement<unsigned short>(index);
+                        index2 = *indexBuffer.GetElement<unsigned short>(index + 1);
+                        index3 = *indexBuffer.GetElement<unsigned short>(index + 2);
+                    }
+                    else
+                    {
+                        index1 = *indexBuffer.GetElement<unsigned int>(index);
+                        index2 = *indexBuffer.GetElement<unsigned int>(index + 1);
+                        index3 = *indexBuffer.GetElement<unsigned int>(index + 2);
+                    }
+
+
+                    //Thanks to opengl-tutorial.com
+                    const glm::vec3* v0 = bufferInfo[0].GetElement<glm::vec3>(index1);
+                    const glm::vec3* v1 = bufferInfo[0].GetElement<glm::vec3>(index2);
+                    const glm::vec3* v2 = bufferInfo[0].GetElement<glm::vec3>(index3);
+                    const glm::vec2* uv0 = bufferInfo[3].GetElement<glm::vec2>(index1);
+                    const glm::vec2* uv1 = bufferInfo[3].GetElement<glm::vec2>(index2);
+                    const glm::vec2* uv2 = bufferInfo[3].GetElement<glm::vec2>(index3);
+
+                    glm::vec3 deltaPos1 = *v1 - *v0;
+                    glm::vec3 deltaPos2 = *v2 - *v0;
+
+                    glm::vec2 deltaUV1 = *uv1 - *uv0;
+                    glm::vec2 deltaUV2 = *uv2 - *uv0;
+                    float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+                    glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+                    generatedTangents[index1] = tangent;
+                    generatedTangents[index2] = tangent;
+                    generatedTangents[index3] = tangent;
+                }
+
+                bufferInfo[2].numElements = generatedTangents.size();
+                bufferInfo[2].dataSize = sizeof(glm::vec3);
+                bufferInfo[2].data = reinterpret_cast<const std::uint8_t*>(&generatedTangents[0]);
+                bufferInfo[2].totalSize = generatedTangents.size() * sizeof(glm::vec3);
+                bufferInfo[2].emptySpace = 0;
+                totalSize += bufferInfo[2].totalSize;
+                totalStride += bufferInfo[2].dataSize;
+            }
+
+            //Reserve enough memory. Divide by four because the total size is measured in bytes, and a float is four bytes.
+            data.resize(totalSize / 4);
 
             //Note: Currently tangents are not calculated if absent.
             //If model makers are lazy and not including them for meshes that require them, implement generation.

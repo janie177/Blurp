@@ -235,7 +235,7 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			//Load from source directly.
 			else if (a_MaterialInfo.metallic.data != nullptr)
 			{
-				size_t size = static_cast<size_t>(a_MaterialInfo.settings.metalRoughAlpha.dimensions.x)* static_cast<size_t>(a_MaterialInfo.settings.metalRoughAlpha.dimensions.y);
+				size_t size = static_cast<size_t>(a_MaterialInfo.settings.metalRoughAlpha.dimensions.x) * static_cast<size_t>(a_MaterialInfo.settings.metalRoughAlpha.dimensions.y);
 				assert(size > 0);
 				auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.metallic.data);
 				metal = asChar;

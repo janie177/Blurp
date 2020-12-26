@@ -208,7 +208,7 @@ namespace blurp
         /*
          * Retrieve the default pipeline state if none is specified for the first element.
          */
-        PipelineState* pipelineState = m_DrawDataSet.drawDataPtr[1].pipelineState;
+        PipelineState* pipelineState = m_DrawDataSet.drawDataPtr[0].pipelineState;
         if(pipelineState == nullptr)
         {
             pipelineState = &PipelineState::GetDefault();

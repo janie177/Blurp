@@ -1,6 +1,7 @@
 #version 460 core
 #define MAX_LIGHTS 64
 
+//TODO: Currently only triangles are supported. Find a way of swapping this out depending on the actual geometry used.
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 78) out;
 
