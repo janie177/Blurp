@@ -308,5 +308,20 @@ namespace blurp
 	 */
 	std::shared_ptr<MaterialBatch> LoadMaterialBatch(blurp::RenderResourceManager& a_Manager, const std::string& a_FileName);
 
+	/*
+	 * Information about JPG compression.
+	 */
+	struct JPGInfo
+	{
+		int width;
+		int height;
+		int depth;
+		std::vector<unsigned char>* output;
+	};
+
+	/*
+	 * Compress data as JPG 
+	 */
+	void CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<unsigned char>& a_Output, int quality = 100);
 
 }

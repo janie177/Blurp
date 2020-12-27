@@ -3,7 +3,8 @@
 #include <filesystem>
 
 #include "Material.h"
-#include "api/stb_image.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
 #include "Data.h"
 #include "Settings.h"
 #include <RenderResourceManager.h>
@@ -17,6 +18,9 @@
 
 bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName)
 {
+	//This has to be enabled because when images get decompressed in the end they are flipped again. So when compressing they have to be flipped too.
+	stbi_flip_vertically_on_write(true);
+
 	//Asserts
 
 	//Only 2D textures are supported.
@@ -78,17 +82,17 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 				return false;
 			}
 
-			//Amount of bytes in this image.
-			const long size = width * height * 3;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(image, width, height, 3, compressed);
 
-			header.diffuse.size = size;
+			header.diffuse.size = compressed.size();
 			header.diffuse.start = data.size();
 			header.diffuse.settings = a_MaterialInfo.settings.diffuse;
 			header.diffuse.settings.dimensions.x = width;
 			header.diffuse.settings.dimensions.y = height;
 			header.diffuse.settings.dimensions.z = 1;
 
-			data.insert(data.end(), image, image + size);
+			data.insert(data.end(), compressed.begin(), compressed.end());
 
 			stbi_image_free(image);
 		}
@@ -100,8 +104,11 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.diffuse.data);
 			header.diffuse.start = data.size();
 
-			data.insert(data.end(), asChar, asChar + size);
-			header.diffuse.size = size;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(asChar, a_MaterialInfo.settings.diffuse.dimensions.x, a_MaterialInfo.settings.diffuse.dimensions.y, 3, compressed);
+
+			data.insert(data.end(), compressed.begin(), compressed.end());
+			header.diffuse.size = compressed.size();
 			header.diffuse.settings = a_MaterialInfo.settings.diffuse;
 		}
 	}
@@ -126,17 +133,17 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 				return false;
 			}
 
-			//Amount of bytes in this image.
-			const long size = width * height * 3;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(image, width, height, 3, compressed);
 
-			header.normal.size = size;
+			header.normal.size = compressed.size();
 			header.normal.start = data.size();
 			header.normal.settings = a_MaterialInfo.settings.normal;
 			header.normal.settings.dimensions.x = width;
 			header.normal.settings.dimensions.y = height;
 			header.normal.settings.dimensions.z = 1;
 
-			data.insert(data.end(), image, image + size);
+			data.insert(data.end(), compressed.begin(), compressed.end());
 
 			stbi_image_free(image);
 		}
@@ -147,8 +154,11 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.normal.data);
 			header.normal.start = data.size();
-			data.insert(data.end(), asChar, asChar + size);
-			header.normal.size = size;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(asChar, a_MaterialInfo.settings.normal.dimensions.x, a_MaterialInfo.settings.normal.dimensions.y, 3, compressed);
+
+			data.insert(data.end(), compressed.begin(), compressed.end());
+			header.normal.size = compressed.size();
 			header.normal.settings = a_MaterialInfo.settings.normal;
 		}
 	}
@@ -172,17 +182,17 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 				return false;
 			}
 
-			//Amount of bytes in this image.
-			const long size = width * height * 3;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(image, width, height, 3, compressed);
+			
 
-			header.emissive.size = size;
+			header.emissive.size = compressed.size();
 			header.emissive.start = data.size();
 			header.emissive.settings = a_MaterialInfo.settings.emissive;
 			header.emissive.settings.dimensions.x = width;
 			header.emissive.settings.dimensions.y = height;
 			header.emissive.settings.dimensions.z = 1;
-
-			data.insert(data.end(), image, image + size);
+            data.insert(data.end(), compressed.begin(), compressed.end());
 
 			stbi_image_free(image);
 		}
@@ -193,8 +203,11 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			assert(size > 0);
 			auto* asChar = static_cast<unsigned char*>(a_MaterialInfo.emissive.data);
 			header.emissive.start = data.size();
-			data.insert(data.end(), asChar, asChar + size);
-			header.emissive.size = size;
+			std::vector<std::uint8_t> compressed;
+			CompressJPGToVector(asChar, a_MaterialInfo.settings.emissive.dimensions.x, a_MaterialInfo.settings.emissive.dimensions.y, 3, compressed);
+
+			data.insert(data.end(), compressed.begin(), compressed.end());
+			header.emissive.size = compressed.size();
 			header.emissive.settings = a_MaterialInfo.settings.emissive;
 		}
 	}
@@ -324,14 +337,18 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			if (alpha != nullptr) mraData[i * 3 + 2] = alpha[i];
 		}
 
-		header.metalRoughnessAlpha.size = size;
+
+		std::vector<std::uint8_t> compressed;
+		CompressJPGToVector(&mraData[0], w, h, 3, compressed);
+		
+
+		header.metalRoughnessAlpha.size = compressed.size();
 		header.metalRoughnessAlpha.start = data.size();
 		header.metalRoughnessAlpha.settings = a_MaterialInfo.settings.metalRoughAlpha;
 		header.metalRoughnessAlpha.settings.dimensions.x = w;
 		header.metalRoughnessAlpha.settings.dimensions.y = h;
 		header.metalRoughnessAlpha.settings.dimensions.z = 1;
-
-		data.insert(data.end(), mraData.begin(), mraData.end());
+        data.insert(data.end(), compressed.begin(), compressed.end());
 
 		//If STB image was used, free the allocated memory again.
 		if (metal && stbFree[0])
@@ -442,14 +459,18 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 			}
 		}
 
-		header.aoHeight.size = size;
+		std::vector<std::uint8_t> compressed;
+		CompressJPGToVector(&ohData[0], w, h, 3, compressed);
+		
+
+		header.aoHeight.size = compressed.size();
 		header.aoHeight.start = data.size();
 		header.aoHeight.settings = a_MaterialInfo.settings.ambientOcclusionHeight;
 		header.aoHeight.settings.dimensions.x = w;
 		header.aoHeight.settings.dimensions.y = h;
 		header.aoHeight.settings.dimensions.z = 1;
 
-		data.insert(data.end(), ohData.begin(), ohData.end());
+        data.insert(data.end(), compressed.begin(), compressed.end());
 
 		if (ao && stbFree[0])
 		{
@@ -466,6 +487,8 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 
 	//Copy header into buffer (already has enough memory allocated for it at the start).
 	*reinterpret_cast<MaterialHeader*>(&data[0]) = header;	
+
+	
 
 	/*
 	 * Compression using LZ4.
@@ -570,50 +593,67 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 	if (materialHeader->diffuse.size > 0)
 	{
 		texSettings = materialHeader->diffuse.settings;
-		texSettings.texture2D.data = regen_buffer + materialHeader->diffuse.start;
 
-		unsigned char value1 = ((unsigned char*)texSettings.texture2D.data)[300];
-		unsigned char value2 = ((unsigned char*)texSettings.texture2D.data)[301];
-		unsigned char value3 = ((unsigned char*)texSettings.texture2D.data)[302];
+		int x = 0, y = 0, depth = 0;
+		auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->diffuse.start, static_cast<int>(materialHeader->diffuse.size), &x, &y, &depth, 0);
+		texSettings.texture2D.data = decompressed;
 
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetDiffuseTexture(texture);
+
+		stbi_image_free(decompressed);
 	}
 
 	//NORMAL
 	if (materialHeader->normal.size > 0)
 	{
 		texSettings = materialHeader->normal.settings;
-		texSettings.texture2D.data = regen_buffer + materialHeader->normal.start;
+		int x = 0, y = 0, depth = 0;
+		auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->normal.start, static_cast<int>(materialHeader->normal.size), &x, &y, &depth, 0);
+		texSettings.texture2D.data = decompressed;
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetNormalTexture(texture);
+
+		stbi_image_free(decompressed);
 	}
 
 	//EMISSIVE
 	if (materialHeader->emissive.size > 0)
 	{
 		texSettings = materialHeader->emissive.settings;
-		texSettings.texture2D.data = regen_buffer + materialHeader->emissive.start;
+		int x = 0, y = 0, depth = 0;
+		auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->emissive.start, static_cast<int>(materialHeader->emissive.size), &x, &y, &depth, 0);
+		texSettings.texture2D.data = decompressed;
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetEmissiveTexture(texture);
+
+		stbi_image_free(decompressed);
 	}
 
 	//METAL/ROUGHNESS/ALPHA
 	if (materialHeader->metalRoughnessAlpha.size > 0)
 	{
 		texSettings = materialHeader->metalRoughnessAlpha.settings;
-		texSettings.texture2D.data = regen_buffer + materialHeader->metalRoughnessAlpha.start;
+		int x = 0, y = 0, depth = 0;
+		auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->metalRoughnessAlpha.start, static_cast<int>(materialHeader->metalRoughnessAlpha.size), &x, &y, &depth, 0);
+		texSettings.texture2D.data = decompressed;
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetMRATexture(texture);
+
+		stbi_image_free(decompressed);
 	}
 
 	//AMBIENT_OCCLUSION/HEIGHT
 	if (materialHeader->aoHeight.size > 0)
 	{
 		texSettings = materialHeader->aoHeight.settings;
-		texSettings.texture2D.data = regen_buffer + materialHeader->aoHeight.start;
+		int x = 0, y = 0, depth = 0;
+		auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->aoHeight.start, static_cast<int>(materialHeader->aoHeight.size), &x, &y, &depth, 0);
+		texSettings.texture2D.data = decompressed;
 		std::shared_ptr<Texture> texture = a_Manager.CreateTexture(texSettings);
 		matSettings.SetOHTexture(texture);
+
+		stbi_image_free(decompressed);
 	}
 
 	//Make the material before freeing the memory.
@@ -628,7 +668,7 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName)
 {
 	//Ensure that positive dimensions are specified.
-	if(a_MaterialInfo.textureSettings.dimensions.x <= 0 || a_MaterialInfo.textureSettings.dimensions.y <= 0 || a_MaterialInfo.materialCount <= 0)
+	if (a_MaterialInfo.textureSettings.dimensions.x <= 0 || a_MaterialInfo.textureSettings.dimensions.y <= 0 || a_MaterialInfo.materialCount <= 0)
 	{
 		std::cout << "Cannot create an empty material batch! Width, height and depth need to be atleast 1." << std::endl;
 		return false;
@@ -652,13 +692,13 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 	//Add constant data to the buffer and store the offset.
 
-	if(a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_CONSTANT_VALUE))
+	if (a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_CONSTANT_VALUE))
 	{
-	    if(a_MaterialInfo.diffuse.constantData.size() != a_MaterialInfo.materialCount)
-	    {
+		if (a_MaterialInfo.diffuse.constantData.size() != a_MaterialInfo.materialCount)
+		{
 			std::cout << "When constant values are enabled, there needs to be one provided for every material in the batch!" << std::endl;
 			return false;
-	    }
+		}
 		//Set the headers contents.
 		header.diffuseConstantData.start = data.size();
 
@@ -749,15 +789,15 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 	//Calculate how many textures are enabled per material. This is super ugly but it's offline I guess so yea.
 	int numTextures = 0;
-	if(metalEnabled || roughnessEnabled || alphaEnabled)
+	if (metalEnabled || roughnessEnabled || alphaEnabled)
 	{
 		++numTextures;
 	}
-	if(aoEnabled || heightEnabled)
+	if (aoEnabled || heightEnabled)
 	{
 		++numTextures;
 	}
-	if(a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
+	if (a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
 	{
 		++numTextures;
 	}
@@ -774,7 +814,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 	header.batchData.numTextures = numTextures;
 
 	//Iterate over each depth and load each texture if enabled.
-	for(int depth = 0; depth < a_MaterialInfo.materialCount; ++depth)
+	for (int depth = 0; depth < a_MaterialInfo.materialCount; ++depth)
 	{
 		//RGB texture needs to be enabled even if just one is enabled.
 		if (aoEnabled || heightEnabled)
@@ -782,7 +822,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 			unsigned char* ao = nullptr;
 			unsigned char* heigtMap = nullptr;
 
-			if(aoEnabled)
+			if (aoEnabled)
 			{
 				if (a_MaterialInfo.ao.textureNames.size() != a_MaterialInfo.materialCount)
 				{
@@ -832,7 +872,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 			//Interleave the textures
 			const size_t size = a_MaterialInfo.textureSettings.dimensions.x * a_MaterialInfo.textureSettings.dimensions.y;
-			for(size_t i = 0; i < size; ++i)
+			for (size_t i = 0; i < size; ++i)
 			{
 				data.push_back(ao == nullptr ? 0 : ao[3 * i + 0]);
 				data.push_back(heigtMap == nullptr ? 0 : heigtMap[3 * i + 1]);
@@ -840,18 +880,18 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 			}
 
 			//Free stb memory.
-			if(ao != nullptr) stbi_image_free(ao);
-			if(heigtMap != nullptr) stbi_image_free(heigtMap);
+			if (ao != nullptr) stbi_image_free(ao);
+			if (heigtMap != nullptr) stbi_image_free(heigtMap);
 
 		}
 
-	    if(a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
-	    {
-	        if(a_MaterialInfo.diffuse.textureNames.size() != a_MaterialInfo.materialCount)
-	        {
+		if (a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::DIFFUSE_TEXTURE))
+		{
+			if (a_MaterialInfo.diffuse.textureNames.size() != a_MaterialInfo.materialCount)
+			{
 				std::cout << "Not enough textures specified! One needed for each depth of material batch." << std::endl;
 				return false;
-	        }
+			}
 
 			int width, height, channels;
 			const auto image = stbi_load((a_MaterialInfo.path + a_MaterialInfo.diffuse.textureNames[depth]).c_str(), &width, &height, &channels, 3);
@@ -862,7 +902,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 				return false;
 			}
 
-			if(image == nullptr)
+			if (image == nullptr)
 			{
 				std::cout << "Could not find texture specified in material batch!" << std::endl;
 				return false;
@@ -872,7 +912,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 			const size_t size = width * height * 3;
 			data.insert(data.end(), image, image + size);
 			stbi_image_free(image);
-	    }
+		}
 
 		if (a_MaterialInfo.mask.IsAttributeEnabled(MaterialAttribute::NORMAL_TEXTURE))
 		{
@@ -1124,6 +1164,8 @@ std::shared_ptr<blurp::MaterialBatch> blurp::LoadMaterialBatch(blurp::RenderReso
 	batchSettings.textureCount = materialHeader->batchData.numTextures;
 	batchSettings.SetMask(materialHeader->batchData.mask);
 
+
+
 	batchSettings.textureData = regen_buffer + materialHeader->textures.start;
 
 	batchSettings.constantData.emissiveConstantData = reinterpret_cast<float*>(regen_buffer + materialHeader->emissiveConstantData.start);
@@ -1136,4 +1178,17 @@ std::shared_ptr<blurp::MaterialBatch> blurp::LoadMaterialBatch(blurp::RenderReso
 	batchSettings.materialCount = materialHeader->batchData.materialCount;
 
 	return a_Manager.CreateMaterialBatch(batchSettings);
+}
+
+void blurp::CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<unsigned char>& a_Output, int quality)
+{
+	JPGInfo info{ width, height, depth, &a_Output};
+
+	//Recursively called to fill up the output vector.
+	auto rv2 = stbi_write_jpg_to_func(
+		[](void* context, void* data, int size)
+	{
+		static_cast<JPGInfo*>(context)->output->insert(static_cast<JPGInfo*>(context)->output->end(), static_cast<unsigned char*>(data), static_cast<unsigned char*>(data) + size);
+	}
+	, &info, width, height, depth, a_Src, quality);
 }
