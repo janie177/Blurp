@@ -63,7 +63,8 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
     for(auto& material : file.materials)
     {
         const std::string materialFileName = a_Settings.fileName + "_Material_" + std::to_string(materials.size());
-        const std::string materialFileFullPath = a_Settings.path + materialFileName;
+        const std::string path = a_Settings.path + "blurpmats/";
+        const std::string materialFileFullPath = path + materialFileName;
 
         //If the file already exits, load it and continue. This prevents regenerating every time.
         if(!a_RecompileMaterials && std::filesystem::exists((materialFileFullPath + ".blurpmat")))
@@ -396,10 +397,11 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             materialInfo.settings.ambientOcclusionHeight.dimensions = { data.w, data.h, 1 };
         }
 
+        //Path to load the data from.
         materialInfo.path = a_Settings.path;
 
         //Create the material at the right index.
-        bool saved = blurp::CreateMaterialFile(materialInfo, a_Settings.path, materialFileName);
+        bool saved = blurp::CreateMaterialFile(materialInfo, path, materialFileName);
         assert(saved && "Could not export material for some reason.");
 
         auto blurpMat = blurp::LoadMaterial(a_ResourceManager, materialFileFullPath);

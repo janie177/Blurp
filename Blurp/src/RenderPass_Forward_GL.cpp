@@ -227,7 +227,7 @@ namespace blurp
             auto& instanceData = m_DrawDataSet.drawDataPtr[i];
 
             //If a pipeline state object is specified and not the same as the current state, then reapply the pipeline state.
-            if(instanceData.pipelineState != nullptr && instanceData.pipelineState->id != pipelineState->id)
+            if(instanceData.pipelineState != nullptr && instanceData.pipelineState->GetId() != pipelineState->GetId())
             {
                 pipelineState = instanceData.pipelineState;
                 setPipelineState = true;
@@ -237,11 +237,12 @@ namespace blurp
             if (setPipelineState)
             {
                 //Set depth
-                if (pipelineState->depthStencilData.enableDepth)
+                auto depthStencilData = pipelineState->GetDepthStencilData();
+                if (depthStencilData.enableDepth)
                 {
                     glEnable(GL_DEPTH_TEST);    //Depth testing enabled.
-                    glDepthFunc(ToGL(pipelineState->depthStencilData.depthFunction)); //The depth function
-                    glDepthMask(pipelineState->depthStencilData.depthWrite);    //Enable or disable depth writing.
+                    glDepthFunc(ToGL(depthStencilData.depthFunction)); //The depth function
+                    glDepthMask(depthStencilData.depthWrite);    //Enable or disable depth writing.
                 }
                 else
                 {
@@ -249,7 +250,7 @@ namespace blurp
                 }
 
                 //Set stencil
-                if (pipelineState->depthStencilData.enableStencil)
+                if (depthStencilData.enableStencil)
                 {
                     /*
                      * Note:
@@ -262,28 +263,28 @@ namespace blurp
 
                     //Front faces
                     glStencilFuncSeparate(GL_FRONT,
-                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilFunc),
-                        pipelineState->depthStencilData.stencilRef,
-                        pipelineState->depthStencilData.stencilReadMask);
+                        ToGL(depthStencilData.stencilFrontFace.stencilFunc),
+                        depthStencilData.stencilRef,
+                        depthStencilData.stencilReadMask);
 
                     glStencilOpSeparate(GL_FRONT,
-                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilFailOp),
-                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilDepthFailOp),
-                        ToGL(pipelineState->depthStencilData.stencilFrontFace.stencilPassOp));
+                        ToGL(depthStencilData.stencilFrontFace.stencilFailOp),
+                        ToGL(depthStencilData.stencilFrontFace.stencilDepthFailOp),
+                        ToGL(depthStencilData.stencilFrontFace.stencilPassOp));
 
                     //Back faces
                     glStencilFuncSeparate(GL_BACK,
-                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilFunc),
-                        pipelineState->depthStencilData.stencilRef,
-                        pipelineState->depthStencilData.stencilReadMask);
+                        ToGL(depthStencilData.stencilBackFace.stencilFunc),
+                        depthStencilData.stencilRef,
+                        depthStencilData.stencilReadMask);
 
                     glStencilOpSeparate(GL_BACK,
-                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilFailOp),
-                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilDepthFailOp),
-                        ToGL(pipelineState->depthStencilData.stencilBackFace.stencilPassOp));
+                        ToGL(depthStencilData.stencilBackFace.stencilFailOp),
+                        ToGL(depthStencilData.stencilBackFace.stencilDepthFailOp),
+                        ToGL(depthStencilData.stencilBackFace.stencilPassOp));
 
                     //Write mask cannot be separate for different faces in D3D12, so I'm not supporting it in OpenGL either.
-                    glStencilMask(pipelineState->depthStencilData.stencilWriteMask);
+                    glStencilMask(depthStencilData.stencilWriteMask);
                 }
                 else
                 {
@@ -291,11 +292,11 @@ namespace blurp
                 }
 
                 //Set culling
-                if (pipelineState->cullMode != CullMode::CULL_NONE)
+                if (pipelineState->GetCullMode() != CullMode::CULL_NONE)
                 {
                     glEnable(GL_CULL_FACE);
-                    glCullFace(ToGL(pipelineState->cullMode));
-                    glFrontFace(ToGL(pipelineState->front));
+                    glCullFace(ToGL(pipelineState->GetCullMode()));
+                    glFrontFace(ToGL(pipelineState->GetFrontWindingOrder()));
                 }
                 else
                 {
@@ -303,20 +304,21 @@ namespace blurp
                 }
 
                 //Set blending
-                if (pipelineState->blending.blend)
+                auto blending = pipelineState->GetBlendData();
+                if (blending.blend)
                 {
                     glEnable(GL_BLEND);
 
                     glBlendFuncSeparate(
-                        ToGL(pipelineState->blending.srcBlend),
-                        ToGL(pipelineState->blending.dstBlend),
-                        ToGL(pipelineState->blending.srcBlendAlpha),
-                        ToGL(pipelineState->blending.dstBlendAlpha)
+                        ToGL(blending.srcBlend),
+                        ToGL(blending.dstBlend),
+                        ToGL(blending.srcBlendAlpha),
+                        ToGL(blending.dstBlendAlpha)
                     );
 
                     glBlendEquationSeparate(
-                        ToGL(pipelineState->blending.blendOperation),
-                        ToGL(pipelineState->blending.blendOperationAlpha)
+                        ToGL(blending.blendOperation),
+                        ToGL(blending.blendOperationAlpha)
                     );
                 }
                 else

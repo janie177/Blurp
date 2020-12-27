@@ -530,6 +530,8 @@ bool blurp::CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::st
 
 std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManager& a_Manager, const std::string& a_FileName)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	std::ifstream file(a_FileName + MATERIAL_FILE_EXTENSION, std::ios::in | std::ios::binary);
 	std::vector<char> data;
 
@@ -667,6 +669,9 @@ std::shared_ptr<blurp::Material> blurp::LoadMaterial(blurp::RenderResourceManage
 
 bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName)
 {
+	//This has to be enabled because when images get decompressed in the end they are flipped again. So when compressing they have to be flipped too.
+	stbi_flip_vertically_on_write(true);
+
 	//Ensure that positive dimensions are specified.
 	if (a_MaterialInfo.textureSettings.dimensions.x <= 0 || a_MaterialInfo.textureSettings.dimensions.y <= 0 || a_MaterialInfo.materialCount <= 0)
 	{
@@ -679,6 +684,9 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 	//Trailing data buffer.
 	std::vector<char> data;
+
+	//Vector containing raw uncompressed image data.
+	std::vector<char> imgData;
 
 	//Resize to fit header.
 	data.resize(sizeof(MaterialHeader));
@@ -874,9 +882,9 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 			const size_t size = a_MaterialInfo.textureSettings.dimensions.x * a_MaterialInfo.textureSettings.dimensions.y;
 			for (size_t i = 0; i < size; ++i)
 			{
-				data.push_back(ao == nullptr ? 0 : ao[3 * i + 0]);
-				data.push_back(heigtMap == nullptr ? 0 : heigtMap[3 * i + 1]);
-				data.push_back(0);
+				imgData.push_back(ao == nullptr ? 0 : ao[3 * i + 0]);
+				imgData.push_back(heigtMap == nullptr ? 0 : heigtMap[3 * i + 1]);
+				imgData.push_back(0);
 			}
 
 			//Free stb memory.
@@ -910,7 +918,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 			//Append to buffer.
 			const size_t size = width * height * 3;
-			data.insert(data.end(), image, image + size);
+			imgData.insert(imgData.end(), image, image + size);
 			stbi_image_free(image);
 		}
 
@@ -939,7 +947,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 			//Append to buffer.
 			const size_t size = width * height * 3;
-			data.insert(data.end(), image, image + size);
+			imgData.insert(imgData.end(), image, image + size);
 			stbi_image_free(image);
 		}
 
@@ -968,7 +976,7 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 			//Append to buffer.
 			const size_t size = width * height * 3;
-			data.insert(data.end(), image, image + size);
+			imgData.insert(imgData.end(), image, image + size);
 			stbi_image_free(image);
 		}
 
@@ -1056,9 +1064,9 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 			const size_t size = a_MaterialInfo.textureSettings.dimensions.x * a_MaterialInfo.textureSettings.dimensions.y;
 			for (size_t i = 0; i < size; ++i)
 			{
-				data.push_back(metal == nullptr ? 0 : metal[3 * i + 0]);
-				data.push_back(roughness == nullptr ? 0 : roughness[3 * i + 1]);
-				data.push_back(alpha == nullptr ? 0 : alpha[3 * i + 1]);
+				imgData.push_back(metal == nullptr ? 0 : metal[3 * i + 0]);
+				imgData.push_back(roughness == nullptr ? 0 : roughness[3 * i + 1]);
+				imgData.push_back(alpha == nullptr ? 0 : alpha[3 * i + 1]);
 			}
 
 			//Free stb memory.
@@ -1073,6 +1081,11 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 	//Copy header into buffer (already has enough memory allocated for it at the start).
 	*reinterpret_cast<MaterialBatchHeader*>(&data[0]) = header;
+
+	//Compress the image data.
+	int width = a_MaterialInfo.textureSettings.dimensions.x;
+	int height = a_MaterialInfo.textureSettings.dimensions.y * a_MaterialInfo.materialCount * numTextures;
+	CompressJPGToVector(reinterpret_cast<unsigned char*>(&imgData[0]), width, height, 3, data);
 
 	/*
 	 * Compression using LZ4.
@@ -1116,6 +1129,8 @@ bool blurp::CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, con
 
 std::shared_ptr<blurp::MaterialBatch> blurp::LoadMaterialBatch(blurp::RenderResourceManager& a_Manager, const std::string& a_FileName)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	std::ifstream file(a_FileName + MATERIAL_BATCH_FILE_EXTENSION, std::ios::in | std::ios::binary);
 	std::vector<char> data;
 
@@ -1164,9 +1179,12 @@ std::shared_ptr<blurp::MaterialBatch> blurp::LoadMaterialBatch(blurp::RenderReso
 	batchSettings.textureCount = materialHeader->batchData.numTextures;
 	batchSettings.SetMask(materialHeader->batchData.mask);
 
+	int x = 0, y = 0, depth = 0;
+	size_t width = materialHeader->batchData.settings.dimensions.x;
+	size_t height = materialHeader->batchData.settings.dimensions.y * materialHeader->batchData.numTextures * materialHeader->batchData.materialCount;
+	auto* decompressed = stbi_load_from_memory(reinterpret_cast<unsigned char*>(regen_buffer) + materialHeader->textures.start, static_cast<int>(width) * static_cast<int>(height) * 3, &x, &y, &depth, 0);
 
-
-	batchSettings.textureData = regen_buffer + materialHeader->textures.start;
+	batchSettings.textureData = decompressed;
 
 	batchSettings.constantData.emissiveConstantData = reinterpret_cast<float*>(regen_buffer + materialHeader->emissiveConstantData.start);
 	batchSettings.constantData.diffuseConstantData = reinterpret_cast<float*>(regen_buffer + materialHeader->diffuseConstantData.start);
@@ -1177,7 +1195,11 @@ std::shared_ptr<blurp::MaterialBatch> blurp::LoadMaterialBatch(blurp::RenderReso
 	batchSettings.textureSettings = materialHeader->batchData.settings;
 	batchSettings.materialCount = materialHeader->batchData.materialCount;
 
-	return a_Manager.CreateMaterialBatch(batchSettings);
+	auto batch =  a_Manager.CreateMaterialBatch(batchSettings);
+
+	stbi_image_free(decompressed);
+
+	return batch;
 }
 
 void blurp::CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<unsigned char>& a_Output, int quality)
@@ -1189,6 +1211,20 @@ void blurp::CompressJPGToVector(unsigned char* a_Src, int width, int height, int
 		[](void* context, void* data, int size)
 	{
 		static_cast<JPGInfo*>(context)->output->insert(static_cast<JPGInfo*>(context)->output->end(), static_cast<unsigned char*>(data), static_cast<unsigned char*>(data) + size);
+	}
+	, &info, width, height, depth, a_Src, quality);
+}
+
+void blurp::CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<char>& a_Output,
+    int quality)
+{
+	JPGInfoSigned info{ width, height, depth, &a_Output };
+
+	//Recursively called to fill up the output vector.
+	auto rv2 = stbi_write_jpg_to_func(
+		[](void* context, void* data, int size)
+	{
+		static_cast<JPGInfoSigned*>(context)->output->insert(static_cast<JPGInfoSigned*>(context)->output->end(), static_cast<unsigned char*>(data), static_cast<unsigned char*>(data) + size);
 	}
 	, &info, width, height, depth, a_Src, quality);
 }

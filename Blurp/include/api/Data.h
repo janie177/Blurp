@@ -250,49 +250,84 @@ namespace blurp
          */
         static PipelineState& GetDefault();
 
+
+        PipelineState() : m_Topology(TopologyType::TRIANGLES), m_CullMode(CullMode::CULL_BACK), m_Front(WindingOrder::COUNTER_CLOCKWISE), m_Id(-1)
+        {
+
+        }
+
     private:
-        PipelineState(const BlendData& a_BlendData, const TopologyType& a_Topology, const CullMode& a_CullMode, const WindingOrder& a_Winding, const DepthStencilData& a_DepthStencilData) : blending(a_BlendData), topology(a_Topology), cullMode(a_CullMode), front(a_Winding), depthStencilData(a_DepthStencilData), id(m_IdCounter++)
+        PipelineState(const BlendData& a_BlendData, const TopologyType& a_Topology, const CullMode& a_CullMode, const WindingOrder& a_Winding, const DepthStencilData& a_DepthStencilData) : m_Blending(a_BlendData), m_Topology(a_Topology), m_CullMode(a_CullMode), m_Front(a_Winding), m_DepthStencilData(a_DepthStencilData), m_Id(m_IdCounter++)
         {
 
         }
 
-        PipelineState() : topology(TopologyType::TRIANGLES), cullMode(CullMode::CULL_BACK), front(WindingOrder::COUNTER_CLOCKWISE), id(-1)
-        {
-
-        }
-        
     public:
+
+        const BlendData GetBlendData() const
+        {
+            return m_Blending;
+        }
+
+        const TopologyType GetTopology() const
+        {
+            return m_Topology;
+        }
+
+        const CullMode GetCullMode() const
+        {
+            return m_CullMode;
+        }
+
+        const WindingOrder GetFrontWindingOrder() const
+        {
+            return m_Front;
+        }
+
+        const DepthStencilData GetDepthStencilData() const
+        {
+            return m_DepthStencilData;
+        }
+
+        const int GetId() const
+        {
+            return m_Id;
+        }
+
+
+        //Private because immutable.
+    private:
 
         /*
          * Blend settings for the pipeline.
          */
-        const BlendData blending;
+        BlendData m_Blending;
 
         /*
          * The topology type used by the pipeline.
          */
-        const TopologyType topology;
+        TopologyType m_Topology;
 
         /*
          * Cull mode and face.
          */
-        const CullMode cullMode;
+        CullMode m_CullMode;
 
         /*
          * The window order that is considered as front face.
          */
-        const WindingOrder front;
+        WindingOrder m_Front;
 
         /*
          * How to use the depth and stencil buffer and toggling them on or off.
          */
-        const DepthStencilData depthStencilData;
+        DepthStencilData m_DepthStencilData;
 
         /*
          * The unique ID of this pipeline state. Used to identify state switches.
          */
-        const int id;
-    private:
+        int m_Id;
+
         static int m_IdCounter;
     };
 

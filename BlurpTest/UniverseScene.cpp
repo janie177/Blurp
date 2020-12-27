@@ -10,7 +10,6 @@
 #include <KeyCodes.h>
 #include <RenderResourceManager.h>
 #include <RenderPipeline.h>
-#include <RenderPass_HelloTriangle.h>
 #include <RenderTarget.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <MaterialFile.h>
@@ -74,6 +73,14 @@ void UniverseScene::Init()
     colorAttachment.pixelFormat = PixelFormat::RGBA;
     colorAttachment.dataType = DataType::UBYTE;
 
+    //Set up pipeline state.
+    blurp::BlendData blend;
+    blurp::DepthStencilData depthStencil;
+    blend.blend = false;
+    depthStencil.depthWrite = true;
+    depthStencil.enableDepth = true;
+
+    pipelineState = PipelineState::Compile(blend, TopologyType::TRIANGLES, CullMode::CULL_BACK, WindingOrder::COUNTER_CLOCKWISE, depthStencil);
 
     //Set up a pipeline that draws a triangle onto a texture. Then it draws a triangle with the first texture on it on the 2nd triangle on the screen.
     PipelineSettings pSettings;
@@ -438,6 +445,7 @@ void UniverseScene::Update()
     sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(iData.transformData.dataRange.end, 1, 16, &sunMat);
 
     //Queue for draw.
+    data.pipelineState = &pipelineState;
     std::vector<DrawData> drawDatas = { data, iData, sunData};
     forwardPass->SetDrawData({ &drawDatas[0], static_cast<std::uint32_t>(drawDatas.size()) });
 

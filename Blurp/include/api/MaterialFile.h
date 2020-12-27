@@ -284,6 +284,9 @@ namespace blurp
 	/*
 	 * Create a material file from the given material settings.
 	 * This will save the material file with the given file name and path.
+	 *
+	 * The path given in a_MaterialInfo is used for loading resources.
+	 * The path a_Path is used for storing the result.
 	 */
 	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
 
@@ -319,9 +322,22 @@ namespace blurp
 		std::vector<unsigned char>* output;
 	};
 
+	struct JPGInfoSigned
+	{
+		int width;
+		int height;
+		int depth;
+		std::vector<char>* output;
+	};
+
 	/*
-	 * Compress data as JPG 
+	 * Compress data as JPG for unsigned chars.
 	 */
 	void CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<unsigned char>& a_Output, int quality = 100);
+
+	/*
+	 * Compress as JPG but for signed chars. This prevents a copy.
+	 */
+	void CompressJPGToVector(unsigned char* a_Src, int width, int height, int depth, std::vector<char>& a_Output, int quality = 100);
 
 }

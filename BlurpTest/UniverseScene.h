@@ -33,4 +33,6 @@ private:
     std::shared_ptr<blurp::GpuBuffer> gpuBuffer;
 
     std::shared_ptr<blurp::PointLight> m_Sun;
+
+    blurp::PipelineState pipelineState;
 };
