@@ -94,8 +94,8 @@ int main()
     batch.emissive.constantData = { glm::vec3(0.1f, 0.2f, 0.1f), glm::vec3(0.5f, 0.3f, 0.f), glm::vec3(0.f, 0.f, 0.f) };
     
 
-    constexpr bool rebuild = false;
-    constexpr bool rebuildBatch = true;
+    constexpr bool rebuild = true;
+    constexpr bool rebuildBatch = false;
 
     if(rebuild)
     {
@@ -143,8 +143,8 @@ int main()
 
 
     //Load one of the scenes.
-    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();

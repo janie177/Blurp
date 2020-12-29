@@ -240,7 +240,7 @@ void MaterialTestScene::Init()
     //materialData.heightTextureName = "height.jpg";
 
     //Create a material file and then load it.
-    const std::string fullPath = "materials/eggs/Material";
+    const std::string fullPath = "materials/broken_ice/Material";
     m_Material = LoadMaterial(m_Engine.GetResourceManager(), fullPath);
 
     //Set the camera away from the mesh and looking at it.

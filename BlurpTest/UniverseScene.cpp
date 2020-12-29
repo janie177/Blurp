@@ -150,7 +150,7 @@ void UniverseScene::Init()
     Transform transform;
     transform.SetTranslation({ 0, 0, 0.f });
 
-    numSpasmCubes = 100;
+    numSpasmCubes = 500000;
 
     //Init the scene graph.
     for (int i = 0; i < numSpasmCubes; ++i)

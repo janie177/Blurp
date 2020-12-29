@@ -57,11 +57,23 @@ bool hasEnding(std::string const& fullString, std::string const& ending);
  * Materials in the GLTF model are also parsed and included in the draw data for simplicity.
  *
  * If multiple meshes are inside the model, then multiple DrawData objects are created.
+ *
+ * If a_BakeTransforms is true, all nodes in the GLTF scene using a specific mesh will have their transfrom chain embedded with the mesh on the GPU.
+ * Note that this means that the instance count for each draw call will be 1, and that a root transform has to be provided for each draw call.
+ *
+ * If a_ForceRecompimeMeshes is true, all meshes are recompiled and stored.
+ * Keep in mind that this only works when a_BakeTransforms is set to true.
  */
-GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager, bool a_RecompileMaterials = false);
+GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager, bool a_BakeTransforms, bool a_ForceRecompileMaterials, bool a_ForceRecompileMeshes);
 
 //Interally resolve a GLTF node.
 void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex, glm::mat4 a_ParentTransform);
+
+/*
+ * Find all transforms affecting a mesh instance and store them in the output vector.
+ * This chains together according to the node hierarchy.
+ */
+void FindTransforms(int a_MeshIndex, fx::gltf::Document& a_File, int a_NodeIndex, glm::mat4 a_ParentTransform, std::vector<glm::mat4>& a_Output);
 
 
 

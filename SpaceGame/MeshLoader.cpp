@@ -3,6 +3,7 @@
 #include <MaterialFile.h>
 #include <filesystem>
 #include <iostream>
+#include <MeshFile.h>
 
 bool hasEnding(std::string const& fullString, std::string const& ending)
 {
@@ -14,7 +15,7 @@ bool hasEnding(std::string const& fullString, std::string const& ending)
     }
 }
 
-GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager, bool a_RecompileMaterials)
+GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceManager& a_ResourceManager, bool a_BakeTransforms, bool a_ForceRecompileMaterials, bool a_ForceRecompileMeshes)
 {
     fx::gltf::Document file;
     GLTFScene output;
@@ -53,10 +54,6 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         }
     }
 
-    //TODO:
-    //- Sponza won't load because of a fx-gltf error. I think it's the mesh being crooked but gotta check just in case.
-    //  The Sponza mesh from the GLTF 2 repo does work according to fx-gltf, but I can't download that one rn for some reason.
-
     //Keep track of the materials that are reused.
     std::vector<std::shared_ptr<blurp::Material>> materials;
 
@@ -67,7 +64,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         const std::string materialFileFullPath = path + materialFileName;
 
         //If the file already exits, load it and continue. This prevents regenerating every time.
-        if(!a_RecompileMaterials && std::filesystem::exists((materialFileFullPath + ".blurpmat")))
+        if(!a_ForceRecompileMaterials && std::filesystem::exists((materialFileFullPath + ".blurpmat")))
         {
             materials.push_back(blurp::LoadMaterial(a_ResourceManager, materialFileFullPath));
             continue;
@@ -401,7 +398,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         materialInfo.path = a_Settings.path;
 
         //Create the material at the right index.
-        bool saved = blurp::CreateMaterialFile(materialInfo, path, materialFileName);
+        bool saved = blurp::CreateMaterialFile(materialInfo, path, materialFileName, true); //Compress for size sake.
         assert(saved && "Could not export material for some reason.");
 
         auto blurpMat = blurp::LoadMaterial(a_ResourceManager, materialFileFullPath);
@@ -445,170 +442,180 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             blurp::DrawData drawData;
             blurp::MeshSettings blurpMesh;
             blurp::MaterialSettings blurpMaterial;
+            std::shared_ptr<blurp::Mesh> compiledMesh;
 
+            //These need to be here in scope or bad things happen.
             BufferInfo bufferInfo[4];
+            BufferInfo indexBuffer;
             blurp::VertexAttribute attribs[4]{ blurp::VertexAttribute::POSITION_3D, blurp::VertexAttribute::NORMAL, blurp::VertexAttribute::TANGENT, blurp::VertexAttribute::UV_COORDS };
+            std::vector<unsigned int> srcIndices;
+            std::vector<glm::vec3> generatedTangents;
+            std::vector<char> indices;
 
             //Buffer that will contain all vertex info.
             std::vector<float> data;
             size_t totalSize = 0;
             size_t totalStride = 0;
 
-            for (auto const& attrib : primitive.attributes)
+            const std::string meshFilePath = a_Settings.path + "meshes/";
+            const std::string meshFileName = "mesh_" + std::to_string(meshId) + "_" + std::to_string(primitiveId);
+
+            //If not recompiling meshes and the mesh file exists.
+            if (a_BakeTransforms && !a_ForceRecompileMeshes && std::filesystem::exists((meshFilePath + meshFileName + ".blurpmesh")))
             {
-                if (attrib.first == "POSITION")
+                compiledMesh = blurp::LoadMeshFile(a_ResourceManager, meshFilePath + meshFileName);
+            }
+            else
+            {
+
+                for (auto const& attrib : primitive.attributes)
                 {
-                    bufferInfo[0] = GLTFUtil::ReadBufferData(file, attrib.second);
-                    totalSize += bufferInfo[0].totalSize;
-                    totalStride += bufferInfo[0].dataSize;
+                    if (attrib.first == "POSITION")
+                    {
+                        bufferInfo[0] = GLTFUtil::ReadBufferData(file, attrib.second);
+                        totalSize += bufferInfo[0].totalSize;
+                        totalStride += bufferInfo[0].dataSize;
+                    }
+                    else if (attrib.first == "NORMAL")
+                    {
+                        bufferInfo[1] = GLTFUtil::ReadBufferData(file, attrib.second);
+                        totalSize += bufferInfo[1].totalSize;
+                        totalStride += bufferInfo[1].dataSize;
+                    }
+                    else if (attrib.first == "TANGENT")
+                    {
+                        bufferInfo[2] = GLTFUtil::ReadBufferData(file, attrib.second);
+                        totalSize += bufferInfo[2].totalSize;
+                        totalStride += bufferInfo[2].dataSize;
+                    }
+                    else if (attrib.first == "TEXCOORD_0")
+                    {
+                        bufferInfo[3] = GLTFUtil::ReadBufferData(file, attrib.second);
+                        totalSize += bufferInfo[3].totalSize;
+                        totalStride += bufferInfo[3].dataSize;
+                    }
                 }
-                else if (attrib.first == "NORMAL")
+
+                //Generate indices if not given.
+                if (primitive.indices < 0)
                 {
-                    bufferInfo[1] = GLTFUtil::ReadBufferData(file, attrib.second);
-                    totalSize += bufferInfo[1].totalSize;
-                    totalStride += bufferInfo[1].dataSize;
+                    assert(bufferInfo[0].numElements > 0 && "Positions are required to generate missing indices.");
+                    for (int i = 0; i < bufferInfo[0].numElements; ++i)
+                    {
+                        srcIndices.push_back(i);
+                    }
+
+                    indexBuffer.dataSize = sizeof(unsigned int);
+                    indexBuffer.numElements = srcIndices.size();
+                    indexBuffer.totalSize = indexBuffer.numElements * indexBuffer.dataSize;
+                    indexBuffer.data = reinterpret_cast<std::uint8_t*>(&srcIndices[0]);
                 }
-                else if (attrib.first == "TANGENT")
+                else
                 {
-                    bufferInfo[2] = GLTFUtil::ReadBufferData(file, attrib.second);
+                    indexBuffer = GLTFUtil::ReadBufferData(file, primitive.indices);
+                }
+
+                //If the primitive uses a material with normal mapping enabled, and normals are provided but not tangents, calculate them.
+                if (primitive.material >= 0 && !file.materials[primitive.material].normalTexture.empty() && bufferInfo[1].HasData() && !bufferInfo[2].HasData() && bufferInfo[3].HasData())
+                {
+                    if (primitive.mode != fx::gltf::Primitive::Mode::Triangles)
+                    {
+                        std::cout << "Warning: Loading a mesh with normal mapping without tangents. The mesh does not use a triangle list so tangents could not be calculated because I am lazy." << std::endl;
+                    }
+
+                    generatedTangents.resize(bufferInfo[0].numElements);
+                    for (auto index = 0u; index < indexBuffer.numElements; index += 3)
+                    {
+                        unsigned int index1;
+                        unsigned int index2;
+                        unsigned int index3;
+                        if (indexBuffer.dataSize == 2)
+                        {
+                            index1 = *indexBuffer.GetElement<unsigned short>(index);
+                            index2 = *indexBuffer.GetElement<unsigned short>(index + 1);
+                            index3 = *indexBuffer.GetElement<unsigned short>(index + 2);
+                        }
+                        else
+                        {
+                            index1 = *indexBuffer.GetElement<unsigned int>(index);
+                            index2 = *indexBuffer.GetElement<unsigned int>(index + 1);
+                            index3 = *indexBuffer.GetElement<unsigned int>(index + 2);
+                        }
+
+
+                        //Thanks to opengl-tutorial.com
+                        const glm::vec3* v0 = bufferInfo[0].GetElement<glm::vec3>(index1);
+                        const glm::vec3* v1 = bufferInfo[0].GetElement<glm::vec3>(index2);
+                        const glm::vec3* v2 = bufferInfo[0].GetElement<glm::vec3>(index3);
+                        const glm::vec2* uv0 = bufferInfo[3].GetElement<glm::vec2>(index1);
+                        const glm::vec2* uv1 = bufferInfo[3].GetElement<glm::vec2>(index2);
+                        const glm::vec2* uv2 = bufferInfo[3].GetElement<glm::vec2>(index3);
+
+                        glm::vec3 deltaPos1 = *v1 - *v0;
+                        glm::vec3 deltaPos2 = *v2 - *v0;
+
+                        glm::vec2 deltaUV1 = *uv1 - *uv0;
+                        glm::vec2 deltaUV2 = *uv2 - *uv0;
+                        float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+                        glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+                        generatedTangents[index1] = tangent;
+                        generatedTangents[index2] = tangent;
+                        generatedTangents[index3] = tangent;
+                    }
+
+                    bufferInfo[2].numElements = generatedTangents.size();
+                    bufferInfo[2].dataSize = sizeof(glm::vec3);
+                    bufferInfo[2].data = reinterpret_cast<const std::uint8_t*>(&generatedTangents[0]);
+                    bufferInfo[2].totalSize = generatedTangents.size() * sizeof(glm::vec3);
+                    bufferInfo[2].emptySpace = 0;
                     totalSize += bufferInfo[2].totalSize;
                     totalStride += bufferInfo[2].dataSize;
                 }
-                else if (attrib.first == "TEXCOORD_0")
+
+                //Reserve enough memory. Divide by four because the total size is measured in bytes, and a float is four bytes.
+                data.resize(totalSize / 4);
+
+                //Note: Currently tangents are not calculated if absent.
+                //If model makers are lazy and not including them for meshes that require them, implement generation.
+                size_t offset = 0;
+
+                for (int buffer = 0; buffer < 4; ++buffer)
                 {
-                    bufferInfo[3] = GLTFUtil::ReadBufferData(file, attrib.second);
-                    totalSize += bufferInfo[3].totalSize;
-                    totalStride += bufferInfo[3].dataSize;
-                }
-            }
-
-            BufferInfo indexBuffer;
-
-            //Generate indices if not given.
-            std::vector<unsigned int> srcIndices;
-            if (primitive.indices < 0)
-            {
-                assert(bufferInfo[0].numElements > 0 && "Positions are required to generate missing indices.");
-                for(int i = 0; i < bufferInfo[0].numElements; ++i)
-                {
-                    srcIndices.push_back(i);
-                }
-
-                indexBuffer.dataSize = sizeof(unsigned int);
-                indexBuffer.numElements = srcIndices.size();
-                indexBuffer.totalSize = indexBuffer.numElements * indexBuffer.dataSize;
-                indexBuffer.data = reinterpret_cast<std::uint8_t*>(&srcIndices[0]);
-            }
-            else
-            {
-                indexBuffer = GLTFUtil::ReadBufferData(file, primitive.indices);
-            }
-
-            //If the primitive uses a material with normal mapping enabled, and normals are provided but not tangents, calculate them.
-            std::vector<glm::vec3> generatedTangents;
-            if (primitive.material >= 0 && !file.materials[primitive.material].normalTexture.empty() && bufferInfo[1].HasData() && !bufferInfo[2].HasData() && bufferInfo[3].HasData())
-            {
-                if (primitive.mode != fx::gltf::Primitive::Mode::Triangles)
-                {
-                    std::cout << "Warning: Loading a mesh with normal mapping without tangents. The mesh does not use a triangle list so tangents could not be calculated because I am lazy." << std::endl;
-                }
-
-                generatedTangents.resize(bufferInfo[0].numElements);
-                for (auto index = 0u; index < indexBuffer.numElements; index += 3)
-                {
-                    unsigned int index1;
-                    unsigned int index2;
-                    unsigned int index3;
-                    if(indexBuffer.dataSize == 2)
+                    if (bufferInfo[buffer].HasData())
                     {
-                        index1 = *indexBuffer.GetElement<unsigned short>(index);
-                        index2 = *indexBuffer.GetElement<unsigned short>(index + 1);
-                        index3 = *indexBuffer.GetElement<unsigned short>(index + 2);
-                    }
-                    else
-                    {
-                        index1 = *indexBuffer.GetElement<unsigned int>(index);
-                        index2 = *indexBuffer.GetElement<unsigned int>(index + 1);
-                        index3 = *indexBuffer.GetElement<unsigned int>(index + 2);
-                    }
-
-
-                    //Thanks to opengl-tutorial.com
-                    const glm::vec3* v0 = bufferInfo[0].GetElement<glm::vec3>(index1);
-                    const glm::vec3* v1 = bufferInfo[0].GetElement<glm::vec3>(index2);
-                    const glm::vec3* v2 = bufferInfo[0].GetElement<glm::vec3>(index3);
-                    const glm::vec2* uv0 = bufferInfo[3].GetElement<glm::vec2>(index1);
-                    const glm::vec2* uv1 = bufferInfo[3].GetElement<glm::vec2>(index2);
-                    const glm::vec2* uv2 = bufferInfo[3].GetElement<glm::vec2>(index3);
-
-                    glm::vec3 deltaPos1 = *v1 - *v0;
-                    glm::vec3 deltaPos2 = *v2 - *v0;
-
-                    glm::vec2 deltaUV1 = *uv1 - *uv0;
-                    glm::vec2 deltaUV2 = *uv2 - *uv0;
-                    float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-                    glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
-                    generatedTangents[index1] = tangent;
-                    generatedTangents[index2] = tangent;
-                    generatedTangents[index3] = tangent;
-                }
-
-                bufferInfo[2].numElements = generatedTangents.size();
-                bufferInfo[2].dataSize = sizeof(glm::vec3);
-                bufferInfo[2].data = reinterpret_cast<const std::uint8_t*>(&generatedTangents[0]);
-                bufferInfo[2].totalSize = generatedTangents.size() * sizeof(glm::vec3);
-                bufferInfo[2].emptySpace = 0;
-                totalSize += bufferInfo[2].totalSize;
-                totalStride += bufferInfo[2].dataSize;
-            }
-
-            //Reserve enough memory. Divide by four because the total size is measured in bytes, and a float is four bytes.
-            data.resize(totalSize / 4);
-
-            //Note: Currently tangents are not calculated if absent.
-            //If model makers are lazy and not including them for meshes that require them, implement generation.
-            size_t offset = 0;
-
-            for (int buffer = 0; buffer < 4; ++buffer)
-            {
-                if (bufferInfo[buffer].HasData())
-                {
-                    int floatStride = totalStride / 4;
-                    int floatOffset = offset / 4;
-                    for (int i = 0; i < bufferInfo[buffer].numElements; ++i)
-                    {
-                        auto element = bufferInfo[buffer].GetElement<float>(i);
-
-                        //This loop interprets it as float array, so for vec3 it'll add 3 elements and for vec2 only two.
-                        for (int q = 0; q < bufferInfo[buffer].dataSize / 4; ++q)
+                        int floatStride = totalStride / 4;
+                        int floatOffset = offset / 4;
+                        for (int i = 0; i < bufferInfo[buffer].numElements; ++i)
                         {
-                            data[i * floatStride + floatOffset + q] = element[q];
+                            auto element = bufferInfo[buffer].GetElement<float>(i);
+
+                            //This loop interprets it as float array, so for vec3 it'll add 3 elements and for vec2 only two.
+                            for (int q = 0; q < bufferInfo[buffer].dataSize / 4; ++q)
+                            {
+                                data[i * floatStride + floatOffset + q] = element[q];
+                            }
                         }
+
+                        blurpMesh.vertexSettings.EnableAttribute(attribs[buffer], offset, totalStride, 0);
+                        offset += bufferInfo[buffer].dataSize;
                     }
-
-                    blurpMesh.vertexSettings.EnableAttribute(attribs[buffer], offset, totalStride, 0);
-                    offset += bufferInfo[buffer].dataSize;
                 }
-            }
 
-            assert(offset == totalStride && "Uhh this should always be the same??");
+                assert(offset == totalStride && "Uhh this should always be the same??");
 
-            std::vector<char> indices;
-            indices.resize(indexBuffer.numElements * indexBuffer.dataSize);
+                indices.resize(indexBuffer.numElements * indexBuffer.dataSize);
 
-            //Extract index buffer.
-            if (indexBuffer.dataSize == 2)
-            {
-                std::uint16_t* asShort = reinterpret_cast<std::uint16_t*>(&indices[0]);
-                for (std::uint32_t i = 0; i < indexBuffer.numElements; ++i)
+                //Extract index buffer.
+                if (indexBuffer.dataSize == 2)
                 {
-                    auto element = indexBuffer.GetElement<std::uint16_t>(i);
-                    asShort[i] = *element;
+                    std::uint16_t* asShort = reinterpret_cast<std::uint16_t*>(&indices[0]);
+                    for (std::uint32_t i = 0; i < indexBuffer.numElements; ++i)
+                    {
+                        auto element = indexBuffer.GetElement<std::uint16_t>(i);
+                        asShort[i] = *element;
+                    }
                 }
-            }
-            else
-            {
-                for (std::uint32_t i = 0; i < indexBuffer.numElements; ++i)
+                else
                 {
                     std::uint32_t* asInt = reinterpret_cast<std::uint32_t*>(&indices[0]);
 
@@ -618,38 +625,82 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                         asInt[i] = *element;
                     }
                 }
+
+                //Reverse winding order.
+                //for (auto it = indices.begin(); it != indices.end(); it += 3)
+                //{
+                //    std::swap(*it, *(it + 2));
+                //}
+
+                //Insert instance matrices if specified.
+                if (a_Settings.numVertexInstances > 0)
+                {
+                    size_t matrixOffset = data.size() * sizeof(float);
+                    float* start = reinterpret_cast<float*>(a_Settings.vertexInstances);
+                    float* end = reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(start) + (static_cast<size_t>(a_Settings.numVertexInstances) * 16));
+                    data.insert(data.end(), start, end);
+
+                    blurpMesh.vertexSettings.EnableAttribute(blurp::VertexAttribute::MATRIX, matrixOffset, 0, 1);
+                    blurpMesh.instanceCount = a_Settings.numVertexInstances;
+                }
+
+                /*
+                 * If set to true, go down the node hierarchy to find all instances of this mesh.
+                 * Then chain the transforms along the way and return all transforms that ultimately affect this mesh.
+                 */
+                if (a_BakeTransforms)
+                {
+                    blurpMesh.vertexSettings.EnableAttribute(blurp::VertexAttribute::MATRIX, data.size() * sizeof(float), 16 * sizeof(float), 1);
+                    std::vector<glm::mat4> transforms;
+                    for (int sceneId = 0; sceneId < file.scenes.size(); ++sceneId)
+                    {
+                        auto& scene = file.scenes[sceneId];
+
+                        for (auto& rootNodeId : scene.nodes)
+                        {
+                            auto& rootNode = file.nodes[rootNodeId];
+                            glm::mat4 rootTransform = glm::make_mat4(&rootNode.matrix[0]);
+                            FindTransforms(meshId, file, rootNodeId, rootTransform, transforms);
+                        }
+
+                        //Add the transforms to the vertex buffer.
+                        for (auto& mat : transforms)
+                        {
+                            float* ptr = reinterpret_cast<float*>(&mat);
+
+                            for (int i = 0; i < 16; ++i)
+                            {
+                                data.push_back(ptr[i]);
+                            }
+                        }
+                    }
+                    blurpMesh.instanceCount = transforms.size();
+                }
+
+                //Setup the rest of the blurpMesh object.
+                blurpMesh.indexData = &indices[0];
+                blurpMesh.indexDataType = indexBuffer.dataSize == 2 ? blurp::DataType::USHORT : blurp::DataType::UINT;
+                blurpMesh.numIndices = indexBuffer.numElements;
+
+                blurpMesh.vertexData = &data[0];
+                blurpMesh.access = blurp::AccessMode::READ_ONLY;
+                blurpMesh.usage = blurp::MemoryUsage::GPU;
+                blurpMesh.vertexDataSizeBytes = data.size() * sizeof(float);
+
+                //Compile into mesh on the GPU and then store a reference.
+                compiledMesh = a_ResourceManager.CreateMesh(blurpMesh);
+
+                std::cout << "Mesh compiled for gltf file: " << meshId << std::endl;
             }
 
-            //Reverse winding order.
-            //for (auto it = indices.begin(); it != indices.end(); it += 3)
-            //{
-            //    std::swap(*it, *(it + 2));
-            //}
+            drawData.mesh = compiledMesh;
 
-            //Insert instance matrices if specified.
-            if (a_Settings.numVertexInstances > 0)
+            //Save the mesh file if forced or not existing.
+            if(a_BakeTransforms && (!std::filesystem::exists((meshFilePath + meshFileName + ".blurpmesh")) || a_ForceRecompileMeshes))
             {
-                size_t matrixOffset = data.size() * sizeof(float);
-                float* start = reinterpret_cast<float*>(a_Settings.vertexInstances);
-                float* end = reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(start) + (static_cast<size_t>(a_Settings.numVertexInstances) * 16));
-                data.insert(data.end(), start, end);
-
-                blurpMesh.vertexSettings.EnableAttribute(blurp::VertexAttribute::MATRIX, matrixOffset, 0, 1);
-                blurpMesh.instanceCount = a_Settings.numVertexInstances;
+                blurp::CreateMeshFile(blurpMesh, meshFilePath, meshFileName);
+                std::cout << "Mesh saved to file: " << meshFileName << std::endl;
             }
-
-            //Setup the rest of the blurpMesh object.
-            blurpMesh.indexData = &indices[0];
-            blurpMesh.indexDataType = indexBuffer.dataSize == 2 ? blurp::DataType::USHORT : blurp::DataType::UINT;
-            blurpMesh.numIndices = indexBuffer.numElements;
-
-            blurpMesh.vertexData = &data[0];
-            blurpMesh.access = blurp::AccessMode::READ_ONLY;
-            blurpMesh.usage = blurp::MemoryUsage::GPU;
-            blurpMesh.vertexDataSizeBytes = data.size() * sizeof(float);
-
-            //Compile into mesh on the GPU and then store a reference.
-            drawData.mesh = a_ResourceManager.CreateMesh(blurpMesh);
 
             //Enable transformations through dynamic matrix.
             drawData.attributes.EnableAttribute(blurp::DrawAttribute::TRANSFORMATION_MATRIX);
@@ -664,7 +715,16 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
             }
 
             //Set instance count to 0! Important because it defaults to 1.
-            drawData.instanceCount = 0;
+            //When baking, the default of 1 is required.
+            if(!a_BakeTransforms)
+            {
+                drawData.instanceCount = 0;
+            }
+            else
+            {
+                //Not really needed because it default to 1, but if that every changes this won't break.
+                drawData.instanceCount = 1;
+            }
 
             //Compile the pipeline state for this draw call.
             blurp::BlendData blending;
@@ -712,24 +772,28 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
                 drawableIds.push_back(output.drawDatas.size() - 1);
                 output.pipelineStates.push_back(pState);
             }
+
+            std::cout << "Mesh loaded with ID: " << meshId << std::endl;
         }
 
         //Add the indices of the primitives for this mesh.
         output.meshes.push_back(GLTFMesh{ drawableIds, transparenDrawableIds});
-
-        std::cout << "Mesh compiled for gltf file: " << meshId << std::endl;
     }
 
     //Iterate over the scene nodes in the scenes to add the correct transformations and instance count to each drawable.
-    for(int sceneId = 0; sceneId < file.scenes.size(); ++sceneId)
+    //Only do this if baking is disabled, because when baked the hierarchy is already part of each mesh.
+    if (!a_BakeTransforms)
     {
-        auto& scene = file.scenes[sceneId];
-
-        for(auto& rootNodeId : scene.nodes)
+        for (int sceneId = 0; sceneId < file.scenes.size(); ++sceneId)
         {
-            auto& rootNode = file.nodes[rootNodeId];
-            glm::mat4 rootTransform = glm::make_mat4(&rootNode.matrix[0]);
-            ResolveNode(output, file, rootNodeId, rootTransform);
+            auto& scene = file.scenes[sceneId];
+
+            for (auto& rootNodeId : scene.nodes)
+            {
+                auto& rootNode = file.nodes[rootNodeId];
+                glm::mat4 rootTransform = glm::make_mat4(&rootNode.matrix[0]);
+                ResolveNode(output, file, rootNodeId, rootTransform);
+            }
         }
     }
 
@@ -777,6 +841,32 @@ void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex
         for(auto& id : node.children)
         {
             ResolveNode(a_Scene, a_File, id, chainedTransform);
+        }
+    }
+}
+
+void FindTransforms(int a_MeshIndex, fx::gltf::Document& a_File, int a_NodeIndex,
+    glm::mat4 a_ParentTransform, std::vector<glm::mat4>& a_Output)
+{
+    assert(a_MeshIndex >= 0);
+    assert(a_NodeIndex >= 0);
+
+    auto& node = a_File.nodes[a_NodeIndex];
+    const glm::mat4 transform = glm::make_mat4(&node.matrix[0]);
+    const glm::mat4 chainedTransform = a_ParentTransform * transform;
+
+    //Add mesh to scene if mesh is attached to this node.
+    if (node.mesh == a_MeshIndex)
+    {
+        a_Output.push_back(chainedTransform);
+    }
+
+    //If there is child meshes, recursively call.
+    if (!node.children.empty())
+    {
+        for (auto& id : node.children)
+        {
+            FindTransforms(a_MeshIndex, a_File, id, chainedTransform, a_Output);
         }
     }
 }

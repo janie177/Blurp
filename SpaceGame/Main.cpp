@@ -50,11 +50,32 @@ int main()
      */
     while (!window->IsClosed())
     {
+        //Print FPS
+
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now - timeStamp);
+        double seconds = 1000000000.0 / static_cast<float>(duration.count());
+        static float secs = 0;
+        secs += seconds;
+        static int counter = 0;
+        ++counter;
+
+        if (counter > 50)
+        {
+            float fps = secs / (float)counter;
+            counter = 0;
+            std::cout << "FPS: " << fps << std::endl;
+            secs = 0.f;
+
+        }
+        timeStamp = now;
+
+
         //Update the controls.
         game.UpdateInput(window);
 
         //Update game logic
-        game.UpdateGame();
+        game.UpdateGame(seconds);
 
         //Draw the next frame.
         game.Render();
@@ -64,26 +85,6 @@ int main()
 
         //Clear all resources that have gone out of scope.
         engine.GetResourceManager().CleanUpUnused();
-
-        //Print FPS
-        
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - timeStamp);
-        float seconds = 1000000.f / static_cast<float>(duration.count());
-        static float secs = 0;
-        secs += seconds;
-        static int counter = 0;
-        ++counter;
-
-        if(counter > 50)
-        {
-            float fps = secs / (float)counter;
-            counter = 0;
-            std::cout << "FPS: " << fps << std::endl;
-            secs = 0.f;
-            
-        }
-        timeStamp = now;
     }
 
     std::cout << "Closing down." << std::endl;

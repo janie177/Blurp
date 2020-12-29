@@ -14,10 +14,18 @@
 #define NUM_CASCADES 6
 #define FAR_PLANE 1000.f
 #define NEAR_PLANE 0.1f
+#define NUM_POINT_LIGHT_SHADOWS 2
 
 
-Game::Game(blurp::BlurpEngine& a_RenderEngine) : m_Engine(a_RenderEngine)
+Game::Game(blurp::BlurpEngine& a_RenderEngine) : m_Engine(a_RenderEngine),
+    m_SpaceShips(10000, sizeof(SpaceShip)),
+    m_Asteroids(100000, sizeof(Asteroid)),
+    m_Lasers(10000, sizeof(Laser)),
+    m_KillBots(10000, sizeof(KillBot)),
+    m_Planets(9, sizeof(Planet)), //Reserve space for 9 planets since planet 9 can be found any day now.
+    m_Lights(1000, sizeof(Light))
 {
+
 }
 
 void Game::Init()
@@ -48,23 +56,11 @@ void Game::Init()
 
     //Create some lights and the sun.
     LightSettings lSettings;
-    lSettings.type = LightType::LIGHT_POINT;
-    lSettings.intensity = 5.f;
-    lSettings.color = { 0.2f, 1.f, 0.7f };
-    lSettings.pointLight.position = { 0.f, 40.f, 10.f };
-    lSettings.shadowMapIndex = 0;
-    m_Lights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings)));
-
-    lSettings.pointLight.position = { -50.f, 40.f, 10 };
-    lSettings.intensity = 5.f;
-    lSettings.color = { 0.4f, 0.4f, 0.7f };
-    lSettings.shadowMapIndex = 1;
-    m_Lights.push_back(std::reinterpret_pointer_cast<PointLight>(m_Engine.GetResourceManager().CreateLight(lSettings)));
 
     lSettings.type = LightType::LIGHT_DIRECTIONAL;
     lSettings.shadowMapIndex = 0;
-    lSettings.intensity = 1.7f;
-    lSettings.color = { 1.f, 0.8f, 0.3f };
+    lSettings.intensity = 0.8f;
+    lSettings.color = { 1.f, 1.f, 1.f };
     lSettings.directionalLight.direction = glm::vec3(1.f, 0.f, 0.f);
     m_Sun = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
 
@@ -75,7 +71,7 @@ void Game::Init()
 
     //Positional shadow array.
     TextureSettings shadowPosSettings;
-    shadowPosSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, m_Lights.size() * 6);
+    shadowPosSettings.dimensions = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_POINT_LIGHT_SHADOWS * 6);
     shadowPosSettings.generateMipMaps = false;
     shadowPosSettings.dataType = DataType::FLOAT;
     shadowPosSettings.pixelFormat = PixelFormat::DEPTH;
@@ -119,7 +115,7 @@ void Game::Init()
 
     //Clear the shadow textures every frame.
     ClearData posShadowClear;
-    posShadowClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, m_Lights.size() * 6);
+    posShadowClear.size = glm::vec3(SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, NUM_POINT_LIGHT_SHADOWS * 6);
     posShadowClear.clearValue.floats[0] = 1.f;
     m_ClearPass->AddTexture(m_PosShadowArray, posShadowClear);
 
@@ -165,42 +161,7 @@ void Game::Init()
     gpuBufferSettings.size = std::pow(2, 15);
     gpuBufferSettings.resizeWhenFull = true;
     gpuBufferSettings.memoryUsage = MemoryUsage::CPU_W;
-    m_TransformBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
-
-    //Load GLTF mesh.
-    //m_Scene = LoadMesh(MeshLoaderSettings{"MetalRoughSpheres.gltf", "meshes/spheres/", 0, nullptr}, m_Engine.GetResourceManager(), true);
-    m_Scene = LoadMesh(MeshLoaderSettings{"scene.gltf", "meshes/town/", 0, nullptr}, m_Engine.GetResourceManager(), true);
-    //m_Scene = LoadMesh(MeshLoaderSettings{ "scene.gltf", "meshes/forest/", 0, nullptr }, m_Engine.GetResourceManager(), true);
-    //m_Scene = LoadMesh(MeshLoaderSettings{ "DamagedHelmet.gltf", "meshes/Helmet/", 0, nullptr }, m_Engine.GetResourceManager(), true);
-
-    //Upload matrices for each object, appending to the end of the buffer.
-    //Remember the end of the buffer as a global variable so that I don't accidentally overwrite it.
-    m_TransformEnd = 0;
-    for(auto& mesh : m_Scene.meshes)
-    {
-        auto view = m_TransformBuffer->WriteData<glm::mat4>(m_TransformEnd, mesh.transforms.size(), 16, &mesh.transforms[0]);
-        m_TransformEnd = view.end;
-        for(auto drawableId : mesh.drawableIds)
-        {
-            auto& drawable = m_Scene.drawDatas[drawableId];
-            drawable.transformData.dataBuffer = m_TransformBuffer;
-            drawable.transformData.dataRange = view;
-        }
-
-        //Transparency.
-        for (auto drawableId : mesh.transparentDrawableIds)
-        {
-            auto& drawable = m_Scene.transparentDrawDatas[drawableId];
-            drawable.transformData.dataBuffer = m_TransformBuffer;
-            drawable.transformData.dataRange = view;
-        }
-    }
-
-    //Append all draw data (first solid then transparent). Remember where transparency starts for eventual sorting.
-    drawDatas.reserve(m_Scene.drawDatas.size() + m_Scene.transparentDrawDatas.size());
-    drawDatas.insert(drawDatas.end(), m_Scene.drawDatas.begin(), m_Scene.drawDatas.end());
-    m_TransparentStart = drawDatas.size();
-    drawDatas.insert(drawDatas.end(), m_Scene.transparentDrawDatas.begin(), m_Scene.transparentDrawDatas.end());
+    m_GpuBuffer = m_Engine.GetResourceManager().CreateGpuBuffer(gpuBufferSettings);
 
     //Set up shadow map generation for the render passes using the now existing data buffers.
     //Some of these datatypes are in shared_ptr format so that they can be modified during pipeline execution (offsets into buffers).
@@ -210,7 +171,7 @@ void Game::Init()
     ShadowData shadowData;
     shadowData.directional.shadowMaps = m_DirShadowArray;
     shadowData.directional.numCascades = NUM_CASCADES;
-    shadowData.directional.dataBuffer = m_TransformBuffer;
+    shadowData.directional.dataBuffer = m_GpuBuffer;
     shadowData.directional.dataRange = m_DirLightMatView;
     shadowData.positional.shadowMaps = m_PosShadowArray;
 
@@ -221,6 +182,29 @@ void Game::Init()
     //Pass the shadow data to the forward and shadow generation passes.
     m_ShadowGenerationPass->SetOutput(shadowData);
     m_ForwardPass->SetShadowData(shadowData);
+
+    
+    /*
+     * GAMEPLAY OBJECTS
+     *
+     * Set up all entities in the scene and load meshes.
+     */
+
+    const int earthId = 0;
+    const int shipId = 1;
+    const int killBotId = 2;
+    const int asteroidsId = 3;
+    m_Meshes.emplace_back().Load("meshes/lava_planet/", "scene.gltf", m_Engine.GetResourceManager());
+    //m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager());
+    //m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager());
+    //m_Meshes.emplace_back().Load("meshes/asteroids/", "scene.gltf", m_Engine.GetResourceManager());
+
+
+    //Add the earth planet at the origin.
+    Entity* earth = CreateEntity(EntityType::PLANET, earthId);
+    earth->GetTransform().Scale(10.f);
+
+
 }
 
 void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
@@ -313,15 +297,6 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
             transform.Rotate(transform.GetForward(), -rotationSpeed);
         }
 
-
-        if (input.getKeyState(KEY_1) != ButtonState::NOT_PRESSED)
-        {
-            m_Lights[0]->SetPosition(m_Camera->GetTransform().GetTranslation());
-        }
-        if (input.getKeyState(KEY_2) != ButtonState::NOT_PRESSED)
-        {
-            m_Lights[1]->SetPosition(m_Camera->GetTransform().GetTranslation());
-        }
         if (input.getKeyState(KEY_3) != ButtonState::NOT_PRESSED)
         {
             m_Sun->SetDirection(glm::normalize(m_Camera->GetTransform().GetBack()));
@@ -340,8 +315,31 @@ void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
     }
 }
 
-void Game::UpdateGame()
+void Game::UpdateGame(float a_DeltaTime)
 {
+    /*
+     * Remove dead entities. This frees them in their memory pool.
+     */
+    auto itr = m_Entities.begin();
+    while(itr != m_Entities.end())
+    {
+        if (itr->first->MarkedForDelete())
+        {
+            itr->second->free(itr->first);
+            itr = m_Entities.erase(itr);
+        }else
+        {
+            ++itr;
+        }
+    }
+
+    /*
+     * Update every entity.
+     */
+    for(auto& entity : m_Entities)
+    {
+        entity.first->OnUpdate(a_DeltaTime, *this);
+    }
 }
 
 void Game::Render()
@@ -349,6 +347,65 @@ void Game::Render()
     //Reset the passes.
     m_ForwardPass->Reset();
     m_ShadowGenerationPass->Reset();
+
+    /*
+     * An incrementing value indicating the offset into the GPU Buffer.
+     */
+    int gpuBufferOffset = 0;
+
+    /*
+     * Allocate memory to store the draw calls, and then iterate over the entities in the scene to find their transforms per mesh.
+     */
+    std::vector<blurp::DrawData> drawDatas;
+    std::vector<blurp::DrawData> drawDatasTransparent;
+    std::vector<std::vector<glm::mat4>> transforms;
+    for(int i = 0; i < m_Meshes.size(); ++i)
+    {
+        transforms.emplace_back();
+    }
+    //TODO use a data structure like an octree to reduce this costly loop.
+    for(auto& entity : m_Entities)
+    {
+        const int id = entity.first->GetMeshId();
+        if(id != -1)
+        {
+            transforms[id].emplace_back(entity.first->GetTransform().GetTransformation());
+        }
+    }
+
+    //TODO sort transforms from front to back. How does this work with transparency because it's the other way around. Upload once to GPU then read backwards? Maybe add a setting to the renderer to flip reading direction?
+
+    //Upload transforms to the GPU and link them to the draw call.
+    for(int i = 0; i < m_Meshes.size(); ++ i)
+    {
+        auto& matvec = transforms[i];
+        if(!matvec.empty())
+        {
+            auto view = m_GpuBuffer->WriteData<glm::mat4>(gpuBufferOffset, matvec.size(), 16, &matvec[0]);
+            gpuBufferOffset = view.end;
+
+            //Opaque draw calls.
+            for(auto& data : m_Meshes[i].GetDrawDatas())
+            {
+                auto& inserted = drawDatas.emplace_back(data);
+                inserted.instanceCount = matvec.size();
+                inserted.transformData.dataRange = view;
+                inserted.transformData.dataBuffer = m_GpuBuffer;
+            }
+
+            //Transparent draw calls (happen last).
+            for (auto& data : m_Meshes[i].GetTransparentDrawDatas())
+            {
+                auto& inserted = drawDatasTransparent.emplace_back(data);
+                inserted.instanceCount = matvec.size();
+                inserted.transformData.dataRange = view;
+                inserted.transformData.dataBuffer = m_GpuBuffer;
+            }
+        }
+    }
+
+    //Append transparent draw calls to solid ones.
+    drawDatas.insert(drawDatas.end(), drawDatasTransparent.begin(), drawDatasTransparent.end());
 
     //Tell the shadow pass to use all geometry as shadow casters.
     //This looks complex, but all it does is specify an array of lights indexes for every DrawData object.
@@ -359,38 +416,41 @@ void Game::Render()
     std::vector<int> posLightShadowIndices;
 
     //Setup the shadow mapping for this frame. Exclude the last Drawdata which is the light mesh.
-    for (int i = 0; i < m_Lights.size(); ++i)
-    {
-        m_ShadowGenerationPass->AddLight(m_Lights[i], i);
-        posLightShadowIndices.push_back(i);
-    }
+    //TODO find the lights to use for shadows! Closest to camera probably.
+    //for (int i = 0; i < m_Lights.size(); ++i)
+    //{
+    //    m_ShadowGenerationPass->AddLight(m_Lights[i], i);
+    //    posLightShadowIndices.push_back(i);
+    //}
 
     m_ShadowGenerationPass->AddLight(m_Sun, 0);
     dirLightShadowIndices.push_back(0);
 
+    //TODO set up which objects cast shadows for each shadow casting light.
+    //TODO This means building a new drawable set.
+    //
     //Only take solid geometry for shadows for now.
     std::vector<blurp::LightIndexData> lIndexData;
-    lIndexData.reserve(m_TransparentStart);
+    //lIndexData.reserve(numdrawdatastocastshadowsfor);
 
-    for (int i = 0; i < static_cast<int>(m_TransparentStart); ++i)
-    {
-        //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
-        lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
-    }
+    //for (int i = 0; i < static_cast<int>(numdrawdatastocastshadowsfor); ++i)
+    //{
+    //    //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
+    //    lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
+    //}
 
-    m_ShadowGenerationPass->SetGeometry(&drawDatas[0], &lIndexData[0], lIndexData.size());
-
-
+    //TODO find lights to use (also non-shadow).
     //Upload light data
     blurp::LightData lData;
-    lData.ambient = { 0.03f, 0.03f, 0.03f };
+    lData.ambient = { 0.01f, 0.01f, 0.01f };
     blurp::LightUploadData lud;
     lud.lightData = &lData;
-    lud.point.count = m_Lights.size();
-    lud.point.lights = &m_Lights[0];
+    //lud.point.count = 0;
+    //lud.point.lights = &m_Lights[0];
     lud.directional.lights = &m_Sun;
     lud.directional.count = 1;
-    auto lightView = m_TransformBuffer->WriteData(m_TransformEnd, lud);
+    auto lightView = m_GpuBuffer->WriteData(gpuBufferOffset, lud);
+    gpuBufferOffset = lightView.end;
 
     //Set the view used to determine the offset into the buffer to write shadow map matrices.
     //This means that the shadow generation pass will now append all shadow map matrices behind the uploaded light data in the buffer.

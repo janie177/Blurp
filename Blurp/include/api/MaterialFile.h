@@ -134,10 +134,13 @@ namespace blurp
 	 */
 	struct MaterialHeader
 	{
-		MaterialHeader() : version(1), mask(0) {}
+		MaterialHeader() : version(1), mask(0), extraCompression(false) {}
 
 		std::uint16_t version;
 		std::uint16_t mask;
+
+		//Is jpeg compression enabled or not?
+		bool extraCompression;
 
 		MaterialFileAttribute diffuse;
 		MaterialFileAttribute emissive;
@@ -162,12 +165,15 @@ namespace blurp
 
 	struct MaterialBatchHeader
 	{
-		MaterialBatchHeader() : version(1), batchData({0, 0, 0})
+		MaterialBatchHeader() : version(1), batchData({0, 0, 0}), extraCompression(false)
 		{
 		    
 		}
 
 		std::uint16_t version;
+
+		//Is jpeg compression enabled or not?
+		bool extraCompression;
 
 		//General info that affects the entire batch.
 		struct
@@ -287,13 +293,11 @@ namespace blurp
 	 *
 	 * The path given in a_MaterialInfo is used for loading resources.
 	 * The path a_Path is used for storing the result.
-	 */
-	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
-
-	/*
 	 *
+	 * If a_CompressToJpeg is true, the materials are compressed an extra amount. This greatly reduces file size.
+	 * If set to false, file sizes are bigger but mesh quality is higher.
 	 */
-	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
+	bool CreateMaterialFile(const MaterialInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName, bool a_CompressToJpg);
 
 	/*
 	 * Load a material from the given file name.
@@ -304,7 +308,7 @@ namespace blurp
 	 * Create a material batch file from the given material settings.
 	 * This will save the material file with the given file name and path.
 	 */
-	bool CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName);
+	bool CreateMaterialBatchFile(const MaterialBatchInfo& a_MaterialInfo, const std::string& a_Path, const std::string& a_FileName, bool a_CompressToJpg);
 
 	/*
 	 * Load a material batch from the given file.
