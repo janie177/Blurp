@@ -32,6 +32,11 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+#blurp files
+*.blurpmat
+*.blurpmatx
+*.blurpmesh
+
 !*/Dependencies/*
 
 # Visual Studio 2015/2017 cache/options directory
