@@ -334,10 +334,14 @@
     {
       "doubleSided": false,
       "emissiveFactor": [
-        10,
-        10,
-        10
+        1,
+        1,
+        1
       ],
+      "emissiveTexture": {
+        "index": 3,
+        "texCoord": 0
+      },
       "name": "material_1",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
@@ -358,10 +362,14 @@
       "alphaMode": "BLEND",
       "doubleSided": false,
       "emissiveFactor": [
-        10,
-        10,
-        10
+        0.74885670729999998,
+        0.74885670729999998,
+        0.74885670729999998
       ],
+      "emissiveTexture": {
+        "index": 1,
+        "texCoord": 0
+      },
       "name": "material",
       "pbrMetallicRoughness": {
         "baseColorFactor": [

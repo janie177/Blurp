@@ -94,7 +94,7 @@ int main()
     batch.emissive.constantData = { glm::vec3(0.1f, 0.2f, 0.1f), glm::vec3(0.5f, 0.3f, 0.f), glm::vec3(0.f, 0.f, 0.f) };
     
 
-    constexpr bool rebuild = true;
+    constexpr bool rebuild = false;
     constexpr bool rebuildBatch = false;
 
     if(rebuild)
@@ -104,7 +104,7 @@ int main()
         {
             std::cout << "Creating file at " << path << fileName << std::endl;
             info.path = "materials/" + path + "/";
-            bool sucess = CreateMaterialFile(info, info.path, fileName);
+            bool sucess = CreateMaterialFile(info, info.path, fileName, false);
             if(!sucess)
             {
                 std::cout << "Sad :(" << std::endl;
@@ -123,7 +123,7 @@ int main()
     {
         auto timepoint = std::chrono::high_resolution_clock::now();
 
-        bool sucess = CreateMaterialBatchFile(batch, batch.path, "MaterialBatch");
+        bool sucess = CreateMaterialBatchFile(batch, batch.path, "MaterialBatch", false);
         if (!sucess)
         {
             std::cout << "Sad :(" << std::endl;
@@ -143,8 +143,8 @@ int main()
 
 
     //Load one of the scenes.
-    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
-    std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();

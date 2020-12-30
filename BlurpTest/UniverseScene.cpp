@@ -150,7 +150,7 @@ void UniverseScene::Init()
     Transform transform;
     transform.SetTranslation({ 0, 0, 0.f });
 
-    numSpasmCubes = 500000;
+    numSpasmCubes = 1;
 
     //Init the scene graph.
     for (int i = 0; i < numSpasmCubes; ++i)
@@ -161,10 +161,10 @@ void UniverseScene::Init()
     /*
      * Generate a big instance enabled mesh for testing.
      */
-    const int numinstances = 1000000;
-    const float maxDistance = 10000.f;
+    const int numinstances = 10;
+    const float maxDistance = 40.f;
     const float maxRotation = 6.28f;
-    const float maxScale = 20.f;
+    const float maxScale = 1.f;
     const float minScale = 0.5f;
 
     std::vector<float> floats;
@@ -242,8 +242,10 @@ void UniverseScene::Init()
     std::shared_ptr<Mesh> instanced = m_Engine.GetResourceManager().CreateMesh(instanceMeshSettings);
 
     //Generate the queue data and mark the mesh for drawing.
-    iMTransform.SetTranslation({ 0.f, 0.f, -40.f });
-    m = iMTransform.GetTransformation();
+    iMTransform[0].SetTranslation({ 0.f, 0.f, -40.f });
+    m[0] = iMTransform[0].GetTransformation();
+    iMTransform[1].SetTranslation({ 0.f, 0.f, 0.f });
+    m[1] = iMTransform[1].GetTransformation();
 
     /*
      * GPU BUFFER TESTING.
@@ -257,7 +259,7 @@ void UniverseScene::Init()
 
     //Draw one instance of the massively instanced mesh.
     iData.mesh = instanced;
-    iData.instanceCount = 1;
+    iData.instanceCount = 2;
     iData.attributes.EnableAttribute(DrawAttribute::TRANSFORMATION_MATRIX).EnableAttribute(DrawAttribute::MATERIAL_BATCH);
     iData.transformData.dataBuffer = gpuBuffer;
     iData.materialData.materialBatch = LoadMaterialBatch(m_Engine.GetResourceManager(), "materials/Batch/MaterialBatch");
@@ -431,8 +433,10 @@ void UniverseScene::Update()
     forwardPass->Reset();
 
     //Update the single transform for the 20 million cubes.
-    iMTransform.Rotate(Transform::GetWorldUp(), 0.005f);
-    m = iMTransform.GetTransformation();
+    iMTransform[0].Rotate(Transform::GetWorldUp(), 0.005f);
+    iMTransform[1].Rotate(Transform::GetWorldUp(), 0.005f);
+    m[0] = iMTransform[0].GetTransformation();
+    m[1] = iMTransform[1].GetTransformation();
 
     //Update the sun
     Transform sunTransform;
@@ -441,7 +445,7 @@ void UniverseScene::Update()
 
 
     data.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(0, transforms.size(), 16, &transforms[0]);
-    iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(data.transformData.dataRange.end, 1, 16, &m);
+    iData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(data.transformData.dataRange.end, 2, 16, &m[0]);
     sunData.transformData.dataRange = gpuBuffer->WriteData<glm::mat4>(iData.transformData.dataRange.end, 1, 16, &sunMat);
 
     //Queue for draw.

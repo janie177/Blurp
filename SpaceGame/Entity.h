@@ -94,10 +94,19 @@ protected:
 class Asteroid : public Entity
 {
 public:
-	Asteroid(int a_MeshId) : Entity(a_MeshId) {}
-	Asteroid() : Entity() {}
+	Asteroid(int a_MeshId) : Entity(a_MeshId), m_Rotate(false), m_RotationX(0.f), m_RotationY(0.f), m_RotationZ(0.f), m_RotationSpeeds(0.f) {}
+	Asteroid() : Entity(), m_Rotate(false), m_RotationX(0.f), m_RotationY(0.f), m_RotationZ(0.f), m_RotationSpeeds(0.f) {}
+
+	void SetRotation(const glm::vec3& a_X, const glm::vec3& a_Y, const glm::vec3& a_Z, const glm::vec3& a_Speeds);
+
 protected:
 	void Update(float a_DeltaTime, Game& a_Game) override final;
+
+	bool m_Rotate;
+	glm::vec3 m_RotationX;
+	glm::vec3 m_RotationY;
+	glm::vec3 m_RotationZ;
+	glm::vec3 m_RotationSpeeds;
 };
 
 class KillBot : public Entity
@@ -112,10 +121,20 @@ protected:
 class Planet : public Entity
 {
 public:
-	Planet(int a_MeshId) : Entity(a_MeshId) {}
-	Planet() : Entity() {}
+	Planet(int a_MeshId) : Entity(a_MeshId), m_RotationSpeed(0), m_Orbits(false), m_OrbitSpeed(0.f), m_OrbitPoint(0.f), m_OrbitAxis({0.f, 1.f, 0.f}) {}
+	Planet() : Entity(), m_RotationSpeed(0), m_Orbits(false), m_OrbitSpeed(0.f), m_OrbitPoint(0.f), m_OrbitAxis({0.f, 1.f, 0.f}) {}
+
+	void SetRotationSpeed(float a_Speed);
+	void SetOrbit(float a_Speed, const glm::vec3& a_Point, const glm::vec3& a_OrbitAxis);
+
 protected:
 	void Update(float a_DeltaTime, Game& a_Game) override final;
+
+	float m_RotationSpeed;
+	bool m_Orbits;
+	float m_OrbitSpeed;
+	glm::vec3 m_OrbitPoint;
+	glm::vec3 m_OrbitAxis;
 };
 
 class Laser : public Entity

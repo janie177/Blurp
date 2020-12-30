@@ -18,8 +18,8 @@ public:
     void Update() override;
 
 private:
-    blurp::Transform iMTransform;
-    glm::mat4 m;
+    blurp::Transform iMTransform[2];
+    glm::mat4 m[2];
     std::shared_ptr<blurp::RenderPass_Forward> forwardPass;
     std::shared_ptr<blurp::RenderPass_Clear> m_ClearPass;
     int numSpasmCubes;

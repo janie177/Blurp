@@ -26,9 +26,16 @@ namespace blurp
             return m_Settings.instanceCount;
         }
 
+        /*
+         * Get a copy of the mesh settings that were used to create this mesh.
+         */
+        MeshSettings GetSettings() const
+        {
+            return m_Settings;
+        }
+
     protected:
         MeshSettings m_Settings;
         VertexAttribute m_Mask;
     };
-
 }

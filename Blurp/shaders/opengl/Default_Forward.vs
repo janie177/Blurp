@@ -157,15 +157,16 @@ void main()
 {    
 //TRANSFORM MATRIX
 #if defined(VA_MATRIX_DEF) && defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
-    mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix * aMatrix;
+    int dynamicIndex = gl_InstanceID % numInstances;
+    mat4 transform = aInstances.data[dynamicIndex].modelMatrix * aMatrix;
 
     //NORMAL MATRIX
     #if defined(VA_ITMATRIX_DEF) && defined(DYNAMIC_NORMALMATRIX_DEFINE)
-        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aITMatrix);
+        mat3 normalMatrix = mat3(aInstances.data[dynamicIndex].normalMatrix * aITMatrix);
     #elif defined(VA_ITMATRIX_DEF)
-        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].modelMatrix * aITMatrix);
+        mat3 normalMatrix = mat3(aInstances.data[dynamicIndex].modelMatrix * aITMatrix);
     #elif defined(DYNAMIC_NORMALMATRIX_DEFINE)
-        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix * aMatrix);
+        mat3 normalMatrix = mat3(aInstances.data[dynamicIndex].normalMatrix * aMatrix);
     #else
         mat3 normalMatrix = mat3(transform);
     #endif
@@ -183,11 +184,11 @@ void main()
 
     //Only use the uploaded matrix.
 #elif defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
-    mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix;
+    mat4 transform = aInstances.data[gl_InstanceID].modelMatrix;
     
     //NORMAL MATRIX
     #if defined(DYNAMIC_NORMALMATRIX_DEFINE)
-        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID / numInstances].normalMatrix);
+        mat3 normalMatrix = mat3(aInstances.data[gl_InstanceID].normalMatrix);
     #else
         mat3 normalMatrix = mat3(transform);
     #endif

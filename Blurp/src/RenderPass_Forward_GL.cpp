@@ -517,8 +517,8 @@ namespace blurp
                 glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, glUvModifierBuffer->GetBufferId(), static_cast<GLintptr>(instanceData.uvModifierData.dataRange.start), instanceData.uvModifierData.dataRange.totalSize);
             }
 
-            //Set the number of instances from the mesh itself in the uniform.
-            glUniform1i(0, mesh->GetInstanceCount());
+            //Upload how many instances are dynamic. The shader invocation instance is then divided by this to get the right ID into the dynamic array.
+            glUniform1i(0, instanceData.instanceCount);
 
             //If the geometry changed, bind the new geometry.
             if(prevMesh != instanceData.mesh)
@@ -529,7 +529,28 @@ namespace blurp
             }
 
             //Finally draw instanced.
-            glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.instanceCount * mesh->GetInstanceCount());
+            auto blurpTopology = pipelineState->GetTopology();
+            auto glTopology = ToGL(blurpTopology);
+
+            //Set up the right instance divisor based on the number of instances.
+            for(auto& pair : mesh->GetInstanceDivisors())
+            {
+                //Divisor is the increment rate of the attribute in literal instances. It's not based on other divisors!
+                glVertexAttribDivisor(pair.first, pair.second * instanceData.instanceCount);
+            }
+
+            if(blurpTopology == TopologyType::POINTS)
+            {
+                glEnable(GL_PROGRAM_POINT_SIZE);
+                glPointSize(5.f);
+
+                glDrawArraysInstanced(glTopology, 0, mesh->GetNumIndices(), instanceData.instanceCount * mesh->GetInstanceCount());
+            }
+            //Indexed drawing.
+            else
+            {
+                glDrawElementsInstanced(glTopology, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, instanceData.instanceCount * mesh->GetInstanceCount());
+            }
         }
 
         //Unbind state that may affect other rendering.

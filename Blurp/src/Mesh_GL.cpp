@@ -34,6 +34,11 @@ namespace blurp
         return m_VertexPosDefines;
     }
 
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>>& Mesh_GL::GetInstanceDivisors() const
+    {
+        return m_InstancedVertexAttributes;
+    }
+
     bool Mesh_GL::OnLoad(BlurpEngine& a_BlurpEngine)
     {
         assert((m_Settings.indexDataType == DataType::USHORT || m_Settings.indexDataType == DataType::UINT) && "Index buffer data type has to be either UINT or USHORT.");
@@ -103,6 +108,10 @@ namespace blurp
                     if (data.instanceDivisor != 0)
                     {
                         glVertexAttribDivisor(index + i, data.instanceDivisor);
+
+                        //Store for later modification depending on dynamic instancing.
+                        m_InstancedVertexAttributes.emplace_back(std::make_pair(index + i, data.instanceDivisor));
+                        
                     }
                 }
 

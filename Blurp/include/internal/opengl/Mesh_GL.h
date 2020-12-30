@@ -41,6 +41,13 @@ namespace blurp
          */
         const std::vector<std::string>& GetAttribLocations() const;
 
+        /*
+         * Get a reference to the vector containing instance divisors used by this mesh.
+         * The pairs in the vector are laid out by <index, divisor>.
+         * Index is the vertex attribute index, while divisor is the instance divisor.
+         */
+        const std::vector<std::pair<std::uint32_t, std::uint32_t>>& GetInstanceDivisors() const;
+
     protected:
         bool OnLoad(BlurpEngine& a_BlurpEngine) override;
         bool OnDestroy(BlurpEngine& a_BlurpEngine) override;
@@ -52,6 +59,10 @@ namespace blurp
         std::uint32_t m_NumIndices;
         GLenum m_IndexDataType;
 
+        //Shader compiling flags to set the right layout index per attribute.
         std::vector<std::string> m_VertexPosDefines;
+
+        //Pairs of <index, divisor> for instancing. This has to be multiplied dynamically when rendering with dynamic matrices.
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> m_InstancedVertexAttributes;
     };
 }

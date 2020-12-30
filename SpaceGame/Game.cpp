@@ -5,6 +5,7 @@
 #include <Window.h>
 #include <RenderPipeline.h>
 #include <GpuBuffer.h>
+#include <MeshFile.h>
 
 #include "CubeMapLoader.h"
 #include "MeshLoader.h"
@@ -12,10 +13,12 @@
 
 #define SHADOW_MAP_DIMENSION 2048
 #define NUM_CASCADES 6
-#define FAR_PLANE 1000.f
+#define FAR_PLANE 2500.f
 #define NEAR_PLANE 0.1f
 #define NUM_POINT_LIGHT_SHADOWS 2
 
+
+#define RAND_FLOAT() (static_cast<float>(rand()) / static_cast<float>(RAND_MAX))
 
 Game::Game(blurp::BlurpEngine& a_RenderEngine) : m_Engine(a_RenderEngine),
     m_SpaceShips(10000, sizeof(SpaceShip)),
@@ -52,8 +55,6 @@ void Game::Init()
     camSettings.farPlane = FAR_PLANE;
     m_Camera = m_Engine.GetResourceManager().CreateCamera(camSettings);
 
-    m_Camera->GetTransform().SetTranslation({-32.0f, 1.3f, 11.0f});
-
     //Create some lights and the sun.
     LightSettings lSettings;
 
@@ -61,7 +62,7 @@ void Game::Init()
     lSettings.shadowMapIndex = 0;
     lSettings.intensity = 0.8f;
     lSettings.color = { 1.f, 1.f, 1.f };
-    lSettings.directionalLight.direction = glm::vec3(1.f, 0.f, 0.f);
+    lSettings.directionalLight.direction = glm::vec3(0.f, 0.f, 1.f);
     m_Sun = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
 
     //Create shadow map generation passes.
@@ -183,28 +184,73 @@ void Game::Init()
     m_ShadowGenerationPass->SetOutput(shadowData);
     m_ForwardPass->SetShadowData(shadowData);
 
-    
+
     /*
      * GAMEPLAY OBJECTS
      *
      * Set up all entities in the scene and load meshes.
      */
 
-    const int earthId = 0;
-    const int shipId = 1;
-    const int killBotId = 2;
-    const int asteroidsId = 3;
-    m_Meshes.emplace_back().Load("meshes/lava_planet/", "scene.gltf", m_Engine.GetResourceManager());
-    //m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager());
-    //m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager());
-    //m_Meshes.emplace_back().Load("meshes/asteroids/", "scene.gltf", m_Engine.GetResourceManager());
+    const int planetId = 0;
+    const int sunId = 1;
+    const int shipId = 2;
+    const int killBotId = 3;
+    const int moonId = 4;
+    const int asteroidsId = 5;
+    m_Meshes.emplace_back().Load("meshes/earth/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/sun/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/moon/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/asteroids/", "scene.gltf", m_Engine.GetResourceManager());
 
 
-    //Add the earth planet at the origin.
-    Entity* earth = CreateEntity(EntityType::PLANET, earthId);
-    earth->GetTransform().Scale(10.f);
+    //Add the planet at the origin.
+    Planet* planet = static_cast<Planet*>(CreateEntity(EntityType::PLANET, planetId));
+    planet->GetTransform().Scale(10.f);
+    planet->SetRotationSpeed(-0.000005f);
+
+    //Add the sun further out.
+    Planet* sun = static_cast<Planet*>(CreateEntity(EntityType::PLANET, sunId));
+    sun->GetTransform().Scale(30.f);
+    sun->GetTransform().SetTranslation({0.f, 0.f, -1500.f});
+    sun->SetRotationSpeed(-0.00000005f);
 
 
+    //Make the moon rotate around the planet.
+    Planet* moon = static_cast<Planet*>(CreateEntity(EntityType::PLANET, moonId));
+    moon->GetTransform().Scale(10.f);
+    moon->GetTransform().SetTranslation({ -150.f, 0.f, 0.f });
+    moon->SetRotationSpeed(-0.00001f);
+    moon->SetOrbit(0.00001f, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+
+    //Add asteroid belt.
+    const int NUM_ASTEROIDS = 1000;
+    const float MIN_ASTEROID_DISTANCE = 300.f;
+    const float MAX_ASTEROID_DISTANCE = 350.f;
+    const float MAX_ASTEROID_HEIGHT_OFFSET = 10.f;
+
+    for (int i = 0; i < NUM_ASTEROIDS; ++i)
+    {
+        float xSpeed = RAND_FLOAT() * 0.00001f;
+        float ySpeed = RAND_FLOAT() * 0.00001f;
+        float zSpeed = RAND_FLOAT() * 0.00001f;    //Set a limiton the rotation speed.
+        float scale = RAND_FLOAT() * 2.f + 0.2f;  //Min scale is 0.2 and max is 2.2.
+
+        //Set up rotation and scale.
+        Asteroid* asteroid = static_cast<Asteroid*>(CreateEntity(EntityType::ASTEROID, asteroidsId));
+        asteroid->GetTransform().Scale(scale);
+        asteroid->SetRotation({ 1.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, {0.f, 0.f, 1.f}, {xSpeed, ySpeed, zSpeed});
+
+        //Set position.
+        const float angle = 2.f * 3.141592f * RAND_FLOAT();
+        const float distance = (RAND_FLOAT() * (MAX_ASTEROID_DISTANCE - MIN_ASTEROID_DISTANCE)) + MIN_ASTEROID_DISTANCE;
+        const float x = cos(angle) * distance;
+        const float z = sin(angle) * distance;
+        const float y = (RAND_FLOAT() * 2.f * MAX_ASTEROID_HEIGHT_OFFSET) - MAX_ASTEROID_HEIGHT_OFFSET;
+
+        asteroid->GetTransform().SetTranslation({ x, y, z });
+    }
 }
 
 void Game::UpdateInput(std::shared_ptr<blurp::Window>& a_Window)
