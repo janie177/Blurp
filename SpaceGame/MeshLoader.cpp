@@ -226,7 +226,7 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
         //Occlusion
         if(!material.occlusionTexture.empty())
         {
-            imagePtrs[4] = LoadTexture(file, material.pbrMetallicRoughness.metallicRoughnessTexture.index, a_Settings.path, 0);
+            imagePtrs[4] = LoadTexture(file, material.occlusionTexture.index, a_Settings.path, 0);
 
             auto samplerId = file.textures[material.occlusionTexture.index].sampler;
             if (samplerId > -1)
@@ -873,6 +873,8 @@ void FindTransforms(int a_MeshIndex, fx::gltf::Document& a_File, int a_NodeIndex
 
 LoadedImageInformation LoadTexture(fx::gltf::Document& a_File, int a_TextureId, const std::string& a_Path, int numChannels)
 {
+    assert(a_TextureId >= 0);
+
     std::uint8_t* imgData = nullptr;
     int w = 0;
     int h = 0;

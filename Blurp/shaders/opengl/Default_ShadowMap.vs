@@ -78,7 +78,8 @@ void main()
 {    
 //TRANSFORM MATRIX
 #if defined(VA_MATRIX_DEF) && defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
-    mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix * aMatrix;
+    int dynamicIndex = gl_InstanceID % numInstances;
+    mat4 transform = aInstances.data[dynamicIndex].modelMatrix * aMatrix;
 
     //Only use the vertex attribute matrix.
 #elif defined(VA_MATRIX_DEF)
@@ -86,7 +87,7 @@ void main()
 
     //Only use the uploaded matrix.
 #elif defined(DYNAMIC_TRANSFORMMATRIX_DEFINE)
-    mat4 transform = aInstances.data[gl_InstanceID / numInstances].modelMatrix;
+    mat4 transform = aInstances.data[gl_InstanceID].modelMatrix;
 
     //No transforms are used, just use the identity.
 #else

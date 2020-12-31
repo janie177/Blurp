@@ -14,6 +14,7 @@
 #include "opengl/Mesh_GL.h"
 #include "opengl/RenderPass_Forward_GL.h"
 #include "opengl/Shader_GL.h"
+#include "opengl/GLUtils.h"
 
 namespace blurp
 {
@@ -529,8 +530,8 @@ namespace blurp
                     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, glTransformGpuBuffer->GetBufferId(), static_cast<GLintptr>(drawData.transformData.dataRange.start), drawData.transformData.dataRange.totalSize);
                 }
 
-                //Set the number of instances from the mesh itself in the uniform.
-                glUniform1i(0, mesh->GetInstanceCount());
+                //Set the number of instances used dynamically.
+                glUniform1i(0, drawData.instanceCount);
 
                 //Draw the mesh for every batch of lights. Size determined by m_MaxPosLightsPerCall.
                 const LightIndexData& indices = m_LightIndices[i];
@@ -575,7 +576,26 @@ namespace blurp
                     }
 
                     //Finally draw instanced.
-                    glDrawElementsInstanced(GL_TRIANGLES, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
+                    auto blurpTopology = drawData.pipelineState->GetTopology();
+                    auto glTopology = ToGL(blurpTopology);
+
+                    //Set up the right instance divisor based on the number of instances.
+                    for (auto& pair : mesh->GetInstanceDivisors())
+                    {
+                        //Divisor is the increment rate of the attribute in literal instances. It's not based on other divisors!
+                        glVertexAttribDivisor(pair.first, pair.second * drawData.instanceCount);
+                    }
+
+                    //Only triangles can cast a shadow because they have a volume.
+                    if (blurpTopology == TopologyType::TRIANGLES || blurpTopology == TopologyType::TRIANGLE_STRIP)
+                    {
+                        glDrawElementsInstanced(glTopology, mesh->GetNumIndices(), mesh->GetIndexDataType(), nullptr, drawData.instanceCount * mesh->GetInstanceCount());
+                    }
+                    //Indexed drawing.
+                    else
+                    {
+                        assert(0 && "Cannot draw shadows for non-triangle topology");
+                    }
                 }
             }
         }

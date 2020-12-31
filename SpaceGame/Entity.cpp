@@ -88,11 +88,14 @@ void Planet::SetOrbit(float a_Speed, const glm::vec3& a_Point, const glm::vec3& 
 void Planet::Update(float a_DeltaTime, Game& a_Game)
 {
 	//TODO rotate around axis, maybe at a nice angle? Other cool planet things like magnetic field and ozone layer yeeeee.
-	m_Transform.Rotate({ 0.f, 1.f, 0.f }, m_RotationSpeed * a_DeltaTime);
+	if(m_RotationSpeed != 0)
+	{
+		m_Transform.Rotate({ 0.f, 1.f, 0.f }, m_RotationSpeed * a_DeltaTime);
+	}
 
 	if(m_Orbits)
 	{
-		m_Transform.RotateAround(m_OrbitPoint, m_OrbitAxis, m_RotationSpeed * a_DeltaTime);
+		m_Transform.RotateAround(m_OrbitPoint, m_OrbitAxis, m_OrbitSpeed * a_DeltaTime);
 	}
 }
 

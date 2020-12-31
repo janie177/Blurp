@@ -339,11 +339,6 @@
   "materials": [
     {
       "doubleSided": false,
-      "emissiveFactor": [
-        1,
-        1,
-        1
-      ],
       "emissiveTexture": {
         "index": 5,
         "texCoord": 0
@@ -355,12 +350,6 @@
         "texCoord": 0
       },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [
-          0.59317835370000005,
-          0.59317835370000005,
-          0.59317835370000005,
-          1
-        ],
         "baseColorTexture": {
           "index": 2,
           "texCoord": 0
@@ -376,15 +365,6 @@
     {
       "alphaMode": "BLEND",
       "doubleSided": false,
-      "emissiveFactor": [
-        0.078125,
-        0.078125,
-        0.078125
-      ],
-      "emissiveTexture": {
-        "index": 1,
-        "texCoord": 0
-      },
       "name": "Material_62",
       "pbrMetallicRoughness": {
         "baseColorFactor": [

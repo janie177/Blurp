@@ -13,7 +13,7 @@
 
 #define SHADOW_MAP_DIMENSION 2048
 #define NUM_CASCADES 6
-#define FAR_PLANE 2500.f
+#define FAR_PLANE 4000.f
 #define NEAR_PLANE 0.1f
 #define NUM_POINT_LIGHT_SHADOWS 2
 
@@ -60,9 +60,9 @@ void Game::Init()
 
     lSettings.type = LightType::LIGHT_DIRECTIONAL;
     lSettings.shadowMapIndex = 0;
-    lSettings.intensity = 0.8f;
+    lSettings.intensity = 2.f;
     lSettings.color = { 1.f, 1.f, 1.f };
-    lSettings.directionalLight.direction = glm::vec3(0.f, 0.f, 1.f);
+    lSettings.directionalLight.direction = glm::vec3(0.f, 0.f, -1.f);
     m_Sun = std::reinterpret_pointer_cast<DirectionalLight>(m_Engine.GetResourceManager().CreateLight(lSettings));
 
     //Create shadow map generation passes.
@@ -95,13 +95,13 @@ void Game::Init()
     //Generate cascade distances for the sun shadow.
     std::vector<float> cascadeDistances;
     cascadeDistances.resize(NUM_CASCADES);
-    float cd = 2.f;
+    float cd = 10.f;
     float total = 0.f;
     for (int c = 0; c < NUM_CASCADES; ++c)
     {
         cascadeDistances[c] = cd;
         total += cd;
-        cd *= 2.f;
+        cd *= 3.f;
         if (c == NUM_CASCADES - 2)
         {
             cd = FAR_PLANE - total;
@@ -192,50 +192,61 @@ void Game::Init()
      */
 
     const int planetId = 0;
-    const int sunId = 1;
+    const int moonId = 1;
     const int shipId = 2;
     const int killBotId = 3;
-    const int moonId = 4;
+    const int alienShipId = 4;
     const int asteroidsId = 5;
-    m_Meshes.emplace_back().Load("meshes/earth/", "scene.gltf", m_Engine.GetResourceManager());
-    m_Meshes.emplace_back().Load("meshes/sun/", "scene.gltf", m_Engine.GetResourceManager());
-    m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager());
-    m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager());
-    m_Meshes.emplace_back().Load("meshes/moon/", "scene.gltf", m_Engine.GetResourceManager());
-    m_Meshes.emplace_back().Load("meshes/asteroids/", "scene.gltf", m_Engine.GetResourceManager());
+    m_Meshes.emplace_back().Load("meshes/earth_hd/", "scene.gltf", m_Engine.GetResourceManager(), true);
+    m_Meshes.emplace_back().Load("meshes/moon/", "scene.gltf", m_Engine.GetResourceManager(), true);
+    m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager(), false);
+    m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager(), false);
+    m_Meshes.emplace_back().Load("meshes/alien_ship/", "scene.gltf", m_Engine.GetResourceManager(), false);
+    m_Meshes.emplace_back().Load("meshes/asteroid/", "scene.gltf", m_Engine.GetResourceManager(), false);
 
 
     //Add the planet at the origin.
     Planet* planet = static_cast<Planet*>(CreateEntity(EntityType::PLANET, planetId));
-    planet->GetTransform().Scale(10.f);
-    planet->SetRotationSpeed(-0.000005f);
+    planet->GetTransform().Scale(0.008f);
+    planet->GetTransform().Rotate({ 1.f, 0.f, 0.f }, 3.141592f / 2.f);
+    planet->SetRotationSpeed(-0.05f);
 
-    //Add the sun further out.
-    Planet* sun = static_cast<Planet*>(CreateEntity(EntityType::PLANET, sunId));
-    sun->GetTransform().Scale(30.f);
-    sun->GetTransform().SetTranslation({0.f, 0.f, -1500.f});
-    sun->SetRotationSpeed(-0.00000005f);
+    //Disabled because skybox simply looks better.
+    ////Add the sun further out.
+    //Planet* sun = static_cast<Planet*>(CreateEntity(EntityType::PLANET, sunId));
+    //sun->GetTransform().Scale(30.f);
+    //sun->GetTransform().SetTranslation({0.f, 0.f, 3000.f});
+    //sun->SetRotationSpeed(-0.008f);
 
 
     //Make the moon rotate around the planet.
     Planet* moon = static_cast<Planet*>(CreateEntity(EntityType::PLANET, moonId));
     moon->GetTransform().Scale(10.f);
     moon->GetTransform().SetTranslation({ -150.f, 0.f, 0.f });
-    moon->SetRotationSpeed(-0.00001f);
-    moon->SetOrbit(0.00001f, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+    moon->SetRotationSpeed(-0.3f);
+    moon->SetOrbit(-0.05f, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+
+    //Make the alien ship a planet because honestly who cares
+    Planet* motherShip = static_cast<Planet*>(CreateEntity(EntityType::PLANET, alienShipId));
+    motherShip->GetTransform().Scale(0.015f);
+    motherShip->GetTransform().Rotate({ 1.f, 0.f, 0.f }, 3.141592f / 2.f);
+    //motherShip->GetTransform().Rotate({ 0.f, 1.f, 0.f }, 3.141592f);
+    motherShip->GetTransform().SetTranslation({ 300.f, -120.f, 0.f });
+    motherShip->SetRotationSpeed(0.f);
+    motherShip->SetOrbit(0.03f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
 
     //Add asteroid belt.
     const int NUM_ASTEROIDS = 1000;
-    const float MIN_ASTEROID_DISTANCE = 300.f;
-    const float MAX_ASTEROID_DISTANCE = 350.f;
-    const float MAX_ASTEROID_HEIGHT_OFFSET = 10.f;
+    const float MIN_ASTEROID_DISTANCE = 400.f;
+    const float MAX_ASTEROID_DISTANCE = 860.f;
+    const float MAX_ASTEROID_HEIGHT_OFFSET = 30.f;
 
     for (int i = 0; i < NUM_ASTEROIDS; ++i)
     {
-        float xSpeed = RAND_FLOAT() * 0.00001f;
-        float ySpeed = RAND_FLOAT() * 0.00001f;
-        float zSpeed = RAND_FLOAT() * 0.00001f;    //Set a limiton the rotation speed.
-        float scale = RAND_FLOAT() * 2.f + 0.2f;  //Min scale is 0.2 and max is 2.2.
+        float xSpeed = RAND_FLOAT() * 0.1f;
+        float ySpeed = RAND_FLOAT() * 0.1f;
+        float zSpeed = RAND_FLOAT() * 0.1f;    //Set a limiton the rotation speed.
+        float scale = RAND_FLOAT() * 0.03f + 0.002f;  //Min scale is 0.2 and max is 3.2.
 
         //Set up rotation and scale.
         Asteroid* asteroid = static_cast<Asteroid*>(CreateEntity(EntityType::ASTEROID, asteroidsId));
@@ -250,6 +261,15 @@ void Game::Init()
         const float y = (RAND_FLOAT() * 2.f * MAX_ASTEROID_HEIGHT_OFFSET) - MAX_ASTEROID_HEIGHT_OFFSET;
 
         asteroid->GetTransform().SetTranslation({ x, y, z });
+    }
+
+
+
+
+    //Generate a vector for each mesh to store transforms in. These are cleared after each draw call but will prevent a lot of memory allocating.
+    for (int i = 0; i < m_Meshes.size(); ++i)
+    {
+        m_Transforms.emplace_back();
     }
 }
 
@@ -402,20 +422,23 @@ void Game::Render()
     /*
      * Allocate memory to store the draw calls, and then iterate over the entities in the scene to find their transforms per mesh.
      */
+    std::vector<blurp::DrawData> drawDatasShadow;
     std::vector<blurp::DrawData> drawDatas;
     std::vector<blurp::DrawData> drawDatasTransparent;
-    std::vector<std::vector<glm::mat4>> transforms;
+
+    //Clear previous frames transforms.
     for(int i = 0; i < m_Meshes.size(); ++i)
     {
-        transforms.emplace_back();
+        m_Transforms[i].clear();
     }
+
     //TODO use a data structure like an octree to reduce this costly loop.
     for(auto& entity : m_Entities)
     {
         const int id = entity.first->GetMeshId();
         if(id != -1)
         {
-            transforms[id].emplace_back(entity.first->GetTransform().GetTransformation());
+            m_Transforms[id].emplace_back(entity.first->GetTransform().GetTransformation());
         }
     }
 
@@ -424,7 +447,7 @@ void Game::Render()
     //Upload transforms to the GPU and link them to the draw call.
     for(int i = 0; i < m_Meshes.size(); ++ i)
     {
-        auto& matvec = transforms[i];
+        auto& matvec = m_Transforms[i];
         if(!matvec.empty())
         {
             auto view = m_GpuBuffer->WriteData<glm::mat4>(gpuBufferOffset, matvec.size(), 16, &matvec[0]);
@@ -446,6 +469,17 @@ void Game::Render()
                 inserted.instanceCount = matvec.size();
                 inserted.transformData.dataRange = view;
                 inserted.transformData.dataBuffer = m_GpuBuffer;
+            }
+
+            if(m_Meshes[i].GeneratesShadow())
+            {
+                for (auto& data : m_Meshes[i].GetDrawDatas())
+                {
+                    auto& inserted = drawDatasShadow.emplace_back(data);
+                    inserted.instanceCount = matvec.size();
+                    inserted.transformData.dataRange = view;
+                    inserted.transformData.dataBuffer = m_GpuBuffer;
+                }
             }
         }
     }
@@ -477,18 +511,20 @@ void Game::Render()
     //
     //Only take solid geometry for shadows for now.
     std::vector<blurp::LightIndexData> lIndexData;
-    //lIndexData.reserve(numdrawdatastocastshadowsfor);
+    lIndexData.reserve(drawDatasShadow.size());
 
-    //for (int i = 0; i < static_cast<int>(numdrawdatastocastshadowsfor); ++i)
-    //{
-    //    //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
-    //    lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
-    //}
+    for (int i = 0; i < static_cast<int>(drawDatasShadow.size()); ++i)
+    {
+        //0 and 0 indicates that each piece of geometry is affected by the dir light at index 0, and the pos light at index 0.
+        lIndexData.emplace_back(blurp::LightIndexData{ dirLightShadowIndices, posLightShadowIndices });
+    }
+
+    m_ShadowGenerationPass->SetGeometry(&drawDatasShadow[0], &lIndexData[0], drawDatasShadow.size());
 
     //TODO find lights to use (also non-shadow).
     //Upload light data
     blurp::LightData lData;
-    lData.ambient = { 0.01f, 0.01f, 0.01f };
+    lData.ambient = { 0.001f, 0.001f, 0.001f };
     blurp::LightUploadData lud;
     lud.lightData = &lData;
     //lud.point.count = 0;
@@ -513,4 +549,12 @@ void Game::Render()
 
     //Update the rendering pipeline.
     m_Pipeline->Execute();
+
+    while(true)
+    {
+        if(m_Pipeline->HasFinishedExecuting())
+        {
+            break;
+        }
+    }
 }

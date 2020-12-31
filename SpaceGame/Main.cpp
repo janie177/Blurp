@@ -4,6 +4,8 @@
 #include <Window.h>
 #include <RenderResourceManager.h>
 #include "Game.h"
+#include "GameLoop.h"
+
 #include <iostream>
 
 int main()
@@ -42,49 +44,44 @@ int main()
 
     std::cout << "Game setup completed. Now starting game loop" << std::endl;
 
-    //Fps measuring
-    auto timeStamp = std::chrono::high_resolution_clock::now();
+    utilities::GameLoop loop(120, 60);
 
     /*
      * Main loop. Render as long as the window remains open.
      */
     while (!window->IsClosed())
     {
-        //Print FPS
+        auto data = loop.update();
 
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now - timeStamp);
-        double seconds = 1000000000.0 / static_cast<float>(duration.count());
-        static float secs = 0;
-        secs += seconds;
-        static int counter = 0;
-        ++counter;
-
-        if (counter > 50)
+        if(data.tick)
         {
-            float fps = secs / (float)counter;
-            counter = 0;
-            std::cout << "FPS: " << fps << std::endl;
-            secs = 0.f;
+            //Update the controls.
+            game.UpdateInput(window);
 
+            //Update game logic
+            game.UpdateGame(data.deltaTick);
         }
-        timeStamp = now;
 
+        if(data.frame)
+        {
+            //Draw the next frame.
+            game.Render();
 
-        //Update the controls.
-        game.UpdateInput(window);
+            //Finally display on the screen.
+            window->Present();
+        }
 
-        //Update game logic
-        game.UpdateGame(seconds);
+         if(data.currentTick % 20 == 0)
+         {
+             std::cout << "FPS: " << data.fps << std::endl;
+         }
 
-        //Draw the next frame.
-        game.Render();
-
-        //Finally display on the screen.
-        window->Present();
-
-        //Clear all resources that have gone out of scope.
-        engine.GetResourceManager().CleanUpUnused();
+        //Clean up after everything else happened.
+        if(data.tick)
+        {
+            //Clear all resources that have gone out of scope.
+            engine.GetResourceManager().CleanUpUnused();
+        }
     }
 
     std::cout << "Closing down." << std::endl;

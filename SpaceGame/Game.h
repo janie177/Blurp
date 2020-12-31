@@ -102,6 +102,7 @@ private:
      */
      //All meshes used by the game.
     std::vector<Mesh> m_Meshes;
+    std::vector<std::vector<glm::mat4>> m_Transforms;   //Vector used to store selected transforms per draw call.
 
     //Memory pools for each object type.
     utilities::TypelessPool m_SpaceShips;
