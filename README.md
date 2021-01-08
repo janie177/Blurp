@@ -9,4 +9,8 @@ A platform independent graphics rendering API.
 Blurp aims to be a graphics framework that abstracts away any platform dependent code. The aim is to create a clean API that simplifies the creation of a rendering pipeline with multiple draw passes.
 
 ### Note
-As you can see, the Blurp logo has four periodic table elements. This makes it better than projects that have only a single one. 
+As you can see, the Blurp logo has four periodic table elements. This makes it better than projects that have only a single one.
+
+---
+
+![Showcase Image](https://github.com/janie177/Blurp/blob/master/burpheader.png)  
