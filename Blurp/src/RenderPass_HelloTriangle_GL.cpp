@@ -83,10 +83,6 @@ namespace blurp
         const auto scissorRect = m_Target->GetScissorRect();
         glScissor(static_cast<int>(scissorRect.r), static_cast<int>(scissorRect.g), static_cast<int>(scissorRect.b), static_cast<int>(scissorRect.a));
 
-        const auto clearColor = m_Target->GetClearColor();
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glUseProgram(std::reinterpret_pointer_cast<Shader_GL>(m_Shader)->GetProgramId());
         glBindVertexArray(m_Vao);
 

@@ -15,6 +15,9 @@
 #include "Scene.h"
 #include "ShadowTestScene.h"
 #include "UniverseScene.h"
+#include "TriangleScene.h"
+
+#define USE_OGL true
 
 int main()
 {
@@ -23,7 +26,15 @@ int main()
 
     BlurpEngine engine;
     BlurpSettings blurpSettings;
+
+    //Choose the graphics API.
+#if USE_OGL
     blurpSettings.graphicsAPI = GraphicsAPI::OPENGL;
+#else
+    blurpSettings.graphicsAPI = GraphicsAPI::DIRECTX12;
+#endif
+
+
     blurpSettings.shadersPath = "../Output/shaders/";
 
     WindowSettings windowSettings;
@@ -143,8 +154,9 @@ int main()
 
 
     //Load one of the scenes.
-    std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
+    //std::unique_ptr<Scene> scene = std::make_unique<UniverseScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<MaterialTestScene>(engine, window);
+    std::unique_ptr<Scene> scene = std::make_unique<TriangleScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<LightTestScene>(engine, window);
     //std::unique_ptr<Scene> scene = std::make_unique<ShadowTestScene>(engine, window);
     scene->Init();

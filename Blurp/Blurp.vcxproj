@@ -206,6 +206,10 @@ xcopy "$(ProjectDir)shaders" "$(SolutionDir)Output\shaders\"  /E /Y /I</Command>
     <ClInclude Include="include\api\Texture.h" />
     <ClInclude Include="include\api\Transform.h" />
     <ClInclude Include="include\api\Window.h" />
+    <ClInclude Include="include\internal\d3d12\D3D12Utils.h" />
+    <ClInclude Include="include\internal\d3d12\RenderDevice_D3D12.h" />
+    <ClInclude Include="include\internal\d3d12\RenderPipeline_D3D12.h" />
+    <ClInclude Include="include\internal\d3d12\SwapChain_D3D12_Win32.h" />
     <ClInclude Include="include\internal\FileReader.h" />
     <ClInclude Include="include\internal\opengl\GLUtils.h" />
     <ClInclude Include="include\internal\opengl\GpuBuffer_GL.h" />

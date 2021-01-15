@@ -198,6 +198,18 @@
     <ClInclude Include="include\api\MeshFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\internal\d3d12\D3D12Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\internal\d3d12\RenderDevice_D3D12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\internal\d3d12\RenderPipeline_D3D12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\internal\d3d12\SwapChain_D3D12_Win32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BlurpEngine.cpp">
