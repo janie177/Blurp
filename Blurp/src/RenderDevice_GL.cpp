@@ -1,22 +1,23 @@
 #include "opengl/RenderDevice_GL.h"
 
-#include "opengl/RenderTarget_GL.h"
 #include "BlurpEngine.h"
+#include "Camera.h"
+#include "Light.h"
+#include "Material.h"
+
 #include "opengl/Mesh_GL.h"
 #include "opengl/RenderPass_HelloTriangle_GL.h"
 #include "opengl/RenderPipeline_GL.h"
 #include "opengl/Shader_GL.h"
 #include "opengl/SwapChain_GL_Win32.h"
 #include "opengl/Texture_GL.h"
-#include "Camera.h"
-#include "Light.h"
 #include "opengl/GpuBuffer_GL.h"
 #include "opengl/MaterialBatch_GL.h"
 #include "opengl/RenderPass_Forward_GL.h"
-#include "Material.h"
 #include "opengl/RenderPass_Clear_GL.h"
 #include "opengl/RenderPass_ShadowMap_GL.h"
 #include "opengl/RenderPass_Skybox_GL.h"
+
 
 namespace blurp
 {
@@ -94,15 +95,14 @@ namespace blurp
     {
         switch(a_Settings.type)
         {
-        case WindowType::WINDOW_WIN32:
-            return std::make_shared<SwapChain_GL_Win32>(a_Settings.swapChainSettings);
-        default:
-        {
-            throw std::exception("Swap chain for given window not implemented for OpenGL!");
-            return nullptr;
+            case WindowType::WINDOW_WIN32:
+                return std::make_shared<SwapChain_GL_Win32>(a_Settings.swapChainSettings);
+            default:
+            {
+                throw std::exception("Swap chain for given window not implemented for OpenGL!");
+                return nullptr;
+            }
         }
-        }
-        
     }
 
     std::shared_ptr<Material> RenderDevice_GL::CreateMaterial(const MaterialSettings& a_Settings)

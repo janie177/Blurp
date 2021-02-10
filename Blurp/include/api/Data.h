@@ -470,7 +470,7 @@ namespace blurp
         SHORT,
         UINT,
         UBYTE,
-        USHORT
+        USHORT,
     };
 
     /*

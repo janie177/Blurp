@@ -185,7 +185,7 @@ namespace blurp
             //The scissorrect dimensions: originx, originy, width, height.
             glm::vec<4, std::uint32_t> scissorRect;
 
-            //The clear color: r, g, b, a.
+            //The clear color: r, g, b, a. Normalized to 0-1 float range.
             glm::vec4 clearColor;
 
         } renderTargetSettings;

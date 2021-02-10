@@ -17,8 +17,6 @@
 #include "UniverseScene.h"
 #include "TriangleScene.h"
 
-#define USE_OGL true
-
 int main()
 {
     using namespace blurp;
@@ -28,11 +26,7 @@ int main()
     BlurpSettings blurpSettings;
 
     //Choose the graphics API.
-#if USE_OGL
     blurpSettings.graphicsAPI = GraphicsAPI::OPENGL;
-#else
-    blurpSettings.graphicsAPI = GraphicsAPI::DIRECTX12;
-#endif
 
 
     blurpSettings.shadersPath = "../Output/shaders/";
