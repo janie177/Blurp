@@ -5,6 +5,8 @@
 #include <iostream>
 #include <MeshFile.h>
 
+#include "../Blurp/Include/api/Transform.h"
+
 bool hasEnding(std::string const& fullString, std::string const& ending)
 {
     if (fullString.length() >= ending.length()) {
@@ -813,7 +815,21 @@ GLTFScene LoadMesh(const MeshLoaderSettings& a_Settings, blurp::RenderResourceMa
 void ResolveNode(GLTFScene& a_Scene, fx::gltf::Document& a_File, int a_NodeIndex, glm::mat4 a_ParentTransform)
 {
     auto& node = a_File.nodes[a_NodeIndex];
-    const glm::mat4 transform = glm::make_mat4(&node.matrix[0]);
+    glm::mat4 transform = glm::make_mat4(&node.matrix[0]);
+
+    if (transform == glm::identity<glm::mat4>())
+    {
+        glm::vec3 translation = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+        glm::quat rotation = glm::quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
+        glm::vec3 scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
+
+        blurp::Transform t;
+        t.Translate(translation);
+        t.Rotate(rotation);
+        t.Scale(scale);
+        transform = t.GetTransformation();
+    }
+
     const glm::mat4 chainedTransform = a_ParentTransform * transform;
 
     //Add mesh to scene if mesh is attached to this node.
@@ -851,8 +867,23 @@ void FindTransforms(int a_MeshIndex, fx::gltf::Document& a_File, int a_NodeIndex
     assert(a_MeshIndex >= 0);
     assert(a_NodeIndex >= 0);
 
+    constexpr static auto identity = glm::identity<glm::mat4>();
     auto& node = a_File.nodes[a_NodeIndex];
-    const glm::mat4 transform = glm::make_mat4(&node.matrix[0]);
+    glm::mat4 transform = glm::make_mat4(&node.matrix[0]);
+
+    if(transform == identity)
+    {
+        glm::vec3 translation = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+        glm::quat rotation = glm::quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
+        glm::vec3 scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
+
+        blurp::Transform t;
+        t.Translate(translation);
+        t.Rotate(rotation);
+        t.Scale(scale);
+        transform = t.GetTransformation();
+    }
+
     const glm::mat4 chainedTransform = a_ParentTransform * transform;
 
     //Add mesh to scene if mesh is attached to this node.

@@ -197,12 +197,14 @@ void Game::Init()
     const int killBotId = 3;
     const int alienShipId = 4;
     const int asteroidsId = 5;
+    const int tavernId = 6;
     m_Meshes.emplace_back().Load("meshes/earth_hd/", "scene.gltf", m_Engine.GetResourceManager(), true);
     m_Meshes.emplace_back().Load("meshes/moon/", "scene.gltf", m_Engine.GetResourceManager(), true);
     m_Meshes.emplace_back().Load("meshes/ship/", "scene.gltf", m_Engine.GetResourceManager(), false);
     m_Meshes.emplace_back().Load("meshes/killbot/", "scene.gltf", m_Engine.GetResourceManager(), false);
     m_Meshes.emplace_back().Load("meshes/alien_ship/", "scene.gltf", m_Engine.GetResourceManager(), false);
     m_Meshes.emplace_back().Load("meshes/asteroid/", "scene.gltf", m_Engine.GetResourceManager(), false);
+    m_Meshes.emplace_back().Load("meshes/tavern/", "scene.gltf", m_Engine.GetResourceManager(), true);
 
 
     //Add the planet at the origin.
@@ -210,6 +212,12 @@ void Game::Init()
     planet->GetTransform().Scale(0.008f);
     planet->GetTransform().Rotate({ 1.f, 0.f, 0.f }, 3.141592f / 2.f);
     planet->SetRotationSpeed(-0.05f);
+
+    Planet* tavern = static_cast<Planet*>(CreateEntity(EntityType::PLANET, tavernId));
+    tavern->GetTransform().Scale(0.1f);
+    tavern->GetTransform().Rotate({ 1.f, 0.f, 0.f }, 3.141592f / 2.f);
+    tavern->GetTransform().Translate({0.f, 100.f, 0.f});
+    tavern->SetRotationSpeed(-0.05f);
 
     //Disabled because skybox simply looks better.
     ////Add the sun further out.
